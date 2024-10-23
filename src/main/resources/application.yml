@@ -1,0 +1,61 @@
+application:
+  name: SongyeoinBackendApplication
+
+server:
+  port: 8080
+  error:
+    include-message: always
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/${MYSQL_DATABASE:songyeoin}?createDatabaseIfNotExist=true&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:songyeoin}
+    password: ${MYSQL_PASSWORD:songyeoin}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+
+  thymeleaf:
+    enabled: true
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML5
+    cache: false
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+
+springdoc:
+  show-actuator: true
+  paths-to-match: /**
+  packages-to-scan: com.ict.carrot
+
+management:
+  endpoint:
+    health:
+      show-details: ALWAYS
+
+logging:
+  level:
+    org.springframework: INFO
+    com.ict: DEBUG
+
+jwt:
+  secretKey: secret
+  issuer: ${JWT_ISSUER:https://dev-carrot.sellease.io}
+  expirationMinute: 10
+
+swagger:
+  contact-name: Carrot
+  contact-mail: ${SWAGGER_CONTACT_MAIL:contact@selleas.us}
+  contact-url: ${SWAGGER_CONTACT_URL:https://dev-carrot.sellease.io}
+  app-name: ${SWAGGER_APP_NAME:ICT Carrot}
+  app-description: "Good Luck"
+  app-version: ${SWAGGER_APP_VERSION:2.0.0}
+  app-license-url: ${SWAGGER_APP_LICENSE_URL:https://www.apache.org/licenses/LICENSE-2.0.html}
+  app-license: ${SWAGGER_APP_LICENSE:Apache 2.0}
