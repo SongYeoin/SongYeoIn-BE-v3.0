@@ -35,9 +35,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
-    // Logstash Logback Encoder (로그를 Logstash 형식으로 인코딩)
-    implementation "net.logstash.logback:logstash-logback-encoder:7.4"
-
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -45,6 +42,14 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.springframework.security:spring-security-test'
+
+
+    // Logstash Logback Encoder (로그를 Logstash 형식으로 인코딩)
+    implementation "net.logstash.logback:logstash-logback-encoder:7.4"
+
+
+    // Springdoc OpenAPI 의존성
+    /*implementation 'org.springdoc:springdoc-openapi-ui:2.1.0'*/
 
 }
 
