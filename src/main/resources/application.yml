@@ -30,11 +30,6 @@ spring:
       max-request-size: 10MB
 
 
-springdoc:
-  show-actuator: true
-  paths-to-match: /**
-  packages-to-scan: com.ict.carrot
-
 management:
   endpoint:
     health:
@@ -49,13 +44,3 @@ jwt:
   secretKey: secret
   issuer: ${JWT_ISSUER:https://dev-carrot.sellease.io}
   expirationMinute: 10
-
-swagger:
-  contact-name: Carrot
-  contact-mail: ${SWAGGER_CONTACT_MAIL:contact@selleas.us}
-  contact-url: ${SWAGGER_CONTACT_URL:https://dev-carrot.sellease.io}
-  app-name: ${SWAGGER_APP_NAME:ICT Carrot}
-  app-description: "Good Luck"
-  app-version: ${SWAGGER_APP_VERSION:2.0.0}
-  app-license-url: ${SWAGGER_APP_LICENSE_URL:https://www.apache.org/licenses/LICENSE-2.0.html}
-  app-license: ${SWAGGER_APP_LICENSE:Apache 2.0}
