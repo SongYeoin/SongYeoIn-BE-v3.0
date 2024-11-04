@@ -1,4 +1,4 @@
-package com.syi.project.config;
+package com.syi.project.common.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;

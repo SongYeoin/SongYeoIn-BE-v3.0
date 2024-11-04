@@ -1,4 +1,4 @@
-package com.syi.project.config;
+package com.syi.project.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
