@@ -1,27 +1,30 @@
 package com.syi.project.club.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-
 import java.time.LocalDate;
 
 @Entity
-@Data
 public class Club{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;    //코드번호
+
+    @Column(nullable = false)
     private String writer;  //작성자
+    @Column(nullable = false)
     private String checker; //승인자
+    @Column(nullable = false)
     private String participants;    //참여자
 
     @Column(length=500)
     private String content; //내용
+    @Column(nullable = false)
     private LocalDate regDate;  //작성일
+    @Column(nullable = false)
     private LocalDate studyDate;    //활동일
 
-    @Column(length=1)
+    @Column(length=1, nullable = false)
     private String checkStatus; //승인상태('Y', 'N', 'W')
     private String checkCmt;    //승인메시지
 
