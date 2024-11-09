@@ -15,7 +15,7 @@ public class SecurityConfig {
         .csrf(csrf -> csrf.disable()) // CSRF 비활성화
         .cors(Customizer.withDefaults()) // CORS 설정 활성화
         .authorizeHttpRequests(authorize ->
-            authorize.requestMatchers("/swagger-ui/**","/swagger-ui.html","/v3/api-docs/**","/webjars/**","/api/test").permitAll()
+            authorize.requestMatchers("/swagger-ui/**","/swagger-ui.html","/v3/api-docs/**","/webjars/**","/api/test","/admin/courses/**").permitAll()
                 .anyRequest().authenticated()
             // 모든 요청에 대한 접근 허용
         )
