@@ -47,7 +47,7 @@ public class CourseController {
   /* 교육과정 조회 */
   @GetMapping("{id}")
   public ResponseEntity<CourseDTO> getCourseById(@PathVariable Long id) {
-    log.info("교육과정 조회 함수(Controller)....");
+    log.info("교육과정 상세조회 함수(Controller)....");
     CourseDTO course = courseService.getCourseById(id);
     return ResponseEntity.ok(course);
   }

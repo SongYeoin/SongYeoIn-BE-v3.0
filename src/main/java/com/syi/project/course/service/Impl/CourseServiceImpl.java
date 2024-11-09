@@ -7,6 +7,7 @@ import com.syi.project.course.service.CourseService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -24,14 +25,26 @@ public class CourseServiceImpl implements CourseService {
 
   /* 교육과정 전체 조회 */
   @Override
+  @Transactional
   public List<CourseDTO> getAllCourses() {
-    return List.of();
+    log.info("교육과정 전체 조회 함수(Service)....");
+    List<Course> courses = courseRepository.findAll();
+
+    if (courses.isEmpty()) {
+      throw new RuntimeException("No courses found");
+    }
+
+    // Course 엔티티 리스트를 DTO 리스트로 변환
+    return courses.stream()
+        .map(this::convertToDTO)
+        .collect(Collectors.toList());
   }
 
   /* 교육과정 조회 */
   @Override
   @Transactional
   public CourseDTO getCourseById(long id) {
+    log.info("교육과정 상세조회 함수(Service)....");
     Course course = courseRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("Course not found with id " + id));
     return convertToDTO(course);
