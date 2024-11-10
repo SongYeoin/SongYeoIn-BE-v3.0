@@ -1,19 +1,19 @@
 package com.syi.project.course.controller;
 
 import com.syi.project.course.dto.CourseDTO;
+import com.syi.project.course.dto.CoursePatchDTO;
 import com.syi.project.course.service.CourseService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,14 +52,19 @@ public class CourseController {
     return ResponseEntity.ok(course);
   }
 
-  @PutMapping("{id}")   //PUT은 덮어쓰기 되고 없으면 새로 만들어짐
-  public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id, CourseDTO courseDTO) {
-    CourseDTO updatedCourse = courseService.updateCourse(id, courseDTO);
+  @PatchMapping("{id}")
+  public ResponseEntity<CourseDTO> updateCourse(@PathVariable Long id,
+      @RequestBody CoursePatchDTO coursePatchDTO) {
+    log.info("교육과정 수정 함수(Controller)....");
+    log.info("수정할 데이터 => {}", coursePatchDTO.toString());
+    CourseDTO updatedCourse = courseService.updateCourse(id, coursePatchDTO);
     return ResponseEntity.ok(updatedCourse);
   }
 
   @DeleteMapping("{id}")
   public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
+    log.info("교육과정 삭제 함수(Controller)....");
+    log.info("교육과정 삭제 번호 (Controller)....{}", id);
     courseService.deleteCourse(id);
     return ResponseEntity.noContent().build();
   }

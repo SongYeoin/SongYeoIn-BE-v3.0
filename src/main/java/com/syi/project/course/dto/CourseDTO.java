@@ -49,12 +49,12 @@ public class CourseDTO {
   private Boolean isDeleted;
 
   @NotBlank
-  private int managerNo;
+  private Long managerNo;
 
   @Builder
   public CourseDTO(Long id, String name, String description, String managerName, String teacherName,
       LocalDate startDate, LocalDate endDate, String roomName, LocalDate enrollDate,
-      LocalDate modifiedDate, String status, Boolean isDeleted, int managerNo) {
+      LocalDate modifiedDate, String status, Boolean isDeleted, Long managerNo) {
     this.id = id;
     this.name = name;
     this.description = description;
@@ -70,21 +70,20 @@ public class CourseDTO {
     this.managerNo = managerNo;
   }
 
-  public Course toEntity(CourseDTO courseDTO){
-    return Course.builder()
-        .name(this.name)
-        .description(this.description)
-        .managerName(this.managerName)
-        .teacherName(this.teacherName)
-        .startDate(this.startDate)
-        .endDate(this.endDate)
-        .roomName(this.roomName)
-        .enrollDate(this.enrollDate)
-        .modifiedDate(this.modifiedDate)
-        .status(this.status)
-        .isDeleted(this.isDeleted)
-        .managerNo(this.managerNo)
-        .build();
+  public Course toEntity() {
+    return new Course(
+        this.name,
+        this.description,
+        this.managerName,
+        this.teacherName,
+        this.startDate,
+        this.endDate,
+        this.roomName,
+        this.enrollDate,
+        this.modifiedDate,
+        this.status,
+        this.isDeleted,
+        this.managerNo);
 
   }
 

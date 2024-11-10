@@ -1,8 +1,8 @@
 package com.syi.project.course.service;
 
 import com.syi.project.course.dto.CourseDTO;
+import com.syi.project.course.dto.CoursePatchDTO;
 import java.util.List;
-import java.util.Optional;
 
 public interface CourseService {
 
@@ -12,7 +12,7 @@ public interface CourseService {
 
   CourseDTO createCourse(CourseDTO courseDTO);
 
-  CourseDTO updateCourse(Long id,CourseDTO courseDTO);
+  CourseDTO updateCourse(Long id, CoursePatchDTO coursePatchDTO);
 
   void deleteCourse(Long id);
 

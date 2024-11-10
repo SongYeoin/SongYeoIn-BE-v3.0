@@ -1,6 +1,7 @@
 package com.syi.project.course.entity;
 
 
+import com.syi.project.course.dto.CoursePatchDTO;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -8,12 +9,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
-import lombok.ToString.Include;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
@@ -62,14 +60,31 @@ public class Course {
   private Boolean isDeleted;
 
   @NotNull
-  private int managerNo;
+  private Long managerNo;
 
-
-  @Builder
+  /* 교육과정 수정할 때 사용하는 생성자 */
   public Course(Long id, String name, String description, String managerName, String teacherName,
       LocalDate startDate, LocalDate endDate, String roomName, LocalDate enrollDate,
-      LocalDate modifiedDate, String status, Boolean isDeleted, int managerNo) {
+      LocalDate modifiedDate, String status, Boolean isDeleted, Long managerNo) {
     this.id = id;
+    this.name = name;
+    this.description = description;
+    this.managerName = managerName;
+    this.teacherName = teacherName;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.roomName = roomName;
+    this.enrollDate = enrollDate;
+    this.modifiedDate = modifiedDate;
+    this.status = status;
+    this.isDeleted = isDeleted;
+    this.managerNo = managerNo;
+  }
+
+  /* 교육과정 등록할 때 사용하는 생성자 */
+  public Course(String name, String description, String managerName, String teacherName,
+      LocalDate startDate, LocalDate endDate, String roomName, LocalDate enrollDate,
+      LocalDate modifiedDate, String status, Boolean isDeleted, Long managerNo) {
     this.name = name;
     this.description = description;
     this.managerName = managerName;
@@ -83,4 +98,46 @@ public class Course {
     this.isDeleted = isDeleted != null ? isDeleted : false;
     this.managerNo = managerNo;
   }
+
+  /* 수정할 때  dto->entity */
+  public void updateWith(CoursePatchDTO dto) {
+    if (dto.getName() != null) {
+      this.name = dto.getName();
+    }
+    if (dto.getDescription() != null) {
+      this.description = dto.getDescription();
+    }
+    if (dto.getManagerName() != null) {
+      this.managerName = dto.getManagerName();
+    }
+    if (dto.getTeacherName() != null) {
+      this.teacherName = dto.getTeacherName();
+    }
+    if (dto.getStartDate() != null) {
+      this.startDate = dto.getStartDate();
+    }
+    if (dto.getEndDate() != null) {
+      this.endDate = dto.getEndDate();
+    }
+    if (dto.getRoomName() != null) {
+      this.roomName = dto.getRoomName();
+    }
+    if (dto.getModifiedDate() != null) {
+      this.modifiedDate = dto.getModifiedDate();
+    }
+    if (dto.getStatus() != null) {
+      this.status = dto.getStatus();
+    }
+    if (dto.getIsDeleted() != null) {
+      this.isDeleted = dto.getIsDeleted();
+    }
+    if (dto.getManagerNo() != null) {
+      this.managerNo = dto.getManagerNo();
+    }
+  }
+
+  public void updateIsDeletedToTrue() {
+    this.isDeleted = true;
+  }
+
 }
