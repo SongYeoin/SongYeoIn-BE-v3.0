@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -62,24 +63,6 @@ public class Course {
   @NotNull
   private Long managerNo;
 
-  /* 교육과정 수정할 때 사용하는 생성자 */
-  public Course(Long id, String name, String description, String managerName, String teacherName,
-      LocalDate startDate, LocalDate endDate, String roomName, LocalDate enrollDate,
-      LocalDate modifiedDate, String status, Boolean isDeleted, Long managerNo) {
-    this.id = id;
-    this.name = name;
-    this.description = description;
-    this.managerName = managerName;
-    this.teacherName = teacherName;
-    this.startDate = startDate;
-    this.endDate = endDate;
-    this.roomName = roomName;
-    this.enrollDate = enrollDate;
-    this.modifiedDate = modifiedDate;
-    this.status = status;
-    this.isDeleted = isDeleted;
-    this.managerNo = managerNo;
-  }
 
   /* 교육과정 등록할 때 사용하는 생성자 */
   public Course(String name, String description, String managerName, String teacherName,

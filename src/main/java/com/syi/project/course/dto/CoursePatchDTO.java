@@ -59,7 +59,6 @@ public class CoursePatchDTO {
     this.endDate = endDate;
     this.roomName = roomName;
     this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDate.now();
-    ;
     this.status = status;
     this.managerNo = managerNo;
   }
