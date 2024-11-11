@@ -41,6 +41,7 @@ logging:
     com.ict: DEBUG
 
 jwt:
-  secretKey: secret
-  issuer: ${JWT_ISSUER:https://dev-carrot.sellease.io}
+  secret: 7Iah7Jes7J247Iqk7ZSE66eB67aA7Yq47ZSE66Gc7KCd7Yq4
+  validity: 3600000  # 유효 시간 (예: 1시간=3600000 밀리초)
+  issuer: ${JWT_ISSUER:https://dev-carrot.sellease.io}/
   expirationMinute: 10
