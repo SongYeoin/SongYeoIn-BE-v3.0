@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/admin/courses")
+@RequestMapping("/manager/course")
 @Slf4j
 @RequiredArgsConstructor // final 이 붙은 필드 생성자 자동 주입
 @Tag(name = "course", description = "교육과정 API")
