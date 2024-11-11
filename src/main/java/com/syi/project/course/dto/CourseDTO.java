@@ -1,7 +1,9 @@
 package com.syi.project.course.dto;
 
 import com.syi.project.course.entity.Course;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,43 +14,58 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Getter
 @Setter
 @ToString
+@Schema(description = "교육 과정 등록 DTO")
 public class CourseDTO {
 
+  @Schema(description = "교육 과정 ID", example = "1")
   private Long id;
 
-  @NotBlank
+  @Schema(description = "교육 과정명", example = "자바 스프링 백엔드 과정")
+  @NotBlank(message = "교육 과정명은 필수입니다.")
+  @Size(min = 2, max = 20,message = "교육 과정명은 2자 이상 20자 이하이어야 합니다.")
   private String name;
 
-  @NotBlank
+  @Schema(description = "교육과정 설명", example = "자바와 스픠링을 배우고 익힙니다.")
+  @NotBlank(message = "교육과정 설명은 필수입니다.")
+  @Size(min = 2, max = 50, message = "교육 과정 설명은 2자 이상 50자 이하이어야 합니다.")
   private String description;
 
-  @NotBlank
+  @Schema(description = "담당자명", example = "황정미")
+  @NotBlank(message = "담당자명은 필수입니다.")
   private String managerName;
 
-  @NotBlank
+  @Schema(description = "강사명", example = "정민신")
+  @NotBlank(message = "강사명은 필수입니다.")
   private String teacherName;
 
-  @NotBlank
+  @Schema(description = "개강 날짜", example = "2024-04-11")
+  @NotBlank(message = "개강 날짜는 필수입니다.")
   @DateTimeFormat(pattern = "yyyy-MM-dd")
   private LocalDate startDate;
 
-  @NotBlank
+  @Schema(description = "종강 날짜", example = "2024-09-16")
+  @NotBlank(message = "종강 날짜는 필수입니다.")
   @DateTimeFormat(pattern = "yyyy-MM-dd")
   private LocalDate endDate;
 
-  @NotBlank
+  @Schema(description = "강의실", example = "302")
+  @NotBlank(message = "강의실은 필수입니다.")
   private String roomName;
 
-
+  @Schema(description = "등록일", example = "2024-11-11")
   private LocalDate enrollDate;
 
+  @Schema(description = "수정일", example = "2024-11-11")
   private LocalDate modifiedDate;
 
+  @Schema(description = "과정 상태", example = "Y")
   private String status;  /* 끝난 과정인지 아닌지 판단*/
 
+  @Schema(description = "삭제 여부", example = "false")
   private Boolean isDeleted;
 
-  @NotBlank
+  @Schema(description = "담당자 번호", example = "1")
+  @NotBlank(message = "담당자 번호는 필수입니다.")
   private Long managerNo;
 
   @Builder
