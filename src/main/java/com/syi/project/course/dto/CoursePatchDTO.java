@@ -2,6 +2,7 @@ package com.syi.project.course.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import lombok.Builder;
@@ -11,7 +12,7 @@ import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
-@Setter
+/*@Setter*/
 @ToString
 @Schema(description = "교육 과정 수정 DTO")
 public class CoursePatchDTO {
@@ -38,12 +39,12 @@ public class CoursePatchDTO {
   private String teacherName;
 
   @Schema(description = "개강 날짜", example = "2024-04-11")
-  @NotBlank(message = "개강 날짜는 필수입니다.")
+  @NotNull(message = "개강 날짜는 필수입니다.")
   @DateTimeFormat(pattern = "yyyy-MM-dd")
   private LocalDate startDate;
 
   @Schema(description = "종강 날짜", example = "2024-09-16")
-  @NotBlank(message = "종강 날짜는 필수입니다.")
+  @NotNull(message = "종강 날짜는 필수입니다.")
   @DateTimeFormat(pattern = "yyyy-MM-dd")
   private LocalDate endDate;
 
@@ -61,7 +62,7 @@ public class CoursePatchDTO {
   private Boolean isDeleted;
 
   @Schema(description = "담당자 번호", example = "1")
-  @NotBlank(message = "담당자 번호는 필수입니다.")
+  @NotNull(message = "담당자 번호는 필수입니다.")
   private Long managerNo;
 
 
