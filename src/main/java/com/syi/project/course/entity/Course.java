@@ -88,6 +88,8 @@ public class Course {
   @Column(nullable = false)
   private Long managerId;
 
+  private Long scheduleId;
+
 
   /* 교육과정 등록할 때 사용하는 생성자 */
   public Course(String name, String description, String managerName, String teacherName,
@@ -107,7 +109,7 @@ public class Course {
     this.managerId = managerId;
   }
 
-  /* 수정할 때  dto->entity */
+  /* 수정할 때  dto 필드 ->entity 필드 업데이트 */
   public void updateWith(CoursePatchDTO dto) {
     if (dto.getName() != null) {
       this.name = dto.getName();
@@ -144,8 +146,12 @@ public class Course {
     }
   }
 
+  public void updateScheduleId(Long id) {
+    this.scheduleId = id;
+  }
+
   /* 삭제한 사람의 id 넣기 */
-  public void updateIsDeletedToTrue(Long id) {
+  public void updateDeletedBy(Long id) {
     this.deletedBy = id;
   }
 

@@ -1,6 +1,5 @@
 package com.syi.project.common.annotation;
 
-import com.syi.project.course.entity.Course;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.lang.reflect.Field;
