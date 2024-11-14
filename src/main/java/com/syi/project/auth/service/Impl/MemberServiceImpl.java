@@ -138,6 +138,19 @@ public class MemberServiceImpl implements MemberService {
     return members.map(MemberDTO::fromEntity);
   }
 
+  // 회원 상세 조회
+  @Override
+  public MemberDTO getMemberDetail(String memberId) {
+    log.info("회원 상세 정보 조회 - 회원 ID: {}", memberId);
+    Member member = memberRepository.findByMemberIdAndIsDeletedFalse(memberId)
+        .orElseThrow(() -> {
+          log.warn("회원 상세 조회 실패 - 회원 ID: {} (회원 정보 없음)", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+    log.debug("회원 상세 정보 조회 성공 - 회원 ID: {}, 이름: {}", member.getMemberId(), member.getName());
+    return MemberDTO.fromEntity(member);
+  }
+
 
   // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드
   @Override
