@@ -26,5 +26,7 @@ public interface MemberService {
 
   Page<MemberDTO> getFilteredMembers(CheckStatus checkStatus, Role role, Pageable pageable);
 
+  MemberDTO getMemberDetail(String memberId);
+
   String refreshToken(String refreshToken);
 }
