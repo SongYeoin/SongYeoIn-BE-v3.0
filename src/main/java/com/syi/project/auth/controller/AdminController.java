@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,18 +41,14 @@ public class AdminController {
   private final MemberService memberService;
 
   @PostMapping("/login")
-  @Operation(
-      summary = "관리자 로그인",
-      description = "관리자 로그인 기능입니다. 로그인 후 JWT 토큰을 발급받습니다.",
-      responses = {
-          @ApiResponse(responseCode = "200", description = "로그인 성공",
-              content = @Content(mediaType = "application/json",
-                  schema = @Schema(implementation = MemberLoginResponseDTO.class))),
-          @ApiResponse(responseCode = "400", description = "잘못된 요청"),
-          @ApiResponse(responseCode = "401", description = "인증 실패 - 비밀번호 불일치 또는 권한 없음"),
-          @ApiResponse(responseCode = "500", description = "서버 오류")
-      }
-  )
+  @Operation(summary = "관리자 로그인", description = "관리자 로그인 기능입니다. 로그인 후 JWT 토큰을 발급받습니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "로그인 성공",
+          content = @Content(mediaType = "application/json", schema = @Schema(implementation = MemberLoginResponseDTO.class))),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+      @ApiResponse(responseCode = "401", description = "인증 실패 - 비밀번호 불일치 또는 권한 없음"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
   public ResponseEntity<MemberLoginResponseDTO> login(
       @Parameter(description = "관리자 로그인 요청 정보", required = true)
       @Valid @RequestBody MemberLoginRequestDTO requestDTO) {
@@ -60,14 +59,11 @@ public class AdminController {
   }
 
   @GetMapping("/list")
-  @Operation(
-      summary = "회원 목록 조회",
-      description = "회원 상태, 역할에 따른 필터링과 페이징 기능을 지원하는 모든 회원 정보 조회 기능입니다.",
-      responses = {
-          @ApiResponse(responseCode = "200", description = "조회 성공"),
-          @ApiResponse(responseCode = "500", description = "서버 오류")
-      }
-  )
+  @Operation(summary = "회원 목록 조회", description = "회원 상태, 역할에 따른 필터링과 페이징 기능을 지원하는 모든 회원 정보 조회 기능입니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "조회 성공"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
   public ResponseEntity<Page<MemberDTO>> getAllMembers(
       @Parameter(description = "회원 상태 필터", required = false)
       @RequestParam(value = "checkStatus", required = false) CheckStatus checkStatus,
@@ -82,15 +78,12 @@ public class AdminController {
   }
 
   @GetMapping("/detail/{memberId}")
-  @Operation(
-      summary = "회원 상세 조회",
-      description = "회원 ID를 통해 회원의 상세 정보를 조회합니다.",
-      responses = {
-          @ApiResponse(responseCode = "200", description = "조회 성공"),
-          @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
-          @ApiResponse(responseCode = "500", description = "서버 오류")
-      }
-  )
+  @Operation(summary = "회원 상세 조회", description = "회원 ID를 통해 회원의 상세 정보를 조회합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "조회 성공"),
+      @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
   public ResponseEntity<MemberDTO> getMemberDetail(
       @Parameter(description = "조회할 회원의 ID", required = true)
       @PathVariable String memberId) {
@@ -98,6 +91,26 @@ public class AdminController {
     log.info("회원 상세 조회 요청 - 회원 ID: {}", memberId);
     MemberDTO memberDetail = memberService.getMemberDetail(memberId);
     return new ResponseEntity<>(memberDetail, HttpStatus.OK);
+  }
+
+  @PatchMapping("/approve/{memberId}")
+  @PreAuthorize("hasRole('MANAGER')")
+  @Operation(summary = "회원 승인 상태 변경", description = "특정 회원의 승인 여부를 변경합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "승인 상태 변경 성공"),
+      @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
+  public ResponseEntity<Void> updateMemberApprovalStatus(
+      @Parameter(description = "변경할 회원의 ID", required = true)
+      @PathVariable String memberId,
+      @Parameter(description = "새로운 승인 상태", required = true)
+      @RequestParam CheckStatus newStatus) {
+
+    log.info("회원 승인 상태 변경 요청 - 회원 ID: {}, 새로운 상태: {}", memberId, newStatus);
+    memberService.updateApprovalStatus(memberId, newStatus);
+    log.info("회원 승인 상태 변경 성공 - 회원 ID: {}, 새로운 상태: {}", memberId, newStatus);
+    return ResponseEntity.ok().build();
   }
 
 
