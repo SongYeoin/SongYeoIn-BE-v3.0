@@ -6,11 +6,14 @@ import org.springframework.http.HttpStatus;
 @Getter
 public class InvalidRequestException extends RuntimeException {
 
-  private final HttpStatus httpStatus;
+  private final ErrorCode errorCode;
 
-  // ErrorCode를 받는 생성자 추가
   public InvalidRequestException(ErrorCode errorCode) {
     super(errorCode.getMessage());
-    this.httpStatus = errorCode.getHttpStatus();
+    this.errorCode = errorCode;
+  }
+
+  public HttpStatus getHttpStatus() {
+    return errorCode.getHttpStatus();
   }
 }
