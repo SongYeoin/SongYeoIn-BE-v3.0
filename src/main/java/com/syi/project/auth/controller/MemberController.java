@@ -77,18 +77,14 @@ public class MemberController {
   }
 
   @PostMapping("/login")
-  @Operation(
-      summary = "로그인",
-      description = "수강생 로그인 기능입니다. 로그인 후 JWT 토큰을 발급받습니다.",
-      responses = {
-          @ApiResponse(responseCode = "200", description = "로그인 성공",
-              content = @Content(mediaType = "application/json",
-                  schema = @Schema(implementation = MemberLoginResponseDTO.class))),
-          @ApiResponse(responseCode = "400", description = "잘못된 요청"),
-          @ApiResponse(responseCode = "401", description = "인증 실패"),
-          @ApiResponse(responseCode = "500", description = "서버 오류")
-      }
-  )
+  @Operation(summary = "로그인", description = "수강생 로그인 기능입니다. 로그인 후 JWT 토큰을 발급받습니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "로그인 성공",
+          content = @Content(mediaType = "application/json", schema = @Schema(implementation = MemberLoginResponseDTO.class))),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+      @ApiResponse(responseCode = "401", description = "인증 실패"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
   public ResponseEntity<MemberLoginResponseDTO> login(
       @Parameter(description = "로그인 요청 정보", required = true)
       @Valid @RequestBody MemberLoginRequestDTO requestDTO) {

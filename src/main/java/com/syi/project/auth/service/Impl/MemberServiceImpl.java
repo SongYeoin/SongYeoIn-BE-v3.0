@@ -151,6 +151,16 @@ public class MemberServiceImpl implements MemberService {
     return MemberDTO.fromEntity(member);
   }
 
+  // 승인상태
+  @Transactional
+  @Override
+  public void updateApprovalStatus(String memberId, CheckStatus newStatus) {
+    Member member = memberRepository.findByMemberIdAndIsDeletedFalse(memberId)
+        .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
+
+    member.updateCheckStatus(newStatus);
+    log.info("회원 승인 상태 업데이트 완료 - 회원 ID: {}, 새로운 상태: {}", memberId, newStatus);
+  }
 
   // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드
   @Override

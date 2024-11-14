@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -217,4 +218,47 @@ class AdminControllerTest {
         .andExpect(jsonPath("$.message", is("해당 사용자가 존재하지 않거나 삭제되었습니다.")))
         .andExpect(jsonPath("$.status", is(404)));
   }
+
+  @Test
+  @DisplayName("회원 승인 상태 변경 성공 테스트")
+  @WithMockUser(roles = "MANAGER")
+  void updateMemberApprovalStatus_success() throws Exception {
+    String memberId = "testMember";
+    CheckStatus newStatus = CheckStatus.Y;
+
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + memberId)
+            .param("newStatus", newStatus.name())
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @DisplayName("회원 승인 상태 변경 - 회원 정보 없음")
+  @WithMockUser(roles = "MANAGER")
+  void updateMemberApprovalStatus_memberNotFound() throws Exception {
+    String invalidMemberId = "invalidMember";
+    CheckStatus newStatus = CheckStatus.Y;
+
+    doThrow(new InvalidRequestException(ErrorCode.USER_NOT_FOUND))
+        .when(memberService).updateApprovalStatus(invalidMemberId, newStatus);
+
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + invalidMemberId)
+            .param("newStatus", newStatus.name())
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @DisplayName("회원 승인 상태 변경 - 권한 없음")
+  @WithMockUser(roles = "STUDENT")
+  void updateMemberApprovalStatus_accessDenied() throws Exception {
+    String memberId = "testMember";
+    CheckStatus newStatus = CheckStatus.Y;
+
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + memberId)
+            .param("newStatus", newStatus.name())
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isForbidden());
+  }
+
 }
