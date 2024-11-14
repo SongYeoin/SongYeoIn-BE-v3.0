@@ -1,18 +1,24 @@
 package com.syi.project.attendance.entity;
 
+import com.syi.project.common.enums.AttendanceStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
 @Getter
@@ -26,19 +32,23 @@ public class Attendance {
   private Long id;
 
   @NotNull(message = "상태값은 필수입니다.")
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private String status;
 
   @NotNull(message = "날짜는 필수입니다.")
+  @DateTimeFormat(pattern = "yyyy-MM-dd")
   @Column(nullable = false)
   private LocalDateTime date;
 
   @NotNull(message = "등록일은 필수입니다.")
   @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
+  @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
   private LocalDateTime enrollDate;
 
   @PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
+  @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
   private LocalDateTime modifiedDate;
 
@@ -61,13 +71,17 @@ public class Attendance {
       LocalDateTime modifiedDate, Long periodId, Long courseId, Long memberId, String memo) {
     this.id = id;
     this.status = status;
-    this.date = date;
-    this.enrollDate = enrollDate;
-    this.modifiedDate = modifiedDate;
+    this.date = date != null ? date : LocalDateTime.now();
+    this.enrollDate = enrollDate != null ? enrollDate : LocalDateTime.now();
+    this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDateTime.now();
     this.periodId = periodId;
     this.courseId = courseId;
     this.memberId = memberId;
     this.memo = memo;
+  }
+
+  public void updateStatus(String status){
+    this.status = status;
   }
 
 

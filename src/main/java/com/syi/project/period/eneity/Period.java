@@ -16,6 +16,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
 @Getter
@@ -51,12 +52,14 @@ public class Period {
   //@NotBlank(message = "시작 시간을 입력해주세요.")
   @NotNull(message = "시작 시간을 입력해주세요.")
   //@Pattern(regexp = "^([01]?[0-9]|2[0-3]):[0-5][0-9]$", message = "시간 형식은 HH:mm이어야 합니다.")
+  @DateTimeFormat(pattern = "HH:mm")
   @Column(nullable = false, length = 5)
   private LocalTime startTime;
 
   @NotNull(message = "종료 시간을 입력해주세요.")
   //@NotBlank(message = "종료 시간을 입력해주세요.")
   //@Pattern(regexp = "^([01]?[0-9]|2[0-3]):[0-5][0-9]$", message = "시간 형식은 HH:mm이어야 합니다.")
+  @DateTimeFormat(pattern = "HH:mm")
   @Column(nullable = false, length = 5)
   private LocalTime endTime;
 
