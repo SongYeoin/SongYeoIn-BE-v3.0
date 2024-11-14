@@ -30,5 +30,7 @@ public interface MemberService {
 
   void updateApprovalStatus(String memberId, CheckStatus checkStatus);
 
+  void updateMemberRole(String memberId, Role newRole);
+
   String refreshToken(String refreshToken);
 }
