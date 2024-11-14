@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -39,9 +38,9 @@ public class CourseController {
       })
   @PostMapping
   public ResponseEntity<CourseDTO> createCourse(@Parameter(description = "교육 과정 등록 정보", required = true) @Valid @RequestBody CourseDTO courseDTO) {
-    log.info("교육과정 등록 함수(Controller)....");
-    log.info(courseDTO.toString());
+    log.info("Request to create course with data: {}", courseDTO);
     CourseDTO createdCourse = courseService.createCourse(courseDTO);
+    log.info("Course created successfully with ID: {}", createdCourse.getId());
     return ResponseEntity.status(HttpStatus.CREATED).body(createdCourse);
   }
 
@@ -52,8 +51,9 @@ public class CourseController {
       })
   @GetMapping
   public ResponseEntity<List<CourseDTO>> getAllCourses() {
-    log.info("교육과정 전체 조회 함수(Controller)....");
+    log.info("Request to get all courses");
     List<CourseDTO> courses = courseService.getAllCourses();
+    log.info("get {} courses successfully", courses.size());
     return ResponseEntity.ok(courses);
   }
 
@@ -64,8 +64,9 @@ public class CourseController {
       })
   @GetMapping("{id}")
   public ResponseEntity<CourseDTO> getCourseById(@Parameter(description = "상세 조회할 교육과정의 ID", required = true) @PathVariable Long id) {
-    log.info("교육과정 상세조회 함수(Controller)....");
+    log.info("Request to get course with ID: {}", id);
     CourseDTO course = courseService.getCourseById(id);
+    log.info("get course with ID: {} successfully", id);
     return ResponseEntity.ok(course);
   }
 
@@ -76,9 +77,9 @@ public class CourseController {
       })
   public ResponseEntity<CourseDTO> updateCourse(@Parameter(description = "수정할 교육과정의 ID", required = true) @PathVariable Long id,
       @RequestBody CoursePatchDTO coursePatchDTO) {
-    log.info("교육과정 수정 함수(Controller)....");
-    log.info("수정할 데이터 => {}", coursePatchDTO.toString());
+    log.info("Request to update course with ID: {}. Update data: {}", id, coursePatchDTO);
     CourseDTO updatedCourse = courseService.updateCourse(id, coursePatchDTO);
+    log.info("Course with ID: {} updated successfully", id);
     return ResponseEntity.ok(updatedCourse);
   }
 
@@ -88,9 +89,9 @@ public class CourseController {
           @ApiResponse(responseCode = "200", description = "교육 과정이 성공적으로 삭제되었습니다."),
       })
   public ResponseEntity<Void> deleteCourse(@Parameter(description = "삭제할 교육과정의 ID", required = true) @PathVariable Long id) {
-    log.info("교육과정 삭제 함수(Controller)....");
-    log.info("교육과정 삭제 번호 (Controller)....{}", id);
+    log.info("Request to delete course with ID: {}", id);
     courseService.deleteCourse(id);
+    log.info("Course with ID: {} deleted successfully", id);
     return ResponseEntity.noContent().build();
   }
 }

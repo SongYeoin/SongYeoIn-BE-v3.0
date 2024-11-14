@@ -8,8 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -43,5 +41,21 @@ public class Schedule {
   @Column(nullable = false)
   private Long courseId;
 
+  /* 시간표 등록할 때 사용하는 생성자 */
+  public Schedule(LocalDate enrollDate, LocalDate modifiedDate, Long deletedBy,
+      Long courseId) {
+    this.enrollDate = enrollDate != null ? enrollDate : LocalDate.now();
+    this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDate.now();
+    this.deletedBy = deletedBy;
+    this.courseId = courseId;
+  }
 
+
+  public void updateDeletedBy(Long id) {
+    this.deletedBy = id;
+  }
+
+  public void updateModifiedDate(LocalDate modifiedDate) {
+    this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDate.now();
+  }
 }

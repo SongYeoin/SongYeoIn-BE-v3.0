@@ -113,4 +113,21 @@ public class CourseDTO {
 
   }
 
+  public static CourseDTO fromEntity(Course course) {
+
+    return CourseDTO.builder()
+        .id(course.getId())
+        .name(course.getName())
+        .description(course.getDescription())
+        .managerName(course.getManagerName())
+        .teacherName(course.getTeacherName())
+        .startDate(course.getStartDate())
+        .endDate(course.getEndDate())
+        .roomName(course.getRoomName())
+        .enrollDate(course.getEnrollDate())
+        .modifiedDate(course.getModifiedDate())
+        .managerId(course.getManagerId())
+        .build();
+  }
+
 }
