@@ -28,5 +28,7 @@ public interface MemberService {
 
   MemberDTO getMemberDetail(String memberId);
 
+  void updateApprovalStatus(String memberId, CheckStatus checkStatus);
+
   String refreshToken(String refreshToken);
 }
