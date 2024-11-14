@@ -5,6 +5,9 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -202,7 +205,7 @@ class AdminControllerTest {
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/nonexistentUser")
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message", is("해당 사용자가 존재하지 않거나 삭제되었습니다.")))
+        .andExpect(jsonPath("$.message", is(ErrorCode.USER_NOT_FOUND.getMessage())))
         .andExpect(jsonPath("$.status", is(404)));
   }
 
@@ -245,7 +248,8 @@ class AdminControllerTest {
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + invalidMemberId)
             .param("newStatus", newStatus.name())
             .contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message", is(ErrorCode.USER_NOT_FOUND.getMessage())));
   }
 
   @Test
@@ -259,6 +263,58 @@ class AdminControllerTest {
             .param("newStatus", newStatus.name())
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @DisplayName("역할 변경 성공 테스트")
+  void updateMemberRole_Success() throws Exception {
+    String memberId = "testMemberId";
+    Role newRole = Role.MANAGER;
+
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/change-role/{memberId}", memberId)
+            .param("newRole", newRole.name())
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk());
+
+    verify(memberService, times(1)).updateMemberRole(memberId, newRole);
+  }
+
+  @Test
+  @DisplayName("역할 변경 실패 - 회원 정보 없음")
+  void updateMemberRole_NotFound() throws Exception {
+    String memberId = "nonExistingMemberId";
+    Role newRole = Role.MANAGER;
+
+    doThrow(new InvalidRequestException(ErrorCode.USER_NOT_FOUND))
+        .when(memberService).updateMemberRole(memberId, newRole);
+
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/change-role/{memberId}", memberId)
+            .param("newRole", newRole.name())
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message", is(ErrorCode.USER_NOT_FOUND.getMessage())))
+        .andExpect(jsonPath("$.status", is(404)));
+
+    verify(memberService, times(1)).updateMemberRole(memberId, newRole);
+  }
+
+  @Test
+  @DisplayName("역할 변경 실패 - 서버 오류 (500 Internal Server Error)")
+  void updateMemberRole_InternalServerError() throws Exception {
+    String memberId = "testMemberId";
+    Role newRole = Role.MANAGER;
+
+    doThrow(new RuntimeException("Unexpected error"))
+        .when(memberService).updateMemberRole(memberId, newRole);
+
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/change-role/{memberId}", memberId)
+            .param("newRole", newRole.name())
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isInternalServerError())
+        .andExpect(jsonPath("$.message", is(ErrorCode.INTERNAL_SERVER_ERROR.getMessage())))
+        .andExpect(jsonPath("$.status", is(500)));
+
+    verify(memberService, times(1)).updateMemberRole(memberId, newRole);
   }
 
 }

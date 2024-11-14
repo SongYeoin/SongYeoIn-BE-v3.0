@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.syi.project.auth.dto.DuplicateCheckDTO;
@@ -328,6 +330,64 @@ class MemberServiceImplTest {
     InvalidRequestException exception = assertThrows(
         InvalidRequestException.class,
         () -> memberService.getMemberDetail("deletedUser")
+    );
+    assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("승인 상태 변경 성공 테스트")
+  void updateApprovalStatus_Success() {
+    String memberId = "testUser";
+    CheckStatus newStatus = CheckStatus.Y;
+
+    when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.of(member));
+
+    memberService.updateApprovalStatus(memberId, newStatus);
+
+    assertEquals(newStatus, member.getCheckStatus());
+    verify(memberRepository, times(1)).findByMemberIdAndIsDeletedFalse(memberId);
+  }
+
+  @Test
+  @DisplayName("승인 상태 변경 실패 - 존재하지 않는 회원")
+  void updateApprovalStatus_Failure_UserNotFound() {
+    String memberId = "nonExistentUser";
+    CheckStatus newStatus = CheckStatus.Y;
+
+    when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.empty());
+
+    InvalidRequestException exception = assertThrows(
+        InvalidRequestException.class,
+        () -> memberService.updateApprovalStatus(memberId, newStatus)
+    );
+    assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("역할 변경 성공 테스트")
+  void updateMemberRole_Success() {
+    String memberId = "testUser";
+    Role newRole = Role.MANAGER;
+
+    when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.of(member));
+
+    memberService.updateMemberRole(memberId, newRole);
+
+    assertEquals(newRole, member.getRole());
+    verify(memberRepository, times(1)).findByMemberIdAndIsDeletedFalse(memberId);
+  }
+
+  @Test
+  @DisplayName("역할 변경 실패 - 존재하지 않는 회원")
+  void updateMemberRole_Failure_UserNotFound() {
+    String memberId = "nonExistentUser";
+    Role newRole = Role.MANAGER;
+
+    when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.empty());
+
+    InvalidRequestException exception = assertThrows(
+        InvalidRequestException.class,
+        () -> memberService.updateMemberRole(memberId, newRole)
     );
     assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
   }
