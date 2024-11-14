@@ -14,10 +14,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
-@Slf4j
 @ControllerAdvice
+@Slf4j
 @RestController
 public class GlobalExceptionHandler {
+
+  @ExceptionHandler(NoSuchElementException.class)
+  public ResponseEntity<String> handleNoSuchElementException(NoSuchElementException ex) {
+    return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);  // 404 상태 코드와 메시지 반환
+  }
 
   // InvalidRequestException 예외 처리
   @ExceptionHandler(InvalidRequestException.class)
