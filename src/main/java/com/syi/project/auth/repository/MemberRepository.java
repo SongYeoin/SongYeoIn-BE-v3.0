@@ -1,6 +1,7 @@
 package com.syi.project.auth.repository;
 
 import com.syi.project.auth.entity.Member;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
@@ -11,4 +12,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   // 이메일 중복 체크
   boolean existsByEmail(String email);
 
+  // 로그인
+  Optional<Member> findByMemberIdAndIsDeletedFalse(String memberId);
+
 }
+

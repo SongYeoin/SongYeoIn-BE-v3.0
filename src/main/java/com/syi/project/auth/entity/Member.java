@@ -70,4 +70,12 @@ public class Member {
     this.isDeleted = false;
   }
 
+  public void updateCheckStatus(CheckStatus newStatus) {
+    this.checkStatus = newStatus;
+  }
+
+  public void updateRole(Role newRole) {
+    this.role = newRole;
+  }
+
 }
