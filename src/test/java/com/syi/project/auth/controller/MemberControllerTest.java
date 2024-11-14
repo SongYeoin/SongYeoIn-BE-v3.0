@@ -180,7 +180,7 @@ public class MemberControllerTest {
         .password("wrongPassword")
         .build();
     Mockito.when(memberService.login(any(MemberLoginRequestDTO.class), eq(Role.STUDENT)))
-        .thenThrow(new IllegalArgumentException("비밀번호가 일치하지 않습니다."));
+        .thenThrow(new InvalidRequestException(ErrorCode.INVALID_PASSWORD));
 
     // When
     ResultActions result = mockMvc.perform(post("/login")
