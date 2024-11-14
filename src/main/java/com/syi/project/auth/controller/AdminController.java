@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,6 +21,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -80,5 +80,25 @@ public class AdminController {
     log.info("회원 목록 조회 성공 - 총 {}명", members.getTotalElements());
     return new ResponseEntity<>(members, HttpStatus.OK);
   }
+
+  @GetMapping("/detail/{memberId}")
+  @Operation(
+      summary = "회원 상세 조회",
+      description = "회원 ID를 통해 회원의 상세 정보를 조회합니다.",
+      responses = {
+          @ApiResponse(responseCode = "200", description = "조회 성공"),
+          @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
+          @ApiResponse(responseCode = "500", description = "서버 오류")
+      }
+  )
+  public ResponseEntity<MemberDTO> getMemberDetail(
+      @Parameter(description = "조회할 회원의 ID", required = true)
+      @PathVariable String memberId) {
+
+    log.info("회원 상세 조회 요청 - 회원 ID: {}", memberId);
+    MemberDTO memberDetail = memberService.getMemberDetail(memberId);
+    return new ResponseEntity<>(memberDetail, HttpStatus.OK);
+  }
+
 
 }

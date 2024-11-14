@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.syi.project.auth.dto.DuplicateCheckDTO;
+import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
 import com.syi.project.auth.dto.MemberSignUpRequestDTO;
@@ -292,5 +293,42 @@ class MemberServiceImplTest {
         () -> memberService.login(requestDTO, Role.STUDENT)
     );
     assertEquals(ErrorCode.INVALID_PASSWORD.getMessage(), exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("회원 상세 조회 - 성공 케이스")
+  void getMemberDetail_Success() {
+    when(memberRepository.findByMemberIdAndIsDeletedFalse("testUser")).thenReturn(Optional.of(member));
+
+    MemberDTO result = memberService.getMemberDetail("testUser");
+
+    assertNotNull(result);
+    assertEquals("testUser", result.getMemberId());
+    assertEquals("YJ", result.getName());
+    assertEquals("test@example.com", result.getEmail());
+  }
+
+  @Test
+  @DisplayName("회원 상세 조회 - 존재하지 않는 회원 ID로 조회 시 실패")
+  void getMemberDetail_Failure_UserNotFound() {
+    when(memberRepository.findByMemberIdAndIsDeletedFalse("nonexistentUser")).thenReturn(Optional.empty());
+
+    InvalidRequestException exception = assertThrows(
+        InvalidRequestException.class,
+        () -> memberService.getMemberDetail("nonexistentUser")
+    );
+    assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("회원 상세 조회 - 삭제된 회원 조회 시 실패")
+  void getMemberDetail_Failure_DeletedUser() {
+    when(memberRepository.findByMemberIdAndIsDeletedFalse("deletedUser")).thenReturn(Optional.empty());
+
+    InvalidRequestException exception = assertThrows(
+        InvalidRequestException.class,
+        () -> memberService.getMemberDetail("deletedUser")
+    );
+    assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
   }
 }

@@ -11,6 +11,8 @@ import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
+import com.syi.project.common.exception.ErrorCode;
+import com.syi.project.common.exception.InvalidRequestException;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
@@ -175,5 +177,44 @@ class AdminControllerTest {
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(0)));
+  }
+
+  @Test
+  @DisplayName("회원 상세 조회 - 성공 케이스")
+  void getMemberDetail_Success() throws Exception {
+    Mockito.when(memberService.getMemberDetail(eq("testMember"))).thenReturn(testMember);
+
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/testMember")
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.memberId", is("testMember")))
+        .andExpect(jsonPath("$.name", is("Test User")))
+        .andExpect(jsonPath("$.email", is("test@example.com")));
+  }
+
+  @Test
+  @DisplayName("회원 상세 조회 - 존재하지 않는 회원 ID로 조회 시 실패")
+  void getMemberDetail_Failure_UserNotFound() throws Exception {
+    Mockito.when(memberService.getMemberDetail(eq("nonexistentUser")))
+        .thenThrow(new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
+
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/nonexistentUser")
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message", is("해당 사용자가 존재하지 않거나 삭제되었습니다.")))
+        .andExpect(jsonPath("$.status", is(404)));
+  }
+
+  @Test
+  @DisplayName("회원 상세 조회 - 삭제된 회원 조회 시 실패")
+  void getMemberDetail_Failure_DeletedUser() throws Exception {
+    Mockito.when(memberService.getMemberDetail(eq("deletedUser")))
+        .thenThrow(new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
+
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/deletedUser")
+            .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message", is("해당 사용자가 존재하지 않거나 삭제되었습니다.")))
+        .andExpect(jsonPath("$.status", is(404)));
   }
 }
