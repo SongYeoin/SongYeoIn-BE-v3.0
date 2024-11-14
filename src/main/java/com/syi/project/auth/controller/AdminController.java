@@ -113,5 +113,23 @@ public class AdminController {
     return ResponseEntity.ok().build();
   }
 
+  @PatchMapping("/change-role/{memberId}")
+  @PreAuthorize("hasRole('MANAGER')")
+  @Operation(summary = "회원 역할 변경", description = "특정 회원의 역할을 변경합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "역할 변경 성공"),
+      @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
+  public ResponseEntity<Void> updateMemberRole(
+      @Parameter(description = "변경할 회원의 ID", required = true) @PathVariable String memberId,
+      @Parameter(description = "새로운 역할", required = true) @RequestParam Role newRole) {
+
+    log.info("회원 역할 변경 요청 - 회원 ID: {}, 새로운 역할: {}", memberId, newRole);
+    memberService.updateMemberRole(memberId, newRole);
+    log.info("회원 역할 변경 성공 - 회원 ID: {}, 새로운 역할: {}", memberId, newRole);
+    return ResponseEntity.ok().build();
+  }
+
 
 }

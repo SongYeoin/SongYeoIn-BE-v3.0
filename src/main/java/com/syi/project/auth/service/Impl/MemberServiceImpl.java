@@ -147,7 +147,7 @@ public class MemberServiceImpl implements MemberService {
           log.warn("회원 상세 조회 실패 - 회원 ID: {} (회원 정보 없음)", memberId);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
         });
-    log.debug("회원 상세 정보 조회 성공 - 회원 ID: {}, 이름: {}", member.getMemberId(), member.getName());
+    log.info("회원 상세 정보 조회 성공 - 회원 ID: {}, 이름: {}", member.getMemberId(), member.getName());
     return MemberDTO.fromEntity(member);
   }
 
@@ -156,10 +156,25 @@ public class MemberServiceImpl implements MemberService {
   @Override
   public void updateApprovalStatus(String memberId, CheckStatus newStatus) {
     Member member = memberRepository.findByMemberIdAndIsDeletedFalse(memberId)
-        .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> {
+          log.warn("회원 승인 상태 업데이트 실패 - 존재하지 않는 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
 
     member.updateCheckStatus(newStatus);
     log.info("회원 승인 상태 업데이트 완료 - 회원 ID: {}, 새로운 상태: {}", memberId, newStatus);
+  }
+
+  // 역할
+  @Override
+  public void updateMemberRole(String memberId, Role newRole) {
+    Member member = memberRepository.findByMemberIdAndIsDeletedFalse(memberId)
+        .orElseThrow(() -> {
+          log.warn("역할 변경 실패 - 회원 정보 없음: 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+    member.updateRole(newRole);
+    log.info("역할 변경 완료 - 회원 ID: {}, 새로운 역할: {}", memberId, newRole);
   }
 
   // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드
