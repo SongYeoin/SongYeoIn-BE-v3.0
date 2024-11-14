@@ -1,6 +1,7 @@
 package com.syi.project.auth.service.Impl;
 
 import com.syi.project.auth.dto.DuplicateCheckDTO;
+import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
 import com.syi.project.auth.dto.MemberSignUpRequestDTO;
@@ -9,6 +10,7 @@ import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.common.config.JwtProvider;
+import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
@@ -16,6 +18,8 @@ import jakarta.transaction.Transactional;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -125,6 +129,15 @@ public class MemberServiceImpl implements MemberService {
     log.info("로그인 성공 - 사용자 ID: {}", requestDTO.getMemberId());
     return new MemberLoginResponseDTO(accessToken, refreshToken);
   }
+
+  // 회원목록
+  @Override
+  public Page<MemberDTO> getFilteredMembers(CheckStatus checkStatus, Role role, Pageable pageable) {
+    log.info("필터링된 회원 목록 조회 - 상태: {}, 역할: {}", checkStatus, role);
+    Page<Member> members = memberRepository.findByStatusAndRole(checkStatus, role, pageable);
+    return members.map(MemberDTO::fromEntity);
+  }
+
 
   // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드
   @Override
