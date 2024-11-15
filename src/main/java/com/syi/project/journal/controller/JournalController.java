@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @Tag(name = "Journal", description = "교육일지 API")
 public class JournalController {
+
   private final JournalService journalService;
 
   /**
