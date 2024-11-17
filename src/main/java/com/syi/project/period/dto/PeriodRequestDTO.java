@@ -23,7 +23,7 @@ public class PeriodRequestDTO {
 
   @Schema(description = "교시 이름", example = "1교시")
   @NotNull(message = "교시 이름을 입력해야 합니다.")
-  private String periodName;
+  private String name;
 
   @Schema(description = "시작 시간", example = "14:00")
   @NotNull(message = "시작 시간을 입력해야 합니다.")
@@ -38,11 +38,11 @@ public class PeriodRequestDTO {
 
 
   @Builder
-  public PeriodRequestDTO(Long id, String dayOfWeek, String periodName, LocalTime startTime,
+  public PeriodRequestDTO(Long id, String dayOfWeek, String name, LocalTime startTime,
       LocalTime endTime, Long deletedBy) {
     this.id = id;
     this.dayOfWeek = dayOfWeek;
-    this.periodName = periodName;
+    this.name = name;
     this.startTime = startTime;
     this.endTime = endTime;
     this.deletedBy = deletedBy;
@@ -54,7 +54,7 @@ public class PeriodRequestDTO {
         courseId,
         scheduleId,
         this.dayOfWeek,
-        this.periodName,
+        this.name,
         this.startTime,
         this.endTime,
         this.deletedBy);

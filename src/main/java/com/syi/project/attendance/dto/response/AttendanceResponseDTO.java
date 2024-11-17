@@ -3,10 +3,12 @@ package com.syi.project.attendance.dto.response;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.Update;
 import com.syi.project.attendance.entity.Attendance;
+import com.syi.project.common.enums.AttendanceStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,10 +29,10 @@ public class AttendanceResponseDTO {
 
   @Schema(description = "출석 상태", example = "")
   @NotNull(groups = AttendanceRequestDTO.Update.class, message = "출석 상태는 필수입니다.")
-  private String status;
+  private AttendanceStatus status;
 
   @Schema(description = "출석 날짜", example = "")
-  private LocalDateTime date;
+  private LocalDate date;
 
   @Schema(description = "출석 등록일", example = "")
   @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
@@ -58,8 +60,9 @@ public class AttendanceResponseDTO {
   @Schema(description = "예외시 표시 메시지", example = "학원 네트워크에서만 출석이 가능합니다.")
   private String resultMessage;
 
+
   @Builder
-  public AttendanceResponseDTO(Long attendanceId, String status, LocalDateTime date,
+  public AttendanceResponseDTO(Long attendanceId, AttendanceStatus status, LocalDate date,
       LocalDateTime enrollDate, LocalDateTime modifiedDate, Long periodId, Long courseId,
       Long memberId, String memo ,String resultMessage) {
     this.attendanceId = attendanceId;

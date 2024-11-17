@@ -17,4 +17,14 @@ public enum AttendanceStatus {
     return status;
   }
 
+  // String 값을 Enum으로 변환하는 유틸리티 메서드
+  public static AttendanceStatus fromStatus(String status) {
+    for (AttendanceStatus attendanceStatus : values()) {
+      if (attendanceStatus.getStatus().equals(status)) {
+        return attendanceStatus;
+      }
+    }
+    throw new IllegalArgumentException("Unknown status: " + status);
+  }
+
 }

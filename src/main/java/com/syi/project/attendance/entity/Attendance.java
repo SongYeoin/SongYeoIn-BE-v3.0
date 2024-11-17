@@ -34,12 +34,12 @@ public class Attendance {
   @NotNull(message = "상태값은 필수입니다.")
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private String status;
+  private AttendanceStatus status;
 
   @NotNull(message = "날짜는 필수입니다.")
   @DateTimeFormat(pattern = "yyyy-MM-dd")
   @Column(nullable = false)
-  private LocalDateTime date;
+  private LocalDate date;
 
   @NotNull(message = "등록일은 필수입니다.")
   @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
@@ -67,11 +67,11 @@ public class Attendance {
   @Size(max = 255, message = "메모는 최대 255자까지 가능합니다.")
   private String memo;
 
-  public Attendance(Long id, String status, LocalDateTime date, LocalDateTime enrollDate,
+  public Attendance(Long id, AttendanceStatus status, LocalDate date, LocalDateTime enrollDate,
       LocalDateTime modifiedDate, Long periodId, Long courseId, Long memberId, String memo) {
     this.id = id;
     this.status = status;
-    this.date = date != null ? date : LocalDateTime.now();
+    this.date = date != null ? date : LocalDate.now();
     this.enrollDate = enrollDate != null ? enrollDate : LocalDateTime.now();
     this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDateTime.now();
     this.periodId = periodId;
@@ -80,7 +80,7 @@ public class Attendance {
     this.memo = memo;
   }
 
-  public void updateStatus(String status){
+  public void updateStatus(AttendanceStatus status){
     this.status = status;
   }
 

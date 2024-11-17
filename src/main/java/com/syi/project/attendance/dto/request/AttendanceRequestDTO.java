@@ -5,10 +5,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @ToString
@@ -28,7 +31,7 @@ public class AttendanceRequestDTO {
   private String status;
 
   @Schema(description = "출석 날짜", example = "")
-  private LocalDateTime date;
+  private LocalDate date;
 
   @Schema(description = "출석 등록일", example = "")
   @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
@@ -53,10 +56,21 @@ public class AttendanceRequestDTO {
   @Size(max = 255, message = "메모는 최대 255자까지 가능합니다.")
   private String memo;
 
+  /* 필터링 조건들 */
+  private String studentName;
+  @DateTimeFormat(pattern = "yyyy-MM-dd")
+  private LocalDate startDate;
+  @DateTimeFormat(pattern = "yyyy-MM-dd")
+  private LocalDate endDate;
+
+  /* 결석으로 변경하기 위한 수강생 id 리스트 */
+  private List<Long> attendanceIds;
+
+
   @Builder
-  public AttendanceRequestDTO(Long attendanceId, String status, LocalDateTime date,
+  public AttendanceRequestDTO(Long attendanceId, String status, LocalDate date,
       LocalDateTime enrollDate, LocalDateTime modifiedDate, Long periodId, Long courseId,
-      Long memberId, String memo) {
+      Long memberId, String memo, String studentName,LocalDate startDate,LocalDate endDate,List<Long> attendanceIds) {
     this.attendanceId = attendanceId;
     this.status = status;
     this.date = date;
@@ -66,6 +80,10 @@ public class AttendanceRequestDTO {
     this.courseId = courseId;
     this.memberId = memberId;
     this.memo = memo;
+    this.studentName = studentName;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.attendanceIds = attendanceIds;
   }
 
 

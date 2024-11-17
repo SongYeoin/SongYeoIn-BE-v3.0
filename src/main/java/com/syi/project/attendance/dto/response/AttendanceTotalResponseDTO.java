@@ -10,7 +10,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @Schema(description = "출석 상세보기 응답 DTO")
-public class AttendanceDetailResponseDTO {
+public class AttendanceTotalResponseDTO {
 
 /*  @Schema(description = "수강생 정보")
   private UserInfoDTO userInfo;*/
@@ -22,9 +22,18 @@ public class AttendanceDetailResponseDTO {
   private List<AttendanceResponseDTO> attendanceInfo;
 
   @Builder
-  public AttendanceDetailResponseDTO(ScheduleResponseDTO scheduleInfo,
+  public AttendanceTotalResponseDTO(ScheduleResponseDTO scheduleInfo,
       List<AttendanceResponseDTO> attendanceInfo) {
     this.scheduleInfo = scheduleInfo;
     this.attendanceInfo = attendanceInfo;
+  }
+
+  public static AttendanceTotalResponseDTO fromEntity(ScheduleResponseDTO scheduleInfo,
+      List<AttendanceResponseDTO> attendanceInfo) {
+
+    return AttendanceTotalResponseDTO.builder()
+        .scheduleInfo(scheduleInfo)
+        .attendanceInfo(attendanceInfo)
+        .build();
   }
 }

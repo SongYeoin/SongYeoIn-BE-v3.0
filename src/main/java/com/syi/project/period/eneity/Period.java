@@ -47,7 +47,7 @@ public class Period {
   @NotBlank(message = "교시명을 입력해주세요.")
   @Size(min = 1, max = 3, message = "교시명은 최대 3자까지 가능합니다.")
   @Column(nullable = false, length = 3)
-  private String periodName;
+  private String name;
 
   //@NotBlank(message = "시작 시간을 입력해주세요.")
   @NotNull(message = "시작 시간을 입력해주세요.")
@@ -65,13 +65,13 @@ public class Period {
 
   private Long deletedBy;
 
-  public Period(Long id,Long courseId, Long scheduleId, String dayOfWeek, String periodName,
+  public Period(Long id,Long courseId, Long scheduleId, String dayOfWeek, String name,
       LocalTime startTime, LocalTime endTime, Long deletedBy) {
     this.id = id;
     this.courseId = courseId;
     this.scheduleId = scheduleId;
     this.dayOfWeek = dayOfWeek;
-    this.periodName = periodName;
+    this.name = name;
     this.startTime = startTime;
     this.endTime = endTime;
     this.deletedBy = deletedBy;

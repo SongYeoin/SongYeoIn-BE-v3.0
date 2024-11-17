@@ -1,7 +1,7 @@
 package com.syi.project.attendance.controller;
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
-import com.syi.project.attendance.dto.response.AttendanceDetailResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceTotalResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.MemberService;
@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.Mapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -57,11 +56,11 @@ public class AttendanceController {
 
   // 출석 전체 조회_수강생
   @GetMapping
-  public ResponseEntity<AttendanceResponseDTO> getAllAttendance(
+  public ResponseEntity<AttendanceTotalResponseDTO> getAllAttendance(
       @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO) {
     log.info("출석 전체 조회 요청");
     log.info("조회 요청된 attendanceRequestDTO: {}", attendanceRequestDTO);
-    AttendanceResponseDTO attendances = attendanceService.getAllAttendances(
+    AttendanceTotalResponseDTO attendances = attendanceService.getAllAttendances(
         attendanceRequestDTO);
     log.info("출석 조회된 정보: {}", attendances);
     return ResponseEntity.ok(attendances);
@@ -69,7 +68,7 @@ public class AttendanceController {
 
   //  출석 상세 조회_수강생
   @GetMapping("{id}")
-  public ResponseEntity<AttendanceDetailResponseDTO> getAttendanceById(
+  public ResponseEntity<AttendanceTotalResponseDTO> getAttendanceById(
       @Parameter(description = "상세 조회할 출석 ID", required = true) @PathVariable Long id,
       @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO) {
     log.info("출석 상세 조회 요청");
@@ -84,7 +83,7 @@ public class AttendanceController {
     ScheduleResponseDTO scheduleInfo = scheduleService.getScheduleById(
         attendanceRequestDTO.getCourseId());
 
-    AttendanceDetailResponseDTO responseDTO = AttendanceDetailResponseDTO.builder()
+    AttendanceTotalResponseDTO responseDTO = AttendanceTotalResponseDTO.builder()
         .attendanceInfo(attendanceInfo)
         .scheduleInfo(scheduleInfo)
         .build();

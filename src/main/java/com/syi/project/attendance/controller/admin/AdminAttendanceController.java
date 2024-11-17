@@ -2,12 +2,12 @@ package com.syi.project.attendance.controller.admin;
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceTotalResponseDTO;
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.course.service.CourseService;
 import com.syi.project.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,11 +41,13 @@ public class AdminAttendanceController {
           @ApiResponse(responseCode = "200", description = "출석을 성공적으로 조회했습니다."),
       })
   @GetMapping
-  public ResponseEntity<AttendanceResponseDTO> getAllAttendances(
+  public ResponseEntity<AttendanceTotalResponseDTO> getAllAttendances(
       @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO) {
+    /* 필터링 추가 */
     log.info("출석 전체 조회 요청");
     log.info("attendanceRequestDTO: {}", attendanceRequestDTO);
-    AttendanceResponseDTO attendances = attendanceService.getAllAttendances(attendanceRequestDTO);
+    AttendanceTotalResponseDTO attendances = attendanceService.getAllAttendances(
+        attendanceRequestDTO);
     log.info("조회된 출석 정보: {}", attendances);
     return ResponseEntity.ok(attendances);
   }
@@ -55,11 +57,12 @@ public class AdminAttendanceController {
       responses = {
           @ApiResponse(responseCode = "200", description = "수강생 출석이 성공적으로 조회되었습니다."),
       })
-  @GetMapping("{memberId}")
-  public ResponseEntity<AttendanceResponseDTO> getAttendanceByMemberId(
-      @Parameter(description = "상세 조회할 수강생 ID", required = true) @PathVariable Long memberId) {
-    log.info("수강생 ID {} 출석 조회 요청", memberId);
-    AttendanceResponseDTO memberAttendance = attendanceService.getAttendanceByMemberId(memberId);
+  @GetMapping("/detail")
+  public ResponseEntity<AttendanceTotalResponseDTO> getAttendanceByMemberId(
+      @RequestBody @Valid AttendanceRequestDTO dto) {
+    log.info("수강생 ID {} 출석 조회 요청", dto.getMemberId());
+    log.debug("memberId: {}, courseId: {}", dto.getMemberId(), dto.getCourseId());
+    AttendanceTotalResponseDTO memberAttendance = attendanceService.getAllAttendances(dto);
     log.info("조회된 학생 출석 정보: {}", memberAttendance);
     return ResponseEntity.ok(memberAttendance);
   }
@@ -70,14 +73,15 @@ public class AdminAttendanceController {
       responses = {
           @ApiResponse(responseCode = "200", description = "상세 출석을 성공적으로 수정했습니다."),
       })
-  public ResponseEntity<AttendanceResponseDTO> updateAttendanceById(
-      @Parameter(description = "상세 수정할 수강생 ID", required = true) @PathVariable Long id,
+  public ResponseEntity<Void> updateAttendanceById(@PathVariable Long id,
       @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO) {
-    log.info("수강생 ID {} 출석 수정 요청", id);
+    log.info("수강생 ID {} 출석 수정 요청", attendanceRequestDTO.getMemberId());
     log.info("수정 요청 정보: {}", attendanceRequestDTO);
-    AttendanceResponseDTO updateAttendance = attendanceService.updateAttendance(id, attendanceRequestDTO);
-    log.info("수정된 정보: {}", updateAttendance);
-    return ResponseEntity.ok(updateAttendance);
+    /*AttendanceResponseDTO updateAttendance = */
+    attendanceService.updateAttendance(id, attendanceRequestDTO);
+    //log.info("수정된 정보: {}", updateAttendance);
+    //return ResponseEntity.ok(updateAttendance);
+    return ResponseEntity.noContent().build();
   }
 
 //  일괄 결석 처리
@@ -88,9 +92,10 @@ public class AdminAttendanceController {
       })
   public ResponseEntity<AttendanceResponseDTO> updateAbsentStatus(@RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO){
     log.info("일괄 결석 처리 요청");
-    log.info("일괄 결석 처리 요청된 정보: {}",attendanceRequestDTO);
-    AttendanceResponseDTO updateAbsent = attendanceService.updateAbsentStatus(attendanceRequestDTO);
-    log.info("일괄 결석 처리 완료된 정보: {}", updateAbsent);
-    return ResponseEntity.ok(updateAbsent);
+    log.info("일괄 결석 처리 요청된 출석 id: {}",attendanceRequestDTO.getAttendanceId());
+    //AttendanceResponseDTO updateAbsent =
+    attendanceService.updateAbsentStatus(attendanceRequestDTO);
+    //log.info("일괄 결석 처리 완료된 정보: {}", updateAbsent);
+    return ResponseEntity.noContent().build();
   }
 }
