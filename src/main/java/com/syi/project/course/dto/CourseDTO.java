@@ -37,7 +37,7 @@ public class CourseDTO {
   @Schema(description = "담당자명", example = "황정미")
   @NotBlank(message = "담당자명은 필수입니다.")
   @Size(min = 2, max = 30, message = "담당자명은 2자 이상 30자 이하이어야 합니다.")
-  private String managerName;
+  private String adminName;
 
   @Schema(description = "강사명", example = "정민신")
   @NotBlank(message = "강사명은 필수입니다.")
@@ -75,16 +75,16 @@ public class CourseDTO {
 
   @Schema(description = "담당자 번호", example = "1")
   @NotNull(message = "담당자 번호는 필수입니다.")
-  private Long managerId;
+  private Long adminId;
 
   @Builder
-  public CourseDTO(Long id, String name, String description, String managerName, String teacherName,
+  public CourseDTO(Long id, String name, String description, String adminName, String teacherName,
       LocalDate startDate, LocalDate endDate, String roomName, LocalDate enrollDate,
-      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long managerId) {
+      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long adminId) {
     this.id = id;
     this.name = name;
     this.description = description;
-    this.managerName = managerName;
+    this.adminName = adminName;
     this.teacherName = teacherName;
     this.startDate = startDate;
     this.endDate = endDate;
@@ -93,14 +93,14 @@ public class CourseDTO {
     this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDate.now();;
     this.status = status != null ? status : CourseStatus.Y;
     this.deletedBy = deletedBy;
-    this.managerId = managerId;
+    this.adminId = adminId;
   }
 
   public Course toEntity() {
     return new Course(
         this.name,
         this.description,
-        this.managerName,
+        this.adminName,
         this.teacherName,
         this.startDate,
         this.endDate,
@@ -109,7 +109,7 @@ public class CourseDTO {
         this.modifiedDate,
         this.status,
         this.deletedBy,
-        this.managerId);
+        this.adminId);
 
   }
 
@@ -119,14 +119,14 @@ public class CourseDTO {
         .id(course.getId())
         .name(course.getName())
         .description(course.getDescription())
-        .managerName(course.getManagerName())
+        .adminName(course.getManagerName())
         .teacherName(course.getTeacherName())
         .startDate(course.getStartDate())
         .endDate(course.getEndDate())
         .roomName(course.getRoomName())
         .enrollDate(course.getEnrollDate())
         .modifiedDate(course.getModifiedDate())
-        .managerId(course.getManagerId())
+        .adminId(course.getManagerId())
         .build();
   }
 

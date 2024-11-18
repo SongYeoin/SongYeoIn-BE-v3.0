@@ -13,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -48,21 +48,23 @@ public class Notice {
   private Course course;
 
   @CreatedDate
-  private LocalDateTime noticeRegDate;
+  private LocalDate noticeRegDate;
 
   @LastModifiedDate
-  private LocalDateTime noticeModifyDate;
+  private LocalDate noticeModifyDate;
 
   private Long viewCount = 0L;
 
   private boolean isGlobal;
 
-  private boolean hasFile = false;
-
-  @OneToMany(mappedBy = "notice", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "notice", cascade = CascadeType.REMOVE, orphanRemoval = true)
   private List<NoticeFile> noticeFiles;
 
   private Long deletedBy;
+
+  public boolean hasFiles() {
+    return noticeFiles != null && !noticeFiles.isEmpty();
+  }
 
   @Builder
   public Notice(String title, String content, Member member, Course course, boolean isGlobal,
@@ -80,7 +82,6 @@ public class Notice {
     this.content = content;
     this.noticeFiles = noticeFiles;
     this.isGlobal = isGlobal;
-    this.hasFile = (noticeFiles != null && !noticeFiles.isEmpty()); // 파일 첨부 여부 갱신
   }
 
   public void markAsDeleted(Long deletedBy) {

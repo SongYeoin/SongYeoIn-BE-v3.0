@@ -55,7 +55,7 @@ public class JournalController {
       summary = "교육일지 목록 조회",
       description = "수강생은 자신이 작성한 일지만, 관리자는 해당 강좌의 모든 일지를 조회할 수 있습니다."
   )
-  @PreAuthorize("hasAnyRole('STUDENT', 'MANAGER')")
+  @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
   @GetMapping("/course/{courseId}")
   public ResponseEntity<List<JournalResponseDTO>> getJournalsList(
       @PathVariable Long courseId,
@@ -74,7 +74,7 @@ public class JournalController {
       summary = "교육일지 상세 조회",
       description = "수강생은 자신이 작성한 일지만, 관리자는 모든 일지를 상세 조회할 수 있습니다."
   )
-  @PreAuthorize("hasAnyRole('STUDENT', 'MANAGER')")
+  @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
   @GetMapping("/{journalId}")
   public ResponseEntity<JournalResponseDTO> getJournalDetail(
       @PathVariable Long journalId,

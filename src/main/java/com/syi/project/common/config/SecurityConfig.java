@@ -54,11 +54,11 @@ public class SecurityConfig {
         .authorizeHttpRequests(authorize -> authorize
             // 인증 없이 접근 가능한 경로 설정
             .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
-                "/webjars/**", "/", "/manager/course/**", "/manager/schedule/**" ,"/login", "/admin/login", "/register", "/refresh","/api/**").permitAll()
+                "/webjars/**", "/", "/admin/course/**", "/admin/schedule/**" ,"/login", "/admin/login", "/register", "/refresh","/api/**").permitAll()
             // 해당 경로는 인증 필요
             .requestMatchers("/api/test").authenticated()
             // 관리자 전용 엔드포인트 접근 설정 예시
-            .requestMatchers("/admin/**").hasRole("MANAGER")
+            .requestMatchers("/admin/**").hasRole("ADMIN")
             // 나머지 모든 요청은 인증을 오구
             .anyRequest().authenticated()
         )

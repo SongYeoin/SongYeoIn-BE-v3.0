@@ -44,7 +44,7 @@ public class MemberSignUpRequestDTO {
   @Email(message = "유효한 이메일 주소를 입력하세요.")
   private final String email;
 
-  @Schema(description = "회원 역할 (STUDENT 또는 MANAGER)", example = "STUDENT")
+  @Schema(description = "회원 역할 (STUDENT 또는 ADMIN)", example = "STUDENT")
   @NotNull(message = "역할은 필수입니다.")
   private final Role role;
 
