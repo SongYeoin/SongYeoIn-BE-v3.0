@@ -62,45 +62,37 @@ public class S3Uploader {
     return uploadUrls;
   }
 
-  // 파일 삭제 - 파일 URL을 사용해 S3에서 파일을 삭제
-//  public void deleteFile(String fileUrl) {
-//    try {
-//      if (fileUrl == null || fileUrl.isEmpty()) {
-//        throw new IllegalArgumentException("파일 URL이 null이거나 비어있습니다.");
-//      }
-//
-//      String bucketDomain = bucket + ".s3." + region + ".amazonaws.com/";
-//      int startIndex = fileUrl.indexOf(bucketDomain);
-//
-//      if (startIndex == -1) {
-//        throw new IllegalArgumentException("잘못된 S3 URL 형식입니다: " + fileUrl);
-//      }
-//
-//      String fileName = fileUrl.substring(startIndex + bucketDomain.length());
-//      amazonS3Client.deleteObject(bucket, fileName);
-//      log.info("파일 삭제 완료: {}", fileName);
-//
-//    } catch (IllegalArgumentException e) {
-//      log.error("파일 삭제 중 유효성 검증 실패: {}", e.getMessage());
-//      throw e;
-//    } catch (Exception e) {
-//      log.error("파일 삭제 중 에러가 발생했습니다: {}", e.getMessage());
-//      throw new RuntimeException("파일 삭제 중 에러가 발생했습니다.", e);
-//    }
-//  }
+  // 파일 수정: 기존 파일을 삭제하고 새 파일을 업로드 (파일 수정 시에만)
+  public String updateFile(MultipartFile newFile, String dirName, String oldFileUrl) throws IOException {
+    try {
+      // 1. 기존 파일 삭제
+      if (oldFileUrl != null && !oldFileUrl.isEmpty()) {
+        deleteFile(oldFileUrl);
+        log.info("기존 파일 삭제 완료.");
+      }
 
+      // 2. 새 파일 업로드
+      String newFileUrl = uploadFile(newFile, dirName);
+      log.info("새 파일 업로드 완료: {}", newFileUrl);
+
+      return newFileUrl; // 새 파일 URL 반환
+    } catch (IOException e) {
+      log.error("파일 수정 중 에러가 발생했습니다.", e);
+      throw new RuntimeException("파일 수정 중 에러가 발생했습니다.", e);
+    }
+  }
+
+  // 파일 삭제 - 파일 URL을 사용해 S3에서 파일을 삭제
   public void deleteFile(String fileUrl) {
     try {
       if (fileUrl == null || fileUrl.isEmpty()) {
         throw new IllegalArgumentException("파일 URL이 null이거나 비어있습니다.");
       }
 
-      String bucketDomain = "https://" + bucket + ".s3." + region + ".amazonaws.com/";
-      if (!fileUrl.startsWith(bucketDomain)) {
-        throw new IllegalArgumentException("잘못된 S3 URL 형식입니다: " + fileUrl);
-      }
+      // URL이 아닌 그냥 Object Key일 경우
+      String fileName = fileUrl;  // 이미 Object Key일 경우, 그대로 사용
 
-      String fileName = fileUrl.substring(bucketDomain.length());
+      // S3 객체 삭제 요청
       amazonS3Client.deleteObject(bucket, fileName);
       log.info("파일 삭제 완료: {}", fileName);
 
@@ -112,7 +104,6 @@ public class S3Uploader {
       throw new RuntimeException("파일 삭제 중 에러가 발생했습니다.", e);
     }
   }
-
 
   // 파일 다운로드
   public InputStream downloadFile(String path) {

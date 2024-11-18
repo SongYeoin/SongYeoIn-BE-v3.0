@@ -2,6 +2,7 @@ package com.syi.project.file.entity;
 
 import com.syi.project.auth.entity.Member;
 import com.syi.project.common.entity.BaseTimeEntity;
+import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.file.enums.FileStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -63,5 +64,10 @@ public class File extends BaseTimeEntity {
     this.status = FileStatus.DELETED; // 파일 상태
     this.deletedBy = deletedBy; // 누가 삭제했는지
     this.deletedAt = LocalDateTime.now(); // 언제 삭제됐는지
+  }
+
+  // S3 URL을 반환하는 메서드
+  public String getUrl(S3Uploader s3Uploader) {
+    return s3Uploader.getUrl(this.path);  // S3Uploader를 사용하여 URL 반환
   }
 }

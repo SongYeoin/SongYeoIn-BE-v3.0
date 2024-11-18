@@ -14,6 +14,7 @@ import com.syi.project.journal.entity.JournalFile;
 import com.syi.project.journal.repository.JournalFileRepository;
 import com.syi.project.journal.repository.JournalRepository;
 import com.syi.project.file.entity.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -140,20 +141,35 @@ public class JournalService {
           return new IllegalArgumentException("존재하지 않거나 접근 권한이 없는 교육일지입니다.");
         });
 
+    // 파일 수정 로직
     if (requestDTO.getFile() != null && !requestDTO.getFile().isEmpty()) {
-      validateFile(requestDTO.getFile());
-      File savedFile = fileService.uploadFile(requestDTO.getFile(), "journals", member);
+      // 기존 파일 URL을 가져옴 (null일 수 있음)
+      String oldFileUrl = journal.getJournalFiles().isEmpty()
+          ? null
+          : journal.getJournalFiles().get(0).getFile().getUrl(s3Uploader);  // getUrl() 호출
 
-      JournalFile journalFile = JournalFile.builder()
-          .journal(journal)
-          .file(savedFile)
-          .build();
+      try {
+        // S3Uploader에서 파일 수정 처리
+        String newFileUrl = s3Uploader.updateFile(requestDTO.getFile(), "journals", oldFileUrl);
 
-      journal.addFile(journalFile);
+        // 새로운 파일 저장 (JournalFile 엔티티 생성)
+        File savedFile = fileService.uploadFile(requestDTO.getFile(), "journals", member);
+        JournalFile journalFile = JournalFile.builder()
+            .journal(journal)
+            .file(savedFile)
+            .build();
+
+        journal.addFile(journalFile);
+      } catch (IOException e) {
+        log.error("파일 수정 중 에러 발생", e);
+        throw new RuntimeException("파일 수정 중 오류가 발생했습니다.", e);
+      }
     }
 
+    // 제목과 내용 수정
     journal.update(requestDTO.getTitle(), requestDTO.getContent());
-    return JournalResponseDTO.from(journal, s3Uploader);  // new 대신 from 사용
+
+    return JournalResponseDTO.from(journal, s3Uploader);  // 새로 저장된 교육일지 반환
   }
 
   @Transactional
