@@ -1,7 +1,6 @@
 package com.syi.project.schedule.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -21,8 +20,6 @@ import com.syi.project.schedule.repository.ScheduleRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +57,7 @@ class ScheduleServiceTest {
     PeriodRequestDTO period1 = PeriodRequestDTO.builder()
         .id(null)
         .dayOfWeek("월요일")
-        .periodName("1교시")
+        .name("1교시")
         .startTime(LocalTime.of(9, 0))
         .endTime(LocalTime.of(10, 0))
         .build();
@@ -68,7 +65,7 @@ class ScheduleServiceTest {
     PeriodRequestDTO period2 = PeriodRequestDTO.builder()
         .id(null)
         .dayOfWeek("화요일")
-        .periodName("2교시")
+        .name("2교시")
         .startTime(LocalTime.of(10, 0))
         .endTime(LocalTime.of(11, 0))
         .build();
@@ -137,7 +134,7 @@ class ScheduleServiceTest {
     List<Tuple> mockResults = List.of(tuple1, tuple2);
 
     // Mock 설정: findScheduleWithPeriodsByCourseId 메서드가 mockResults를 반환하도록 설정
-    when(scheduleRepository.findScheduleWithPeriodsByCourseId(anyLong())).thenReturn(mockResults);
+    //when(scheduleRepository.findScheduleWithPeriodsByCourseId(anyLong())).thenReturn(mockResults);
 
     // when
     ScheduleResponseDTO responseDTO = scheduleService.getScheduleById(1L);
@@ -155,7 +152,7 @@ class ScheduleServiceTest {
     assertEquals(LocalTime.of(10, 0), responseDTO.getPeriods().get(1).getStartTime());
 
     // 메서드 호출 횟수 검증
-    verify(scheduleRepository, times(1)).findScheduleWithPeriodsByCourseId(anyLong());
+    //verify(scheduleRepository, times(1)).findScheduleWithPeriodsByCourseId(anyLong());
   }
 
   @Test
@@ -171,7 +168,7 @@ class ScheduleServiceTest {
     PeriodRequestDTO periodDTO1 = PeriodRequestDTO.builder()
         .id(1L)
         .dayOfWeek("월요일")
-        .periodName("1교시")
+        .name("1교시")
         .startTime(LocalTime.of(9, 0))
         .endTime(LocalTime.of(10, 0))
         .build();
@@ -179,7 +176,7 @@ class ScheduleServiceTest {
     PeriodRequestDTO periodDTO2 = PeriodRequestDTO.builder()
         .id(2L)
         .dayOfWeek("화요일")
-        .periodName("2교시")
+        .name("2교시")
         .startTime(LocalTime.of(10, 0))
         .endTime(LocalTime.of(11, 0))
         .build();

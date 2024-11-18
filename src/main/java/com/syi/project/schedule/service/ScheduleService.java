@@ -1,9 +1,11 @@
 package com.syi.project.schedule.service;
 
-
+import static com.syi.project.period.eneity.QPeriod.period;
 import static com.syi.project.schedule.dto.ScheduleResponseDTO.fromEntity;
+import static com.syi.project.schedule.entity.QSchedule.schedule;
 
 import com.querydsl.core.Tuple;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.period.dto.PeriodRequestDTO;
 import com.syi.project.period.eneity.Period;
 import com.syi.project.period.repository.PeriodRepository;

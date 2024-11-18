@@ -31,7 +31,8 @@ public class PeriodResponseDTO {
 
   @Schema(description = "교시 이름", example = "1교시")
   @NotNull(message = "교시 이름은 필수여야 합니다.")
-  private String periodName;
+
+  private String name;
 
   @Schema(description = "시작 시간", example = "14:00")
   @NotNull(message = "시작 시간은 필수여야 합니다.")
@@ -46,12 +47,11 @@ public class PeriodResponseDTO {
 
   @Builder
   public PeriodResponseDTO(Long id, Long courseId, Long scheduleId, String dayOfWeek,
-      String periodName, LocalTime startTime, LocalTime endTime, Long deletedBy) {
+      String name, LocalTime startTime, LocalTime endTime, Long deletedBy) {
     this.id = id;
     this.courseId = courseId;
     this.scheduleId = scheduleId;
-    this.dayOfWeek = dayOfWeek;
-    this.periodName = periodName;
+    this.name = name;
     this.startTime = startTime;
     this.endTime = endTime;
     this.deletedBy = deletedBy;
@@ -63,7 +63,7 @@ public class PeriodResponseDTO {
         .courseId(period.getCourseId())
         .scheduleId(period.getScheduleId())
         .dayOfWeek(period.getDayOfWeek())
-        .periodName(period.getPeriodName())
+        .name(period.getName())
         .startTime(period.getStartTime())
         .endTime(period.getEndTime())
         .deletedBy(period.getDeletedBy())

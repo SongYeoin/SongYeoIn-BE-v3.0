@@ -29,4 +29,3 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
       Pageable pageable
   );
 }
-

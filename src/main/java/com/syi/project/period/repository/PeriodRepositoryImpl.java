@@ -1,7 +1,9 @@
 package com.syi.project.period.repository;
 
 import static com.syi.project.period.eneity.QPeriod.period;
+import static com.syi.project.schedule.entity.QSchedule.schedule;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.period.eneity.Period;
 import java.util.List;
@@ -24,5 +26,34 @@ public class PeriodRepositoryImpl implements PeriodRepositoryCustom {
         .where(period.scheduleId.eq(scheduleId)
             .and(period.id.in(periodIdsToCheck)))
         .fetch();
+  }
+
+  @Override
+  public List<Period> getScheduleByDayOfWeek(String dayOfWeekString) {
+
+    List<Tuple> results = queryFactory.selectDistinct(
+            period.dayOfWeek,
+            period.scheduleId,
+            period.name,
+            period.id,
+            schedule.courseId)
+        .from(period)
+        .join(schedule).on(period.scheduleId.eq(schedule.id))
+        .where(period.dayOfWeek.containsIgnoreCase(dayOfWeekString))
+        .orderBy(period.scheduleId.asc())
+        .fetch();
+
+    return results.stream()
+        .map(tuple -> new Period(
+            tuple.get(period.id),
+            tuple.get(period.courseId),
+            tuple.get(period.scheduleId),
+            tuple.get(period.dayOfWeek),
+            tuple.get(period.name),
+            null,
+            null,
+            null
+        )).toList();
+
   }
 }
