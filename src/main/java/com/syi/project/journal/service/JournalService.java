@@ -98,7 +98,7 @@ public class JournalService {
 
     List<JournalResponseDTO> result;
     // 관리자는 해당 강좌의 모든 일지 조회 가능
-    if (member.getRole() == Role.MANAGER) {
+    if (member.getRole() == Role.ADMIN) {
       log.debug("관리자 권한으로 전체 교육일지 조회");
       result = journalRepository.findByCourseId(courseId).stream()
           .map(JournalResponseDTO::new)
@@ -132,7 +132,7 @@ public class JournalService {
         });
 
     // 관리자이거나 본인의 일지인 경우에만 조회 가능
-    if (member.getRole() == Role.MANAGER ||
+    if (member.getRole() == Role.ADMIN ||
         journal.getMember().getId().equals(memberId)) {
       log.info("교육일지 상세 조회 완료 - journalId: {}", journalId);
       return new JournalResponseDTO(journal);

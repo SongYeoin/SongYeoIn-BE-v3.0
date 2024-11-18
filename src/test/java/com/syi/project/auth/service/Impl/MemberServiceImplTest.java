@@ -367,7 +367,7 @@ class MemberServiceImplTest {
   @DisplayName("역할 변경 성공 테스트")
   void updateMemberRole_Success() {
     String memberId = "testUser";
-    Role newRole = Role.MANAGER;
+    Role newRole = Role.ADMIN;
 
     when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.of(member));
 
@@ -381,7 +381,7 @@ class MemberServiceImplTest {
   @DisplayName("역할 변경 실패 - 존재하지 않는 회원")
   void updateMemberRole_Failure_UserNotFound() {
     String memberId = "nonExistentUser";
-    Role newRole = Role.MANAGER;
+    Role newRole = Role.ADMIN;
 
     when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.empty());
 

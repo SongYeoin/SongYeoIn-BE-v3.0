@@ -53,7 +53,7 @@ public class AdminController {
       @Parameter(description = "관리자 로그인 요청 정보", required = true)
       @Valid @RequestBody MemberLoginRequestDTO requestDTO) {
     log.info("관리자 로그인 요청 - 사용자 ID: {}", requestDTO.getMemberId());
-    MemberLoginResponseDTO responseDTO = memberService.login(requestDTO, Role.MANAGER);
+    MemberLoginResponseDTO responseDTO = memberService.login(requestDTO, Role.ADMIN);
     log.info("관리자 로그인 성공 - 사용자 ID: {}", requestDTO.getMemberId());
     return new ResponseEntity<>(responseDTO, HttpStatus.OK);
   }
@@ -94,7 +94,7 @@ public class AdminController {
   }
 
   @PatchMapping("/approve/{memberId}")
-  @PreAuthorize("hasRole('MANAGER')")
+  @PreAuthorize("hasRole('ADMIN')")
   @Operation(summary = "회원 승인 상태 변경", description = "특정 회원의 승인 여부를 변경합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "승인 상태 변경 성공"),
@@ -114,7 +114,7 @@ public class AdminController {
   }
 
   @PatchMapping("/change-role/{memberId}")
-  @PreAuthorize("hasRole('MANAGER')")
+  @PreAuthorize("hasRole('ADMIN')")
   @Operation(summary = "회원 역할 변경", description = "특정 회원의 역할을 변경합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "역할 변경 성공"),

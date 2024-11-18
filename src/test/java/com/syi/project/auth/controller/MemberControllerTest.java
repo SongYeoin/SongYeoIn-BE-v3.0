@@ -220,7 +220,7 @@ public class MemberControllerTest {
     ResultActions result = mockMvc.perform(post("/login")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(loginRequestDTO))
-        .with(user("testUser").roles("MANAGER")));  // 관리자 역할로 로그인
+        .with(user("testUser").roles("ADMIN")));  // 관리자 역할로 로그인
 
     result.andExpect(status().isForbidden())  // 수강생 역할만 허용되므로 403 Forbidden
         .andExpect(jsonPath("$.message").value(ErrorCode.ACCESS_DENIED.getMessage()));

@@ -48,7 +48,7 @@ public class Course {
   @NotNull
   @Size(min = 2, max = 30, message = "담당자명은 2자 이상 30자 이하이어야 합니다.")
   @Column(nullable = false, length = 30)
-  private String managerName;
+  private String adminName;
 
   @NotNull
   @Size(min = 2, max = 30, message = "강사명은 2자 이상 30자 이하이어야 합니다.")
@@ -86,18 +86,18 @@ public class Course {
 
   @NotNull(message = "담당자 번호는 필수입니다.")
   @Column(nullable = false)
-  private Long managerId;
+  private Long adminId;
 
   private Long scheduleId;
 
 
   /* 교육과정 등록할 때 사용하는 생성자 */
-  public Course(String name, String description, String managerName, String teacherName,
+  public Course(String name, String description, String adminName, String teacherName,
       LocalDate startDate, LocalDate endDate, String roomName, LocalDate enrollDate,
-      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long managerId) {
+      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long adminId) {
     this.name = name;
     this.description = description;
-    this.managerName = managerName;
+    this.adminName = adminName;
     this.teacherName = teacherName;
     this.startDate = startDate;
     this.endDate = endDate;
@@ -106,7 +106,7 @@ public class Course {
     this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDate.now();;
     this.status = status != null ? status : CourseStatus.Y;
     this.deletedBy = deletedBy;
-    this.managerId = managerId;
+    this.adminId = adminId;
   }
 
   /* 수정할 때  dto 필드 ->entity 필드 업데이트 */
@@ -118,7 +118,7 @@ public class Course {
       this.description = dto.getDescription();
     }
     if (dto.getManagerName() != null) {
-      this.managerName = dto.getManagerName();
+      this.adminName = dto.getManagerName();
     }
     if (dto.getTeacherName() != null) {
       this.teacherName = dto.getTeacherName();
@@ -142,7 +142,7 @@ public class Course {
       this.deletedBy = dto.getDeletedBy();
     }
     if (dto.getManagerId() != null) {
-      this.managerId = dto.getManagerId();
+      this.adminId = dto.getManagerId();
     }
   }
 

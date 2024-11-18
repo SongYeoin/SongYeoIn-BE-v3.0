@@ -35,7 +35,7 @@ public class CoursePatchDTO {
   @Schema(description = "담당자명", example = "황정미")
   @NotBlank(message = "담당자명은 필수입니다.")
   @Size(min = 2, max = 30, message = "담당자명은 2자 이상 30자 이하이어야 합니다.")
-  private String managerName;
+  private String adminName;
 
   @Schema(description = "강사명", example = "정민신")
   @NotBlank(message = "강사명은 필수입니다.")
@@ -68,16 +68,16 @@ public class CoursePatchDTO {
 
   @Schema(description = "담당자 번호", example = "1")
   @NotNull(message = "담당자 번호는 필수입니다.")
-  private Long managerId;
+  private Long adminId;
 
 
   @Builder
-  public CoursePatchDTO(String name, String description, String managerName, String teacherName,
+  public CoursePatchDTO(String name, String description, String adminName, String teacherName,
       LocalDate startDate, LocalDate endDate, String roomName,
-      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long managerId) {
+      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long adminId) {
     this.name = name;
     this.description = description;
-    this.managerName = managerName;
+    this.adminName = adminName;
     this.teacherName = teacherName;
     this.startDate = startDate;
     this.endDate = endDate;
@@ -85,7 +85,7 @@ public class CoursePatchDTO {
     this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDate.now();
     this.status = status;
     this.deletedBy = deletedBy;
-    this.managerId = managerId;
+    this.adminId = adminId;
   }
 
 }
