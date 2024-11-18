@@ -2,7 +2,7 @@ package com.syi.project.club.controller.admin;
 
 import com.syi.project.club.dto.ClubDTO;
 import com.syi.project.club.service.ClubService;
-import com.syi.project.common.Criteria;
+import com.syi.project.common.entity.Criteria;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;

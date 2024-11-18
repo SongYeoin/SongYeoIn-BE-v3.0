@@ -1,11 +1,9 @@
 package com.syi.project.club.repository;
 
 import com.syi.project.club.dto.ClubResponseDTO;
-import com.syi.project.club.entity.Club;
-import com.syi.project.common.Criteria;
+import com.syi.project.common.entity.Criteria;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 
 public interface ClubRepositoryCustom {
 

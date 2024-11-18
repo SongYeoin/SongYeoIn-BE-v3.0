@@ -1,36 +1,22 @@
 package com.syi.project.club.controller;
 
-import com.syi.project.auth.dto.AuthUserDTO;
-import com.syi.project.club.dto.ClubResponseDTO;
 import com.syi.project.club.dto.ClubRequestDTO;
+import com.syi.project.club.dto.ClubResponseDTO;
 import com.syi.project.club.service.ClubService;
-import com.syi.project.common.Criteria;
-import com.syi.project.common.config.JwtProvider;
+import com.syi.project.common.entity.Criteria;
 import com.syi.project.course.service.CourseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.net.URLEncoder;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/")
@@ -267,12 +253,12 @@ public class ClubController {
 //        }
 //    }
 
-    // 삭제 처리
-    @PostMapping("/club/delete")
-    @ResponseBody
-    public String clubDelete(@RequestParam("clubNo") int clubNo) {
-        clubService.delete(clubNo);
-        return "delete success";
-    }
+//    // 삭제 처리
+//    @PostMapping("/club/delete")
+//    @ResponseBody
+//    public String clubDelete(@RequestParam("clubNo") int clubNo) {
+//        clubService.delete(clubNo);
+//        return "delete success";
+//    }
 }
 

@@ -5,7 +5,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.club.dto.ClubResponseDTO;
 import com.syi.project.club.entity.QClub;
-import com.syi.project.common.Criteria;
+import com.syi.project.common.entity.Criteria;
 import com.syi.project.enroll.entity.QEnroll;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

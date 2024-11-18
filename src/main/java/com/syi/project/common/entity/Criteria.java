@@ -1,4 +1,4 @@
-package com.syi.project.common;
+package com.syi.project.common.entity;
 
 import lombok.Data;
 
