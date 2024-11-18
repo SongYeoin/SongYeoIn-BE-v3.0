@@ -12,18 +12,14 @@ public class ClubRequestDTO {
     @Getter
     @NoArgsConstructor
     public static class ClubCreate{
-        private Long courseId;
-        private String writer;  // 작성자
         private String participants;  // 참여자
         private String content;  // 내용
         private LocalDate regDate;  // 작성일
         private LocalDate studyDate;  // 활동일
         private CheckStatus checkStatus;  // 승인 상태
 
-        public ClubCreate(Long courseId, String writer, String participants, String content,
+        public ClubCreate(String participants, String content,
                                  LocalDate regDate, LocalDate studyDate, CheckStatus checkStatus){
-            this.courseId = courseId;
-            this.writer = writer;
             this.participants = participants;
             this.content = content;
             this.regDate = regDate != null ? regDate : LocalDate.now();
@@ -32,15 +28,15 @@ public class ClubRequestDTO {
         }
 
         // DTO -> entity
-        public Club toEntity(){
+        public Club toEntity(Long writerId, Long courseId){
             return Club.builder()
-                    .courseId(courseId)
-                    .writer(writer)
                     .participants(participants)
                     .content(content)
                     .studyDate(studyDate)
                     .checkStatus(checkStatus != null ? checkStatus : CheckStatus.W)
                     .regDate(regDate != null ? regDate : LocalDate.now())
+                    .writerId(writerId)
+                    .courseId(courseId)
                     .build();
         }
     }
@@ -66,7 +62,7 @@ public class ClubRequestDTO {
                     .participants(participants)
                     .content(content)
                     .studyDate(studyDate)
-                    .regDate(regDate)
+                    .regDate(regDate != null ? regDate : LocalDate.now())
                     .build();
         }
     }
@@ -74,12 +70,10 @@ public class ClubRequestDTO {
     @Getter
     @NoArgsConstructor
     public static class ClubApproval{
-        private String checker;
         private CheckStatus checkStatus;
         private String checkMessage;
 
-        public ClubApproval(String checker, CheckStatus checkStatus, String checkMessage){
-            this.checker = checker;
+        public ClubApproval(CheckStatus checkStatus, String checkMessage){
             this.checkStatus = checkStatus != null ? checkStatus : CheckStatus.W;
             this.checkMessage = checkMessage;
         }
@@ -87,7 +81,6 @@ public class ClubRequestDTO {
         // DTO -> entity
         public Club toEntity(){
             return Club.builder()
-                    .checker(checker)
                     .checkStatus(checkStatus != null ? checkStatus : CheckStatus.W)
                     .checkMessage(checkMessage)
                     .build();

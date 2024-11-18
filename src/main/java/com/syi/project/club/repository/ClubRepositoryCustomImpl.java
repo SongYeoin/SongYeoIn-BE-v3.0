@@ -1,12 +1,14 @@
 package com.syi.project.club.repository;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.syi.project.club.entity.Club;
+import com.syi.project.club.dto.ClubResponseDTO;
+import com.syi.project.club.entity.QClub;
 import com.syi.project.common.Criteria;
+import com.syi.project.enroll.entity.QEnroll;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -15,52 +17,28 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public class ClubRepositoryCustomImpl implements ClubRepositoryCustom{
+public class ClubRepositoryCustomImpl implements ClubRepositoryCustom {
 
-    @Autowired
     private final JPAQueryFactory queryFactory;
-
     private QClub club = QClub.club;
+    private QEnroll enroll = QEnroll.enroll;
 
-//    @PersistenceContext
-//    private EntityManager entityManager;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public ClubRepositoryCustomImpl(EntityManager entityManager) {
         this.queryFactory = new JPAQueryFactory(entityManager);
     }
 
-
-    // 클래스 번호(classNo)에 해당하는 동아리 목록을 페이징 처리하여 조회
+    // 클래스 번호(courseId)에 해당하는 동아리 목록을 페이징 처리하여 조회
     @Override
-    public Page<Club> findClubsByCriteria(Criteria cri, Integer classNo, Pageable pageable) {
+    public Page<ClubResponseDTO.ClubList> findClubsByCriteria(Criteria cri, Long courseId, Pageable pageable) {
         BooleanBuilder builder = new BooleanBuilder();
 
-        // 클래스 번호(classNo)에 따른 필터링
-        if (classNo != null) {
-            builder.and(club.name.eq(classNo));
+        // 클래스 번호(courseId)에 따른 필터링
+        if (courseId != null) {
+            builder.and(club.courseId.eq(courseId));
         }
-
-        // 검색 타입과 키워드에 따른 조건 추가
-        if ("C".equals(cri.getType()) && cri.getKeyword() != null) {
-            String status = cri.getKeyword();
-            if ("W".equals(status)) {
-                builder.and(club.status.eq("W"));
-            } else if ("Y".equals(status)) {
-                builder.and(club.status.eq("Y"));
-            } else if ("N".equals(status)) {
-                builder.and(club.status.eq("N"));
-            }
-        } else if (cri.getKeyword() != null) {
-            builder.and(club.name.contains(cri.getKeyword())); // 예시: club 이름으로 검색
-        }
-
-        // 쿼리 실행: 페이징과 조건을 결합한 조회
-        List<Club> clubs = queryFactory
-                .selectFrom(club)
-                .where(builder)
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
 
         // 총 데이터 개수 조회
         long total = queryFactory
@@ -68,6 +46,53 @@ public class ClubRepositoryCustomImpl implements ClubRepositoryCustom{
                 .where(builder)
                 .fetchCount();
 
+        var clubs = queryFactory.select(Projections.bean(ClubResponseDTO.ClubList.class,
+club.memberId,
+                        club.checker,
+                        club.checkStatus,
+                        club.checkMessage,
+                        club.regDate,
+                        club.studyDate))
+                .from(club)
+                .fetch();
+
+        System.out.println("clubs" + clubs.get(0).getStudyDate());
+
+        return new PageImpl <>(clubs, pageable, total);
+
+
+
+
+        // 동아리 목록 데이터 페이징 조회
+        List<ClubResponseDTO.ClubList> clubs = queryFactory.select(Projections.bean(ClubResponseDTO.ClubList.class,
+                        club.id.as("clubId"),   // 동아리 ID
+                        member.name.as("writer"),  // 작성자 이름
+                        club.checker,
+                        club.checkStatus,
+                        club.checkMessage,
+                        club.regDate,
+                        club.studyDate))
+                .from(club)
+                .join(member).on(club.memberId.eq(member.id)) // Club.memberId와 Member.id 조인
+                .where(builder)
+                .offset(pageable.getOffset())  // 페이징 offset 적용
+                .limit(pageable.getPageSize())  // 페이징 limit 적용
+                .fetch();
+
+        // 총 데이터 개수 조회
+        long total = queryFactory
+                .selectFrom(club)
+                .join(member).on(club.memberId.eq(member.id))  // 총 개수 조회 시에도 조인 필요
+                .where(builder)
+                .fetchCount();
+
+        // 페이징 처리된 결과 반환
         return new PageImpl<>(clubs, pageable, total);
     }
+
+    //    public List<ClubDTO> findAll() {
+//        return queryFactory.select(Projections.bean(ClubDTO.class,
+//                club.id))
+//                .from(club).fetch();
+//    }
 }
