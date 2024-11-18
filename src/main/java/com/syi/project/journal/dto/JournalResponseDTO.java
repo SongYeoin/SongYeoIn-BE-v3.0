@@ -4,8 +4,6 @@ import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.journal.entity.Journal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Getter;
 
 @Getter
@@ -15,18 +13,18 @@ public class JournalResponseDTO {
   private String courseName;
   private String title;
   private String content;
-  private List<FileResponseDTO> files;
+  private FileResponseDTO file;  // List에서 단일로 변경
   private LocalDateTime createdAt;
 
   private JournalResponseDTO(Long id, String memberName, String courseName,
-      String title, String content, List<FileResponseDTO> files,
+      String title, String content, FileResponseDTO file,
       LocalDateTime createdAt) {
     this.id = id;
     this.memberName = memberName;
     this.courseName = courseName;
     this.title = title;
     this.content = content;
-    this.files = files;
+    this.file = file;
     this.createdAt = createdAt;
   }
 
@@ -37,9 +35,9 @@ public class JournalResponseDTO {
         journal.getCourse().getName(),
         journal.getTitle(),
         journal.getContent(),
-        journal.getJournalFiles().stream()
-            .map(jf -> FileResponseDTO.from(jf.getFile(), s3Uploader))
-            .collect(Collectors.toList()),
+        journal.getJournalFile() != null
+            ? FileResponseDTO.from(journal.getJournalFile().getFile(), s3Uploader)
+            : null,
         journal.getCreatedAt()
     );
   }

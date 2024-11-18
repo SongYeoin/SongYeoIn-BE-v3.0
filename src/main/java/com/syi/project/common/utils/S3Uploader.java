@@ -4,13 +4,19 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.syi.project.file.dto.FileResponseDTO;
+import io.swagger.v3.oas.annotations.Operation;
 import java.io.InputStream;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -31,10 +37,12 @@ public class S3Uploader {
   @Value("${cloud.aws.region.static}")
   private String region;
 
-  // 단일 파일 업로드
+  @Operation(summary = "파일 업로드 (단일/다중)")
+  @PostMapping("/upload")
+  // 파일 업로드 (단일/다중 처리 통합)
   public String uploadFile(MultipartFile file, String dirName) throws IOException {
-    String fileName = createFileName(file.getOriginalFilename()); // UUID로 생성된 파일명
-    String fullPath = dirName + "/" + fileName; // objectKey가 됨
+    String fileName = createFileName(file.getOriginalFilename());
+    String fullPath = dirName + "/" + fileName;
 
     ObjectMetadata metadata = new ObjectMetadata();
     metadata.setContentType(file.getContentType());
@@ -46,23 +54,7 @@ public class S3Uploader {
     return amazonS3Client.getUrl(bucket, fullPath).toString();
   }
 
-  // 다중 파일 업로드
-  public List<String> uploadFiles(List<MultipartFile> files, String dirName) {
-    List<String> uploadUrls = new ArrayList<>();
-
-    files.forEach(file -> {
-      try {
-        String uploadUrl = uploadFile(file, dirName);
-        uploadUrls.add(uploadUrl);
-      } catch (IOException e) {
-        throw new RuntimeException("파일 업로드 중 에러가 발생했습니다.", e);
-      }
-    });
-
-    return uploadUrls;
-  }
-
-  // 파일 수정: 기존 파일을 삭제하고 새 파일을 업로드 (파일 수정 시에만)
+  // 파일 수정
   public String updateFile(MultipartFile newFile, String dirName, String oldFileUrl) throws IOException {
     try {
       // 1. 기존 파일 삭제
@@ -75,24 +67,22 @@ public class S3Uploader {
       String newFileUrl = uploadFile(newFile, dirName);
       log.info("새 파일 업로드 완료: {}", newFileUrl);
 
-      return newFileUrl; // 새 파일 URL 반환
+      return newFileUrl;
     } catch (IOException e) {
       log.error("파일 수정 중 에러가 발생했습니다.", e);
       throw new RuntimeException("파일 수정 중 에러가 발생했습니다.", e);
     }
   }
 
-  // 파일 삭제 - 파일 URL을 사용해 S3에서 파일을 삭제
+  // 파일 삭제
   public void deleteFile(String fileUrl) {
     try {
       if (fileUrl == null || fileUrl.isEmpty()) {
         throw new IllegalArgumentException("파일 URL이 null이거나 비어있습니다.");
       }
 
-      // URL이 아닌 그냥 Object Key일 경우
       String fileName = fileUrl;  // 이미 Object Key일 경우, 그대로 사용
 
-      // S3 객체 삭제 요청
       amazonS3Client.deleteObject(bucket, fileName);
       log.info("파일 삭제 완료: {}", fileName);
 
@@ -111,7 +101,7 @@ public class S3Uploader {
     return s3Object.getObjectContent();
   }
 
-  // UUID(파일이름 중복방지)로 파일명 생성
+  // UUID(파일명 중복방지)로 파일명 생성
   private String createFileName(String originalFileName) {
     return UUID.randomUUID().toString() + getFileExtension(originalFileName);
   }
@@ -125,7 +115,7 @@ public class S3Uploader {
     }
   }
 
-  // 파일에 접근할 수 있는 S3 URL을 반환
+  // S3 URL 반환
   public String getUrl(String path) {
     return amazonS3Client.getUrl(bucket, path).toString();
   }
