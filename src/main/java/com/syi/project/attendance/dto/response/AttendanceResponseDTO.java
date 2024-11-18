@@ -1,7 +1,5 @@
 package com.syi.project.attendance.dto.response;
 
-import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
-import com.syi.project.attendance.dto.request.AttendanceRequestDTO.Update;
 import com.syi.project.attendance.entity.Attendance;
 import com.syi.project.common.enums.AttendanceStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,11 +22,11 @@ public class AttendanceResponseDTO {
   }
 
   @Schema(description = "출석 ID", example = "1")
-  @NotNull(groups = AttendanceRequestDTO.Update.class, message = "출석 ID는 필수입니다.")
+  @NotNull(groups = Update.class, message = "출석 ID는 필수입니다.")
   private Long attendanceId;
 
   @Schema(description = "출석 상태", example = "")
-  @NotNull(groups = AttendanceRequestDTO.Update.class, message = "출석 상태는 필수입니다.")
+  @NotNull(groups = Update.class, message = "출석 상태는 필수입니다.")
   private AttendanceStatus status;
 
   @Schema(description = "출석 날짜", example = "")
