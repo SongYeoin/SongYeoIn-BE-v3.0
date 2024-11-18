@@ -8,6 +8,5 @@ public interface PeriodRepositoryCustom {
 
   List<Period> findPeriodsByScheduleIdForPatch(Long scheduleId, List<Long> periodIdsToCheck);
 
-
   List<Period> getScheduleByDayOfWeek(String dayOfWeekString);
 }

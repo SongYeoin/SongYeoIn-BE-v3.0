@@ -31,6 +31,7 @@ public class PeriodResponseDTO {
 
   @Schema(description = "교시 이름", example = "1교시")
   @NotNull(message = "교시 이름은 필수여야 합니다.")
+
   private String name;
 
   @Schema(description = "시작 시간", example = "14:00")
@@ -50,7 +51,6 @@ public class PeriodResponseDTO {
     this.id = id;
     this.courseId = courseId;
     this.scheduleId = scheduleId;
-    this.dayOfWeek = dayOfWeek;
     this.name = name;
     this.startTime = startTime;
     this.endTime = endTime;

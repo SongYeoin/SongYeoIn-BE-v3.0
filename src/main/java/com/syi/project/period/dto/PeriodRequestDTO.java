@@ -23,7 +23,8 @@ public class PeriodRequestDTO {
 
   @Schema(description = "교시 이름", example = "1교시")
   @NotNull(message = "교시 이름을 입력해야 합니다.")
-  private String name;
+
+  private String periodName;
 
   @Schema(description = "시작 시간", example = "14:00")
   @NotNull(message = "시작 시간을 입력해야 합니다.")

@@ -11,4 +11,5 @@ public interface EnrollRepositoryCustom {
   void deleteEnrollment(Long enrollmentId, Long memberId);
 
   List<Member> findStudentByCourseId(Long courseId);
+
 }
