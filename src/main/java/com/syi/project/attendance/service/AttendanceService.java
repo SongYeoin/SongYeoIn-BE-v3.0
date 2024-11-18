@@ -11,7 +11,6 @@ import com.syi.project.auth.entity.Member;
 import com.syi.project.common.enums.AttendanceStatus;
 import com.syi.project.course.repository.CourseRepository;
 import com.syi.project.enroll.repository.EnrollRepository;
-import com.syi.project.enroll.service.EnrollService;
 import com.syi.project.period.eneity.Period;
 import com.syi.project.period.repository.PeriodRepository;
 import com.syi.project.schedule.repository.ScheduleRepository;

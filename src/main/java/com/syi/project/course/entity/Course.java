@@ -117,8 +117,8 @@ public class Course {
     if (dto.getDescription() != null) {
       this.description = dto.getDescription();
     }
-    if (dto.getManagerName() != null) {
-      this.adminName = dto.getManagerName();
+    if (dto.getAdminName() != null) {
+      this.adminName = dto.getAdminName();
     }
     if (dto.getTeacherName() != null) {
       this.teacherName = dto.getTeacherName();
@@ -141,8 +141,8 @@ public class Course {
     if (dto.getDeletedBy() != null) {
       this.deletedBy = dto.getDeletedBy();
     }
-    if (dto.getManagerId() != null) {
-      this.adminId = dto.getManagerId();
+    if (dto.getAdminId() != null) {
+      this.adminId = dto.getAdminId();
     }
   }
 

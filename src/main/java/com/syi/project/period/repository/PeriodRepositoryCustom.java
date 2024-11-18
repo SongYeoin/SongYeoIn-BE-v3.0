@@ -1,6 +1,5 @@
 package com.syi.project.period.repository;
 
-import com.querydsl.core.Tuple;
 import com.syi.project.period.eneity.Period;
 import java.util.List;
 

@@ -119,14 +119,14 @@ public class CourseDTO {
         .id(course.getId())
         .name(course.getName())
         .description(course.getDescription())
-        .adminName(course.getManagerName())
+        .adminName(course.getAdminName())
         .teacherName(course.getTeacherName())
         .startDate(course.getStartDate())
         .endDate(course.getEndDate())
         .roomName(course.getRoomName())
         .enrollDate(course.getEnrollDate())
         .modifiedDate(course.getModifiedDate())
-        .adminId(course.getManagerId())
+        .adminId(course.getAdminId())
         .build();
   }
 

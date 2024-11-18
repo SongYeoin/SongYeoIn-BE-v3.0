@@ -1,24 +1,13 @@
 package com.syi.project.club.repository;
 
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.Projections;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.syi.project.club.dto.ClubResponseDTO;
-import com.syi.project.club.entity.QClub;
-import com.syi.project.common.entity.Criteria;
-import com.syi.project.enroll.entity.QEnroll;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 @Repository
+@RequiredArgsConstructor
 public class ClubRepositoryCustomImpl implements ClubRepositoryCustom {
 
+    /*
     private final JPAQueryFactory queryFactory;
     private QClub club = QClub.club;
     private QEnroll enroll = QEnroll.enroll;
@@ -95,4 +84,5 @@ club.memberId,
 //                club.id))
 //                .from(club).fetch();
 //    }
+     */
 }

@@ -39,9 +39,10 @@ public class ClubService {
         // Pageable 객체 생성 (cri에서 pageNum과 amount 가져오기)
         Pageable pageable = PageRequest.of(cri.getPageNum() - 1, cri.getAmount()); // 0-based index
 
-        System.out.println("service: " + clubRepository.findClubsByCriteria(cri, courseId, pageable));
+        // System.out.println("service: " + clubRepository.findClubsByCriteria(cri, courseId, pageable));
         // 페이징과 조건에 맞는 동아리 목록 조회
-        return clubRepository.findClubsByCriteria(cri, courseId, pageable);
+        // return clubRepository.findClubsByCriteria(cri, courseId, pageable);
+        return null;
     }
 
 //    private ClubDTO convertToDTO(Club club) {
