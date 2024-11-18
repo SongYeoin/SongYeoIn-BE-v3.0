@@ -11,7 +11,6 @@ import com.syi.project.auth.entity.Member;
 import com.syi.project.common.enums.AttendanceStatus;
 import com.syi.project.course.repository.CourseRepository;
 import com.syi.project.enroll.repository.EnrollRepository;
-import com.syi.project.enroll.repository.EnrollRepositoryImpl;
 import com.syi.project.enroll.service.EnrollService;
 import com.syi.project.period.eneity.Period;
 import com.syi.project.period.repository.PeriodRepository;
@@ -43,9 +42,7 @@ public class AttendanceService {
   private final ScheduleRepository scheduleRepository;
   //private final EnrollRepository enrollRepository;
   private final PeriodRepository periodRepository;
-  private final EnrollService enrollService;
   private final EnrollRepository enrollRepository;
-  private final EnrollRepositoryImpl enrollRepositoryImpl;
 
   // 수강생,담당자
   /* 출석 전체 조회 */
@@ -156,7 +153,7 @@ public class AttendanceService {
     Map<Long, List<Member>> studentWithCourseMap = periodIdListWithCourseIdMap.keySet().stream()
         .collect(Collectors.toMap(
             courseId -> courseId,
-            enrollRepositoryImpl::findStudentByCourseId,
+            enrollRepository::findStudentByCourseId,
             (existing, replacement) -> existing // 중복 키 처리
         ));
 
