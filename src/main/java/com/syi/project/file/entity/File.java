@@ -66,6 +66,21 @@ public class File extends BaseTimeEntity {
     this.deletedAt = LocalDateTime.now(); // 언제 삭제됐는지
   }
 
+  public void updateFile(
+      String originalName,
+      String objectKey,
+      String path,
+      Long size,
+      String mimeType,
+      Member modifier
+  ) {
+    this.originalName = originalName;
+    this.objectKey = objectKey;
+    this.path = path;
+    this.size = size;
+    this.mimeType = mimeType;
+  }
+
   // S3 URL을 반환하는 메서드
   public String getUrl(S3Uploader s3Uploader) {
     return s3Uploader.getUrl(this.path);  // S3Uploader를 사용하여 URL 반환

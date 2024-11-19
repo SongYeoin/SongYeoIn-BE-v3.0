@@ -14,7 +14,6 @@ import com.syi.project.journal.entity.JournalFile;
 import com.syi.project.journal.repository.JournalFileRepository;
 import com.syi.project.journal.repository.JournalRepository;
 import com.syi.project.file.entity.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,10 +23,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-@Slf4j
 public class JournalService {
 
   private final JournalRepository journalRepository;
@@ -55,7 +54,6 @@ public class JournalService {
           return new IllegalArgumentException("존재하지 않는 강좌입니다.");
         });
 
-    // 1. Journal 생성
     Journal journal = Journal.builder()
         .member(member)
         .course(course)
@@ -63,21 +61,23 @@ public class JournalService {
         .content(requestDTO.getContent())
         .build();
 
-    // 2. 파일 처리
+    // 단일 파일 처리
     if (requestDTO.getFile() != null && !requestDTO.getFile().isEmpty()) {
       validateFile(requestDTO.getFile());
       File savedFile = fileService.uploadFile(requestDTO.getFile(), "journals", member);
+      log.info("교육일지 파일 업로드 완료 - fileName: {}", savedFile.getOriginalName());
 
       JournalFile journalFile = JournalFile.builder()
           .journal(journal)
           .file(savedFile)
           .build();
 
-      journal.addFile(journalFile);
+      journal.setFile(journalFile);
     }
 
     Journal savedJournal = journalRepository.save(journal);
-    return JournalResponseDTO.from(savedJournal, s3Uploader);  // new 대신 from 사용
+    log.info("교육일지 등록 완료 - journalId: {}", savedJournal.getId());
+    return JournalResponseDTO.from(savedJournal, s3Uploader);
   }
 
   public List<JournalResponseDTO> getJournalsByCourse(Long courseId, Long memberId) {
@@ -90,7 +90,7 @@ public class JournalService {
         });
 
     List<Journal> journals;
-    if (member.getRole() == Role.MANAGER) {
+    if (member.getRole() == Role.ADMIN) {
       log.debug("관리자 권한으로 전체 교육일지 조회");
       journals = journalRepository.findByCourseId(courseId);
     } else {
@@ -98,8 +98,9 @@ public class JournalService {
       journals = journalRepository.findByCourseIdAndMemberId(courseId, memberId);
     }
 
+    log.info("교육일지 목록 조회 완료 - courseId: {}, 조회된 교육일지 수: {}", courseId, journals.size());
     return journals.stream()
-        .map(journal -> JournalResponseDTO.from(journal, s3Uploader))  // new 대신 from 사용
+        .map(journal -> JournalResponseDTO.from(journal, s3Uploader))
         .collect(Collectors.toList());
   }
 
@@ -118,10 +119,10 @@ public class JournalService {
           return new IllegalArgumentException("존재하지 않는 교육일지입니다.");
         });
 
-    if (member.getRole() == Role.MANAGER ||
+    if (member.getRole() == Role.ADMIN ||
         journal.getMember().getId().equals(memberId)) {
-      log.info("교육일지 상세 조회 완료 - journalId: {}", journalId);
-      return JournalResponseDTO.from(journal, s3Uploader);  // new 대신 from 사용
+      log.info("교육일지 상세 조회 완료 - journalId: {}, 제목: {}", journalId, journal.getTitle());
+      return JournalResponseDTO.from(journal, s3Uploader);
     }
 
     log.error("교육일지 접근 권한 없음 - memberId: {}, journalId: {}", memberId, journalId);
@@ -143,33 +144,30 @@ public class JournalService {
 
     // 파일 수정 로직
     if (requestDTO.getFile() != null && !requestDTO.getFile().isEmpty()) {
-      // 기존 파일 URL을 가져옴 (null일 수 있음)
-      String oldFileUrl = journal.getJournalFiles().isEmpty()
-          ? null
-          : journal.getJournalFiles().get(0).getFile().getUrl(s3Uploader);  // getUrl() 호출
+      validateFile(requestDTO.getFile());
 
-      try {
-        // S3Uploader에서 파일 수정 처리
-        String newFileUrl = s3Uploader.updateFile(requestDTO.getFile(), "journals", oldFileUrl);
-
-        // 새로운 파일 저장 (JournalFile 엔티티 생성)
-        File savedFile = fileService.uploadFile(requestDTO.getFile(), "journals", member);
-        JournalFile journalFile = JournalFile.builder()
-            .journal(journal)
-            .file(savedFile)
-            .build();
-
-        journal.addFile(journalFile);
-      } catch (IOException e) {
-        log.error("파일 수정 중 에러 발생", e);
-        throw new RuntimeException("파일 수정 중 오류가 발생했습니다.", e);
+      // 기존 파일이 있다면 삭제
+      if (journal.getJournalFile() != null) {
+        fileService.deleteFile(journal.getJournalFile().getFile().getId(), member);
+        log.info("기존 파일 삭제 완료 - fileId: {}", journal.getJournalFile().getFile().getId());
       }
+
+      // 새 파일 업로드
+      File savedFile = fileService.uploadFile(requestDTO.getFile(), "journals", member);
+      log.info("새 파일 업로드 완료 - fileName: {}", savedFile.getOriginalName());
+
+      JournalFile journalFile = JournalFile.builder()
+          .journal(journal)
+          .file(savedFile)
+          .build();
+
+      journal.setFile(journalFile);
     }
 
-    // 제목과 내용 수정
     journal.update(requestDTO.getTitle(), requestDTO.getContent());
+    log.info("교육일지 수정 완료 - journalId: {}", journalId);
 
-    return JournalResponseDTO.from(journal, s3Uploader);  // 새로 저장된 교육일지 반환
+    return JournalResponseDTO.from(journal, s3Uploader);
   }
 
   @Transactional
@@ -185,10 +183,11 @@ public class JournalService {
           return new IllegalArgumentException("존재하지 않거나 접근 권한이 없는 교육일지입니다.");
         });
 
-    // 연관된 파일들 삭제
-    journal.getJournalFiles().forEach(journalFile -> {
-      fileService.deleteFile(journalFile.getFile().getId(), member);
-    });
+    // 첨부파일이 있는 경우에만 삭제
+    if (journal.getJournalFile() != null) {
+      fileService.deleteFile(journal.getJournalFile().getFile().getId(), member);
+      log.info("교육일지 첨부파일 삭제 완료 - fileId: {}", journal.getJournalFile().getFile().getId());
+    }
 
     journalRepository.delete(journal);
     log.info("교육일지 삭제 완료 - journalId: {}", journalId);
