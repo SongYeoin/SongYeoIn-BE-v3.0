@@ -16,10 +16,10 @@ import lombok.ToString;
 @Schema(description = "회원가입 요청 DTO")
 public class MemberSignUpRequestDTO {
 
-  @Schema(description = "회원 아이디", example = "testUser")
+  @Schema(description = "회원 아이디", example = "testuser")
   @NotBlank(message = "아이디는 필수입니다.")
   @Pattern(regexp = "^[a-z0-9_]{6,12}$", message = "아이디는 6~12자의 영문 소문자, 숫자, 특수기호(_)만 사용 가능합니다.")
-  private final String memberId;
+  private final String username;
 
   @Schema(description = "비밀번호", example = "password123!")
   @NotBlank(message = "비밀번호는 필수입니다.")
@@ -49,10 +49,10 @@ public class MemberSignUpRequestDTO {
   private final Role role;
 
   @Builder
-  public MemberSignUpRequestDTO(String memberId, String password, String confirmPassword,
+  public MemberSignUpRequestDTO(String username, String password, String confirmPassword,
       String name,
       String birthday, String email, Role role) {
-    this.memberId = memberId;
+    this.username = username;
     this.password = password;
     this.confirmPassword = confirmPassword;
     this.name = name;
@@ -63,7 +63,7 @@ public class MemberSignUpRequestDTO {
 
   public Member toEntity(String encodedPassword) {
     return new Member(
-        this.memberId,
+        this.username,
         encodedPassword,
         this.name,
         this.birthday,

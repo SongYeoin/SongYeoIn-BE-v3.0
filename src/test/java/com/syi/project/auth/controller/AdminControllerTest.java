@@ -7,7 +7,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -39,7 +38,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@WithMockUser(username = "testUser", roles = "ADMIN")
+@WithMockUser(username = "testMember", roles = "ADMIN")
 class AdminControllerTest {
 
   @Autowired
@@ -54,7 +53,7 @@ class AdminControllerTest {
   void setUp() {
     testMember = MemberDTO.builder()
         .id(1L)
-        .memberId("testMember")
+        .username("testMember")
         .name("Test User")
         .birthday("1990-01-01")
         .email("test@example.com")
@@ -76,7 +75,7 @@ class AdminControllerTest {
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
-        .andExpect(jsonPath("$.content[0].memberId", is("testMember")))
+        .andExpect(jsonPath("$.content[0].username", is("testMember")))
         .andExpect(jsonPath("$.content[0].name", is("Test User")))
         .andExpect(jsonPath("$.content[0].email", is("test@example.com")));
   }
@@ -115,7 +114,8 @@ class AdminControllerTest {
   @DisplayName("회원 목록 조회 - 상태 및 역할 필터 모두 적용")
   void getAllMembers_withStatusAndRoleFilter() throws Exception {
     Page<MemberDTO> members = new PageImpl<>(List.of(testMember), PageRequest.of(0, 15), 1);
-    Mockito.when(memberService.getFilteredMembers(eq(CheckStatus.Y), eq(Role.ADMIN), any(Pageable.class)))
+    Mockito.when(
+            memberService.getFilteredMembers(eq(CheckStatus.Y), eq(Role.ADMIN), any(Pageable.class)))
         .thenReturn(members);
 
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/list")
@@ -133,7 +133,7 @@ class AdminControllerTest {
   void getAllMembers_withPaging() throws Exception {
     MemberDTO member1 = MemberDTO.builder()
         .id(1L)
-        .memberId("member1")
+        .username("member1")
         .name("User One")
         .birthday("1990-01-01")
         .email("user1@example.com")
@@ -145,7 +145,7 @@ class AdminControllerTest {
 
     MemberDTO member2 = MemberDTO.builder()
         .id(2L)
-        .memberId("member2")
+        .username("member2")
         .name("User Two")
         .birthday("1991-02-02")
         .email("user2@example.com")
@@ -164,15 +164,17 @@ class AdminControllerTest {
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(2)))
-        .andExpect(jsonPath("$.content[0].memberId", is("member1")))
-        .andExpect(jsonPath("$.content[1].memberId", is("member2")));
+        .andExpect(jsonPath("$.content[0].username", is("member1")))
+        .andExpect(jsonPath("$.content[1].username", is("member2")));
   }
 
   @Test
   @DisplayName("회원 목록 조회 - 빈 결과")
   void getAllMembers_emptyResult() throws Exception {
-    Page<MemberDTO> emptyMembers = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 15), 0);
-    Mockito.when(memberService.getFilteredMembers(eq(CheckStatus.N), eq(Role.ADMIN), any(Pageable.class)))
+    Page<MemberDTO> emptyMembers = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 15),
+        0);
+    Mockito.when(
+            memberService.getFilteredMembers(eq(CheckStatus.N), eq(Role.ADMIN), any(Pageable.class)))
         .thenReturn(emptyMembers);
 
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/list")
@@ -186,12 +188,12 @@ class AdminControllerTest {
   @Test
   @DisplayName("회원 상세 조회 - 성공 케이스")
   void getMemberDetail_Success() throws Exception {
-    Mockito.when(memberService.getMemberDetail(eq("testMember"))).thenReturn(testMember);
+    Mockito.when(memberService.getMemberDetail(eq(1L))).thenReturn(testMember);
 
-    mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/testMember")
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/1")
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.memberId", is("testMember")))
+        .andExpect(jsonPath("$.id", is(1)))
         .andExpect(jsonPath("$.name", is("Test User")))
         .andExpect(jsonPath("$.email", is("test@example.com")));
   }
@@ -199,10 +201,10 @@ class AdminControllerTest {
   @Test
   @DisplayName("회원 상세 조회 - 존재하지 않는 회원 ID로 조회 시 실패")
   void getMemberDetail_Failure_UserNotFound() throws Exception {
-    Mockito.when(memberService.getMemberDetail(eq("nonexistentUser")))
+    Mockito.when(memberService.getMemberDetail(eq(10L)))
         .thenThrow(new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
 
-    mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/nonexistentUser")
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/10")
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.message", is(ErrorCode.USER_NOT_FOUND.getMessage())))
@@ -212,10 +214,10 @@ class AdminControllerTest {
   @Test
   @DisplayName("회원 상세 조회 - 삭제된 회원 조회 시 실패")
   void getMemberDetail_Failure_DeletedUser() throws Exception {
-    Mockito.when(memberService.getMemberDetail(eq("deletedUser")))
+    Mockito.when(memberService.getMemberDetail(eq(2L)))
         .thenThrow(new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
 
-    mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/deletedUser")
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/detail/2")
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.message", is("해당 사용자가 존재하지 않거나 삭제되었습니다.")))
@@ -226,10 +228,12 @@ class AdminControllerTest {
   @DisplayName("회원 승인 상태 변경 성공 테스트")
   @WithMockUser(roles = "ADMIN")
   void updateMemberApprovalStatus_success() throws Exception {
-    String memberId = "testMember";
+    Long id = 1L;
     CheckStatus newStatus = CheckStatus.Y;
 
-    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + memberId)
+    Mockito.doNothing().when(memberService).updateApprovalStatus(eq(id), eq(newStatus));
+
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + id)
             .param("newStatus", newStatus.name())
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
@@ -239,13 +243,13 @@ class AdminControllerTest {
   @DisplayName("회원 승인 상태 변경 - 회원 정보 없음")
   @WithMockUser(roles = "ADMIN")
   void updateMemberApprovalStatus_memberNotFound() throws Exception {
-    String invalidMemberId = "invalidMember";
+    Long id = 1L;
     CheckStatus newStatus = CheckStatus.Y;
 
     doThrow(new InvalidRequestException(ErrorCode.USER_NOT_FOUND))
-        .when(memberService).updateApprovalStatus(invalidMemberId, newStatus);
+        .when(memberService).updateApprovalStatus(id, newStatus);
 
-    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + invalidMemberId)
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + id)
             .param("newStatus", newStatus.name())
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
@@ -256,10 +260,10 @@ class AdminControllerTest {
   @DisplayName("회원 승인 상태 변경 - 권한 없음")
   @WithMockUser(roles = "STUDENT")
   void updateMemberApprovalStatus_accessDenied() throws Exception {
-    String memberId = "testMember";
+    Long id = 1L;
     CheckStatus newStatus = CheckStatus.Y;
 
-    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + memberId)
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/approve/" + id)
             .param("newStatus", newStatus.name())
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isForbidden());
@@ -268,53 +272,53 @@ class AdminControllerTest {
   @Test
   @DisplayName("역할 변경 성공 테스트")
   void updateMemberRole_Success() throws Exception {
-    String memberId = "testMemberId";
+    Long id = 1L;
     Role newRole = Role.ADMIN;
 
-    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/change-role/{memberId}", memberId)
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/change-role/{id}", id)
             .param("newRole", newRole.name())
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
 
-    verify(memberService, times(1)).updateMemberRole(memberId, newRole);
+    verify(memberService, times(1)).updateMemberRole(id, newRole);
   }
 
   @Test
   @DisplayName("역할 변경 실패 - 회원 정보 없음")
   void updateMemberRole_NotFound() throws Exception {
-    String memberId = "nonExistingMemberId";
+    Long id = 1L;
     Role newRole = Role.ADMIN;
 
     doThrow(new InvalidRequestException(ErrorCode.USER_NOT_FOUND))
-        .when(memberService).updateMemberRole(memberId, newRole);
+        .when(memberService).updateMemberRole(id, newRole);
 
-    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/change-role/{memberId}", memberId)
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/change-role/{id}", id)
             .param("newRole", newRole.name())
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.message", is(ErrorCode.USER_NOT_FOUND.getMessage())))
         .andExpect(jsonPath("$.status", is(404)));
 
-    verify(memberService, times(1)).updateMemberRole(memberId, newRole);
+    verify(memberService, times(1)).updateMemberRole(id, newRole);
   }
 
   @Test
   @DisplayName("역할 변경 실패 - 서버 오류 (500 Internal Server Error)")
   void updateMemberRole_InternalServerError() throws Exception {
-    String memberId = "testMemberId";
+    Long id = 1L;
     Role newRole = Role.ADMIN;
 
     doThrow(new RuntimeException("Unexpected error"))
-        .when(memberService).updateMemberRole(memberId, newRole);
+        .when(memberService).updateMemberRole(id, newRole);
 
-    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/change-role/{memberId}", memberId)
+    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/change-role/{id}", id)
             .param("newRole", newRole.name())
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isInternalServerError())
         .andExpect(jsonPath("$.message", is(ErrorCode.INTERNAL_SERVER_ERROR.getMessage())))
         .andExpect(jsonPath("$.status", is(500)));
 
-    verify(memberService, times(1)).updateMemberRole(memberId, newRole);
+    verify(memberService, times(1)).updateMemberRole(id, newRole);
   }
 
 }

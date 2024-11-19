@@ -26,14 +26,18 @@ public class CustomUserDetails implements UserDetails {
     return List.of(new SimpleGrantedAuthority(authUser.getRole().name()));
   }
 
-  @Override
-  public String getPassword() {
-    return null;  // 패스워드 필요하지 않음
+  public Long getId() {
+    return authUser.getId();
   }
 
   @Override
   public String getUsername() {
-    return authUser.getMemberId();
+    return authUser.getUsername();
+  }
+
+  @Override
+  public String getPassword() {
+    return null;  // 패스워드 필요하지 않음
   }
 
   @Override

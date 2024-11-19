@@ -13,12 +13,14 @@ import org.springframework.data.repository.query.Param;
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
   // 아이디 중복 체크
-  boolean existsByMemberId(String memberId);
+  boolean existsByUsername(String username);
 
   // 이메일 중복 체크
   boolean existsByEmail(String email);
 
-  Optional<Member> findByMemberIdAndIsDeletedFalse(String memberId);
+  Optional<Member> findByUsernameAndIsDeletedFalse(String username);
+
+  Optional<Member> findByIdAndIsDeletedFalse(Long id);
 
   // 회원 목록 조회
   @Query("SELECT m FROM Member m WHERE (:checkStatus IS NULL OR m.checkStatus = :checkStatus) " +

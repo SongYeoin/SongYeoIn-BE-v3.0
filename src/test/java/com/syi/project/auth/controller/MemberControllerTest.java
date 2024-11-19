@@ -54,7 +54,7 @@ public class MemberControllerTest {
   void setUp() {
     // 회원가입 및 로그인 요청 DTO를 설정
     signUpRequestDTO = MemberSignUpRequestDTO.builder()
-        .memberId("testuser")
+        .username("testuser")
         .password("password123!")
         .confirmPassword("password123!")
         .name("홍길동")
@@ -64,7 +64,7 @@ public class MemberControllerTest {
         .build();
 
     loginRequestDTO = MemberLoginRequestDTO.builder()
-        .memberId("testUser")
+        .username("testuser")
         .password("password123!")
         .build();
   }
@@ -75,7 +75,7 @@ public class MemberControllerTest {
     // Given
     MemberSignUpResponseDTO signUpResponseDTO = MemberSignUpResponseDTO.builder()
         .id(1L)
-        .memberId("testuser")
+        .username("testuser")
         .name("홍길동")
         .birthday("19900101")
         .email("test@example.com")
@@ -91,7 +91,7 @@ public class MemberControllerTest {
 
     // Then: 기대하는 HTTP 상태 코드와 응답 데이터 확인
     result.andExpect(status().isCreated())
-        .andExpect(jsonPath("$.memberId").value(signUpRequestDTO.getMemberId()))
+        .andExpect(jsonPath("$.username").value(signUpRequestDTO.getUsername()))
         .andExpect(jsonPath("$.name").value(signUpRequestDTO.getName()))
         .andExpect(jsonPath("$.email").value(signUpRequestDTO.getEmail()));
   }
@@ -101,7 +101,7 @@ public class MemberControllerTest {
   void register_passwordMismatch() throws Exception {
     // Given
     signUpRequestDTO = MemberSignUpRequestDTO.builder()
-        .memberId("testuser")
+        .username("testuser")
         .password("password123!")
         .confirmPassword("wrongPassword")
         .name("홍길동")
@@ -123,7 +123,7 @@ public class MemberControllerTest {
 
   @Test
   @DisplayName("회원가입 실패 테스트 - 이미 사용 중인 아이디")
-  void register_existingMemberId() throws Exception {
+  void register_existingUsername() throws Exception {
     Mockito.when(memberService.register(any(MemberSignUpRequestDTO.class)))
         .thenThrow(new InvalidRequestException(ErrorCode.USER_ALREADY_EXISTS));
 
@@ -176,7 +176,7 @@ public class MemberControllerTest {
   void login_failure_wrongPassword() throws Exception {
     // Given
     loginRequestDTO = MemberLoginRequestDTO.builder()
-        .memberId("testUser")
+        .username("testuser")
         .password("wrongPassword")
         .build();
     Mockito.when(memberService.login(any(MemberLoginRequestDTO.class), eq(Role.STUDENT)))
@@ -210,7 +210,7 @@ public class MemberControllerTest {
   @DisplayName("로그인 실패 테스트 - 관리자 권한으로 로그인 시 수강생 권한 요구")
   void login_failure_accessDenied() throws Exception {
     loginRequestDTO = MemberLoginRequestDTO.builder()
-        .memberId("testUser")
+        .username("username")
         .password("password123!")
         .build();
 
@@ -232,12 +232,12 @@ public class MemberControllerTest {
   void checkMemberIdDuplicate_success() throws Exception {
     // Given
     DuplicateCheckDTO duplicateCheckDTO = new DuplicateCheckDTO(true, "사용 가능한 아이디입니다.");
-    Mockito.when(memberService.checkMemberIdDuplicate("testuser"))
+    Mockito.when(memberService.checkUsernameDuplicate("testuser"))
         .thenReturn(duplicateCheckDTO);
 
     // When
-    ResultActions result = mockMvc.perform(get("/check-id")
-        .param("memberId", "testuser"));
+    ResultActions result = mockMvc.perform(get("/check-username")
+        .param("username", "testuser"));
 
     // Then
     result.andExpect(status().isOk())

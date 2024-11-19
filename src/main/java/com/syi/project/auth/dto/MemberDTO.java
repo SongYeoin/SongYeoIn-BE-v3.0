@@ -12,7 +12,7 @@ import lombok.Getter;
 public class MemberDTO {
 
   private final Long id;
-  private final String memberId;
+  private final String username;
   private final String name;
   private final String birthday;
   private final String email;
@@ -24,7 +24,7 @@ public class MemberDTO {
   public static MemberDTO fromEntity(Member member) {
     return MemberDTO.builder()
         .id(member.getId())
-        .memberId(member.getMemberId())
+        .username(member.getUsername())
         .name(member.getName())
         .birthday(member.getBirthday())
         .email(member.getEmail())

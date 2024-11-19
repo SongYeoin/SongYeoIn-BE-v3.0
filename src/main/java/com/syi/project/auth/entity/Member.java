@@ -22,7 +22,7 @@ public class Member {
   private Long id;
 
   @Column(nullable = false, unique = true)
-  private String memberId;
+  private String username;
 
   @Column(nullable = false)
   private String password;
@@ -57,9 +57,9 @@ public class Member {
   }
 
   // 필수 필드를 초기화하는 생성자
-  public Member(String memberId, String password, String name, String birthday, String email,
+  public Member(String username, String password, String name, String birthday, String email,
       Role role) {
-    this.memberId = memberId;
+    this.username = username;
     this.password = password;
     this.name = name;
     this.birthday = birthday;
