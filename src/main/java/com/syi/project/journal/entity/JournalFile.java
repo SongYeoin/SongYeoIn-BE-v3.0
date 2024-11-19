@@ -16,7 +16,7 @@ public class JournalFile extends BaseTimeEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  @OneToOne(fetch = FetchType.LAZY)  // ManyToOne에서 OneToOne으로 변경
   @JoinColumn(name = "journal_id")
   private Journal journal;
 
