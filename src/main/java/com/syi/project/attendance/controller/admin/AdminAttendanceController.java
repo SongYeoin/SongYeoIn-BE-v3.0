@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/manager/attendance")
+@RequestMapping("/admin/attendance")
 @Slf4j
 @RequiredArgsConstructor
 @Tag(name = "manager-attendance", description = "당당자 출석 API")
