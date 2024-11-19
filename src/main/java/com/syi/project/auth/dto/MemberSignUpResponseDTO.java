@@ -13,7 +13,7 @@ public class MemberSignUpResponseDTO {
   private final Long id;
 
   @Schema(description = "회원 아이디", example = "testUser")
-  private final String memberId;
+  private final String username;
 
   @Schema(description = "이름", example = "홍길동")
   private final String name;
@@ -28,10 +28,10 @@ public class MemberSignUpResponseDTO {
   private final Role role;
 
   @Builder
-  public MemberSignUpResponseDTO(Long id, String memberId, String name, String birthday,
+  public MemberSignUpResponseDTO(Long id, String username, String name, String birthday,
       String email, Role role) {
     this.id = id;
-    this.memberId = memberId;
+    this.username = username;
     this.name = name;
     this.birthday = birthday;
     this.email = email;

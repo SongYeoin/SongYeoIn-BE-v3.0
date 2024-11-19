@@ -41,7 +41,7 @@ public class JwtProvider {
   /**
    * Access Token 생성 메서드
    *
-   * @param id   사용자 기본키 ID
+   * @param id   사용자  기본키 ID
    * @param role 사용자 역할
    * @return 생성된 Access Token 문자열
    */
@@ -49,7 +49,7 @@ public class JwtProvider {
     Date now = new Date();
     Date validity = new Date(now.getTime() + accessTokenValidity);
 
-    log.info("Access Token 생성 시작 - 사용자 ID(기본키): {}, 역할: {}, 만료 시간: {}", id, role, validity);
+    log.info("Access Token 생성 시작 - 사용자 ID: {}, 역할: {}, 만료 시간: {}", id, role, validity);
 
     // JWT Access Token 생성
     String token = Jwts.builder()
@@ -60,7 +60,7 @@ public class JwtProvider {
         .signWith(key, SignatureAlgorithm.HS256)  // 서명 알고리즘 및 키 설정
         .compact();                               // 최종 토큰 문자열 생성
 
-    log.info("Access Token 생성 완료 - 사용자 ID(기본키): {}, 만료 시간: {}", id, validity);
+    log.info("Access Token 생성 완료 - 사용자 ID: {}, 만료 시간: {}", id, validity);
     log.debug("Access Token - {}", token);
     return token;
   }
@@ -99,9 +99,9 @@ public class JwtProvider {
    */
   public Optional<Long> getMemberPrimaryKeyId(String token) {
     try {
-      String memberId = getClaims(token).map(Claims::getSubject).orElse(null);
-      log.info("토큰에서 사용자 기본키 ID 추출 성공 - 사용자 기본키 ID: {}", memberId);
-      return Optional.of(Long.valueOf(memberId));
+      String id = getClaims(token).map(Claims::getSubject).orElse(null);
+      log.info("토큰에서 사용자 기본키 ID 추출 성공 - 사용자 기본키 ID: {}", id);
+      return Optional.of(Long.valueOf(id));
     } catch (Exception e) {
       log.error("토큰에서 사용자 ID 추출 실패 - 원인: {}", e.getMessage());
       return Optional.empty();

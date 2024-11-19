@@ -52,9 +52,9 @@ public class AdminController {
   public ResponseEntity<MemberLoginResponseDTO> login(
       @Parameter(description = "관리자 로그인 요청 정보", required = true)
       @Valid @RequestBody MemberLoginRequestDTO requestDTO) {
-    log.info("관리자 로그인 요청 - 사용자 ID: {}", requestDTO.getMemberId());
+    log.info("관리자 로그인 요청 - 로그인 ID: {}", requestDTO.getUsername());
     MemberLoginResponseDTO responseDTO = memberService.login(requestDTO, Role.ADMIN);
-    log.info("관리자 로그인 성공 - 사용자 ID: {}", requestDTO.getMemberId());
+    log.info("관리자 로그인 성공 - 로그인 ID: {}", requestDTO.getUsername());
     return new ResponseEntity<>(responseDTO, HttpStatus.OK);
   }
 
@@ -77,7 +77,7 @@ public class AdminController {
     return new ResponseEntity<>(members, HttpStatus.OK);
   }
 
-  @GetMapping("/detail/{memberId}")
+  @GetMapping("/detail/{id}")
   @Operation(summary = "회원 상세 조회", description = "회원 ID를 통해 회원의 상세 정보를 조회합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "조회 성공"),
@@ -86,14 +86,14 @@ public class AdminController {
   })
   public ResponseEntity<MemberDTO> getMemberDetail(
       @Parameter(description = "조회할 회원의 ID", required = true)
-      @PathVariable String memberId) {
+      @PathVariable Long id) {
 
-    log.info("회원 상세 조회 요청 - 회원 ID: {}", memberId);
-    MemberDTO memberDetail = memberService.getMemberDetail(memberId);
+    log.info("회원 상세 조회 요청 - 회원 ID: {}", id);
+    MemberDTO memberDetail = memberService.getMemberDetail(id);
     return new ResponseEntity<>(memberDetail, HttpStatus.OK);
   }
 
-  @PatchMapping("/approve/{memberId}")
+  @PatchMapping("/approve/{id}")
   @PreAuthorize("hasRole('ADMIN')")
   @Operation(summary = "회원 승인 상태 변경", description = "특정 회원의 승인 여부를 변경합니다.")
   @ApiResponses({
@@ -103,17 +103,17 @@ public class AdminController {
   })
   public ResponseEntity<Void> updateMemberApprovalStatus(
       @Parameter(description = "변경할 회원의 ID", required = true)
-      @PathVariable String memberId,
+      @PathVariable Long id,
       @Parameter(description = "새로운 승인 상태", required = true)
       @RequestParam CheckStatus newStatus) {
 
-    log.info("회원 승인 상태 변경 요청 - 회원 ID: {}, 새로운 상태: {}", memberId, newStatus);
-    memberService.updateApprovalStatus(memberId, newStatus);
-    log.info("회원 승인 상태 변경 성공 - 회원 ID: {}, 새로운 상태: {}", memberId, newStatus);
+    log.info("회원 승인 상태 변경 요청 - 회원 ID: {}, 새로운 상태: {}", id, newStatus);
+    memberService.updateApprovalStatus(id, newStatus);
+    log.info("회원 승인 상태 변경 성공 - 회원 ID: {}, 새로운 상태: {}", id, newStatus);
     return ResponseEntity.ok().build();
   }
 
-  @PatchMapping("/change-role/{memberId}")
+  @PatchMapping("/change-role/{id}")
   @PreAuthorize("hasRole('ADMIN')")
   @Operation(summary = "회원 역할 변경", description = "특정 회원의 역할을 변경합니다.")
   @ApiResponses({
@@ -122,12 +122,12 @@ public class AdminController {
       @ApiResponse(responseCode = "500", description = "서버 오류")
   })
   public ResponseEntity<Void> updateMemberRole(
-      @Parameter(description = "변경할 회원의 ID", required = true) @PathVariable String memberId,
+      @Parameter(description = "변경할 회원의 ID", required = true) @PathVariable Long id,
       @Parameter(description = "새로운 역할", required = true) @RequestParam Role newRole) {
 
-    log.info("회원 역할 변경 요청 - 회원 ID: {}, 새로운 역할: {}", memberId, newRole);
-    memberService.updateMemberRole(memberId, newRole);
-    log.info("회원 역할 변경 성공 - 회원 ID: {}, 새로운 역할: {}", memberId, newRole);
+    log.info("회원 역할 변경 요청 - 회원 ID: {}, 새로운 역할: {}", id, newRole);
+    memberService.updateMemberRole(id, newRole);
+    log.info("회원 역할 변경 성공 - 회원 ID: {}, 새로운 역할: {}", id, newRole);
     return ResponseEntity.ok().build();
   }
 

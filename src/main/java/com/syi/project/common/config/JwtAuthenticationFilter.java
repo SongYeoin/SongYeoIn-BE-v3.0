@@ -37,16 +37,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     String token = getTokenFromRequest(request);
 
     if (StringUtils.hasText(token) && jwtProvider.validateAccessToken(token)) {
-      Long memberId = jwtProvider.getMemberPrimaryKeyId(token).orElse(null);
+      Long id = jwtProvider.getMemberPrimaryKeyId(token).orElse(null);
 
-      if (memberId != null) {
-        var userDetails = userDetailsService.loadUserByUsername(String.valueOf(memberId));
+      if (id != null) {
+        var userDetails = userDetailsService.loadUserByUsername(String.valueOf(id.toString()));
         var authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
             userDetails.getAuthorities());
 
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.info("JWT 인증 성공 - 사용자 ID: {}", memberId);
+        log.info("JWT 인증 성공 - 사용자 ID: {}", id);
       }
     } else {
       log.warn("유효하지 않은 JWT 토큰 요청 - IP: {}, URL: {}", request.getRemoteAddr(),

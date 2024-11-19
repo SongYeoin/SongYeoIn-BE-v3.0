@@ -7,7 +7,6 @@ import com.syi.project.auth.dto.MemberSignUpRequestDTO;
 import com.syi.project.auth.dto.MemberSignUpResponseDTO;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.common.enums.Role;
-import com.syi.project.common.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -36,16 +35,16 @@ public class MemberController {
 
   private final MemberService memberService;
 
-  @GetMapping("/check-id")
+  @GetMapping("/check-username")
   @Operation(summary = "아이디 중복 체크", description = "아이디 중복 체크를 수행합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "중복 여부 반환")
   })
-  public ResponseEntity<DuplicateCheckDTO> checkMemberId(
+  public ResponseEntity<DuplicateCheckDTO> checkUsername(
       @Parameter(description = "확인할 회원 아이디", required = true)
-      @RequestParam String memberId) {
-    log.info("아이디 중복 체크 요청: {}", memberId);
-    DuplicateCheckDTO response = memberService.checkMemberIdDuplicate(memberId);
+      @RequestParam String username) {
+    log.info("아이디 중복 체크 요청: {}", username);
+    DuplicateCheckDTO response = memberService.checkUsernameDuplicate(username);
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -71,7 +70,7 @@ public class MemberController {
   public ResponseEntity<MemberSignUpResponseDTO> register(
       @Parameter(description = "회원가입 요청 정보", required = true)
       @Valid @RequestBody MemberSignUpRequestDTO requestDTO) {
-    log.info("회원가입 요청: {}", requestDTO.getMemberId());
+    log.info("회원가입 요청: {}", requestDTO.getUsername());
     MemberSignUpResponseDTO responseDTO = memberService.register(requestDTO);
     return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
   }
@@ -88,9 +87,9 @@ public class MemberController {
   public ResponseEntity<MemberLoginResponseDTO> login(
       @Parameter(description = "로그인 요청 정보", required = true)
       @Valid @RequestBody MemberLoginRequestDTO requestDTO) {
-    log.info("수강생 로그인 요청 - 사용자 ID: {}", requestDTO.getMemberId());
+    log.info("수강생 로그인 요청 - 로그인 ID: {}", requestDTO.getUsername());
     MemberLoginResponseDTO responseDTO = memberService.login(requestDTO, Role.STUDENT);
-    log.info("수강생 로그인 성공 - 사용자 ID: {}", requestDTO.getMemberId());
+    log.info("수강생 로그인 성공 - 로그인 ID: {}", requestDTO.getUsername());
     return new ResponseEntity<>(responseDTO, HttpStatus.OK);
   }
 

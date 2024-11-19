@@ -1,4 +1,4 @@
-package com.syi.project.auth.service.Impl;
+package com.syi.project.auth.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -33,7 +33,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-class MemberServiceImplTest {
+class MemberServiceTest {
 
   // @Mock은 Mockito에서 사용하는 어노테이션으로 테스트할 때 가짜 객체를 생성
   // 이 경우 MemberRepository와 PasswordEncoder에 대한 Mock 객체가 생성됨
@@ -46,9 +46,9 @@ class MemberServiceImplTest {
   @Mock
   private JwtProvider jwtProvider;
 
-  // @InjectMocks는 MemberServiceImpl 인스턴스에 @Mock으로 선언된 의존성을 주입
+  // @InjectMocks는 MemberService에 @Mock으로 선언된 의존성을 주입
   @InjectMocks
-  private MemberServiceImpl memberService;
+  private MemberService memberService;
 
   // mocks는 AutoCloseable 인터페이스를 구현하여
   // @Mock과 @InjectMocks로 초기화한 객체들을 자동으로 닫도록 돕는 객체
@@ -65,7 +65,7 @@ class MemberServiceImplTest {
 
     // 공통 데이터 생성
     requestDTO = MemberSignUpRequestDTO.builder()
-        .memberId("testUser")
+        .username("testuser")
         .password("password123")
         .confirmPassword("password123")
         .name("YJ")
@@ -74,7 +74,7 @@ class MemberServiceImplTest {
         .role(Role.STUDENT)
         .build();
     encodedPassword = "encodedPassword";
-    member = new Member("testUser", encodedPassword, "YJ", "1990-01-01", "test@example.com",
+    member = new Member("testuser", encodedPassword, "YJ", "1990-01-01", "test@example.com",
         Role.STUDENT);
   }
 
@@ -90,13 +90,13 @@ class MemberServiceImplTest {
   void register_Success() {
     // Mock 설정
     when(passwordEncoder.encode(requestDTO.getPassword())).thenReturn(encodedPassword);
-    when(memberRepository.existsByMemberId(requestDTO.getMemberId())).thenReturn(false);
+    when(memberRepository.existsByUsername(requestDTO.getUsername())).thenReturn(false);
     when(memberRepository.existsByEmail(requestDTO.getEmail())).thenReturn(false);
 
     // 엔티티 저장할 때 변환 검증
     when(memberRepository.save(any(Member.class))).thenAnswer(invocation -> {
       Member member = invocation.getArgument(0);
-      assertEquals(requestDTO.getMemberId(), member.getMemberId());
+      assertEquals(requestDTO.getUsername(), member.getUsername());
       assertEquals(encodedPassword, member.getPassword());
       assertEquals(requestDTO.getName(), member.getName());
       assertEquals(requestDTO.getBirthday(), member.getBirthday());
@@ -110,7 +110,7 @@ class MemberServiceImplTest {
 
     // Then
     assertNotNull(responseDTO);
-    assertEquals(requestDTO.getMemberId(), responseDTO.getMemberId());
+    assertEquals(requestDTO.getUsername(), responseDTO.getUsername());
     assertEquals(requestDTO.getName(), responseDTO.getName());
     assertEquals(requestDTO.getBirthday(), responseDTO.getBirthday());
     assertEquals(requestDTO.getEmail(), responseDTO.getEmail());
@@ -122,7 +122,7 @@ class MemberServiceImplTest {
   void register_Failure_PasswordMismatch() {
     // Given
     MemberSignUpRequestDTO requestDTO = MemberSignUpRequestDTO.builder()
-        .memberId("testUser")
+        .username("testuser")
         .password("password123")
         .confirmPassword("password456")
         .name("YJ")
@@ -140,9 +140,9 @@ class MemberServiceImplTest {
   }
 
   @Test
-  @DisplayName("회원가입 실패 테스트 - 중복된 사용자 ID")
-  void register_Failure_DuplicateMemberId() {
-    when(memberRepository.existsByMemberId(requestDTO.getMemberId())).thenReturn(true);
+  @DisplayName("회원가입 실패 테스트 - 중복된 사용자 Username")
+  void register_Failure_DuplicateUsername() {
+    when(memberRepository.existsByUsername(requestDTO.getUsername())).thenReturn(true);
 
     // When & Then: 중복된 아이디 예외 발생 검증
     InvalidRequestException exception = assertThrows(
@@ -166,14 +166,14 @@ class MemberServiceImplTest {
   }
 
   @Test
-  @DisplayName("회원 ID 중복 확인 - ID가 존재하는 경우")
-  void checkMemberIdDuplicate_IdExists() {
+  @DisplayName("회원 Username 중복 확인 - Username이 존재하는 경우")
+  void checkUsernameDuplicate_UsernameExists() {
     // Given
-    String memberId = "existingUser";
-    when(memberRepository.existsByMemberId(memberId)).thenReturn(true);
+    String username = "existinguser";
+    when(memberRepository.existsByUsername(username)).thenReturn(true);
 
     // When
-    DuplicateCheckDTO result = memberService.checkMemberIdDuplicate(memberId);
+    DuplicateCheckDTO result = memberService.checkUsernameDuplicate(username);
 
     // Then
     assertFalse(result.isAvailable());
@@ -181,14 +181,14 @@ class MemberServiceImplTest {
   }
 
   @Test
-  @DisplayName("회원 ID 중복 확인 - ID가 존재하지 않는 경우")
-  void checkMemberIdDuplicate_IdNotExists() {
+  @DisplayName("회원 Username 중복 확인 - Username이 존재하지 않는 경우")
+  void checkUsernameDuplicate_UsernameNotExists() {
     // Given
-    String memberId = "newUser";
-    when(memberRepository.existsByMemberId(memberId)).thenReturn(false);
+    String username = "newuser";
+    when(memberRepository.existsByUsername(username)).thenReturn(false);
 
     // When
-    DuplicateCheckDTO result = memberService.checkMemberIdDuplicate(memberId);
+    DuplicateCheckDTO result = memberService.checkUsernameDuplicate(username);
 
     // Then
     assertTrue(result.isAvailable());
@@ -229,11 +229,11 @@ class MemberServiceImplTest {
   @Test
   @DisplayName("로그인 성공 테스트 - 승인된 상태")
   void login_Success_Approved() {
-    MemberLoginRequestDTO requestDTO = new MemberLoginRequestDTO("testUser", "password123");
+    MemberLoginRequestDTO requestDTO = new MemberLoginRequestDTO("testuser", "password123");
 
     member.updateCheckStatus(CheckStatus.Y);
 
-    when(memberRepository.findByMemberIdAndIsDeletedFalse("testUser")).thenReturn(
+    when(memberRepository.findByUsernameAndIsDeletedFalse("testuser")).thenReturn(
         Optional.of(member));
     when(passwordEncoder.matches(requestDTO.getPassword(), encodedPassword)).thenReturn(true);
     when(jwtProvider.createAccessToken(member.getId(), member.getRole().name())).thenReturn(
@@ -251,10 +251,10 @@ class MemberServiceImplTest {
   @Test
   @DisplayName("로그인 실패 테스트 - 승인 대기 상태")
   void login_Failure_PendingApproval() {
-    MemberLoginRequestDTO requestDTO = new MemberLoginRequestDTO("testUser", "password123");
+    MemberLoginRequestDTO requestDTO = new MemberLoginRequestDTO("testuser", "password123");
     member.updateCheckStatus(CheckStatus.W);
 
-    when(memberRepository.findByMemberIdAndIsDeletedFalse("testUser")).thenReturn(
+    when(memberRepository.findByUsernameAndIsDeletedFalse("testuser")).thenReturn(
         Optional.of(member));
     when(passwordEncoder.matches(requestDTO.getPassword(), encodedPassword)).thenReturn(true);
 
@@ -268,10 +268,10 @@ class MemberServiceImplTest {
   @Test
   @DisplayName("로그인 실패 테스트 - 미승인 상태")
   void login_Failure_NotApproved() {
-    MemberLoginRequestDTO requestDTO = new MemberLoginRequestDTO("testUser", "password123");
+    MemberLoginRequestDTO requestDTO = new MemberLoginRequestDTO("testuser", "password123");
     member.updateCheckStatus(CheckStatus.N);
 
-    when(memberRepository.findByMemberIdAndIsDeletedFalse("testUser")).thenReturn(
+    when(memberRepository.findByUsernameAndIsDeletedFalse("testuser")).thenReturn(
         Optional.of(member));
     when(passwordEncoder.matches(requestDTO.getPassword(), encodedPassword)).thenReturn(true);
 
@@ -285,8 +285,8 @@ class MemberServiceImplTest {
   @Test
   @DisplayName("로그인 실패 테스트 - 비밀번호 불일치")
   void login_Failure_WrongPassword() {
-    MemberLoginRequestDTO requestDTO = new MemberLoginRequestDTO("testUser", "wrongPassword");
-    when(memberRepository.findByMemberIdAndIsDeletedFalse("testUser")).thenReturn(
+    MemberLoginRequestDTO requestDTO = new MemberLoginRequestDTO("testuser", "wrongPassword");
+    when(memberRepository.findByUsernameAndIsDeletedFalse("testuser")).thenReturn(
         Optional.of(member));
     when(passwordEncoder.matches(requestDTO.getPassword(), encodedPassword)).thenReturn(false);
 
@@ -300,12 +300,11 @@ class MemberServiceImplTest {
   @Test
   @DisplayName("회원 상세 조회 - 성공 케이스")
   void getMemberDetail_Success() {
-    when(memberRepository.findByMemberIdAndIsDeletedFalse("testUser")).thenReturn(Optional.of(member));
+    when(memberRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.of(member));
 
-    MemberDTO result = memberService.getMemberDetail("testUser");
+    MemberDTO result = memberService.getMemberDetail(1L);
 
     assertNotNull(result);
-    assertEquals("testUser", result.getMemberId());
     assertEquals("YJ", result.getName());
     assertEquals("test@example.com", result.getEmail());
   }
@@ -313,11 +312,11 @@ class MemberServiceImplTest {
   @Test
   @DisplayName("회원 상세 조회 - 존재하지 않는 회원 ID로 조회 시 실패")
   void getMemberDetail_Failure_UserNotFound() {
-    when(memberRepository.findByMemberIdAndIsDeletedFalse("nonexistentUser")).thenReturn(Optional.empty());
+    when(memberRepository.findByIdAndIsDeletedFalse(10L)).thenReturn(Optional.empty());
 
     InvalidRequestException exception = assertThrows(
         InvalidRequestException.class,
-        () -> memberService.getMemberDetail("nonexistentUser")
+        () -> memberService.getMemberDetail(10L)
     );
     assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
   }
@@ -325,11 +324,11 @@ class MemberServiceImplTest {
   @Test
   @DisplayName("회원 상세 조회 - 삭제된 회원 조회 시 실패")
   void getMemberDetail_Failure_DeletedUser() {
-    when(memberRepository.findByMemberIdAndIsDeletedFalse("deletedUser")).thenReturn(Optional.empty());
+    when(memberRepository.findByIdAndIsDeletedFalse(1L)).thenReturn(Optional.empty());
 
     InvalidRequestException exception = assertThrows(
         InvalidRequestException.class,
-        () -> memberService.getMemberDetail("deletedUser")
+        () -> memberService.getMemberDetail(1L)
     );
     assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
   }
@@ -337,28 +336,28 @@ class MemberServiceImplTest {
   @Test
   @DisplayName("승인 상태 변경 성공 테스트")
   void updateApprovalStatus_Success() {
-    String memberId = "testUser";
+    Long id = 1L;
     CheckStatus newStatus = CheckStatus.Y;
 
-    when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.of(member));
+    when(memberRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(member));
 
-    memberService.updateApprovalStatus(memberId, newStatus);
+    memberService.updateApprovalStatus(id, newStatus);
 
     assertEquals(newStatus, member.getCheckStatus());
-    verify(memberRepository, times(1)).findByMemberIdAndIsDeletedFalse(memberId);
+    verify(memberRepository, times(1)).findByIdAndIsDeletedFalse(id);
   }
 
   @Test
   @DisplayName("승인 상태 변경 실패 - 존재하지 않는 회원")
   void updateApprovalStatus_Failure_UserNotFound() {
-    String memberId = "nonExistentUser";
+    Long id = 10L;
     CheckStatus newStatus = CheckStatus.Y;
 
-    when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.empty());
+    when(memberRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.empty());
 
     InvalidRequestException exception = assertThrows(
         InvalidRequestException.class,
-        () -> memberService.updateApprovalStatus(memberId, newStatus)
+        () -> memberService.updateApprovalStatus(id, newStatus)
     );
     assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
   }
@@ -366,28 +365,28 @@ class MemberServiceImplTest {
   @Test
   @DisplayName("역할 변경 성공 테스트")
   void updateMemberRole_Success() {
-    String memberId = "testUser";
+    Long id = 1L;
     Role newRole = Role.ADMIN;
 
-    when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.of(member));
+    when(memberRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.of(member));
 
-    memberService.updateMemberRole(memberId, newRole);
+    memberService.updateMemberRole(id, newRole);
 
     assertEquals(newRole, member.getRole());
-    verify(memberRepository, times(1)).findByMemberIdAndIsDeletedFalse(memberId);
+    verify(memberRepository, times(1)).findByIdAndIsDeletedFalse(id);
   }
 
   @Test
   @DisplayName("역할 변경 실패 - 존재하지 않는 회원")
   void updateMemberRole_Failure_UserNotFound() {
-    String memberId = "nonExistentUser";
+    Long id = 10L;
     Role newRole = Role.ADMIN;
 
-    when(memberRepository.findByMemberIdAndIsDeletedFalse(memberId)).thenReturn(Optional.empty());
+    when(memberRepository.findByIdAndIsDeletedFalse(id)).thenReturn(Optional.empty());
 
     InvalidRequestException exception = assertThrows(
         InvalidRequestException.class,
-        () -> memberService.updateMemberRole(memberId, newRole)
+        () -> memberService.updateMemberRole(id, newRole)
     );
     assertEquals(ErrorCode.USER_NOT_FOUND.getMessage(), exception.getMessage());
   }
