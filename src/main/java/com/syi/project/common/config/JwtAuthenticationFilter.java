@@ -36,23 +36,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     String token = getTokenFromRequest(request);
 
-    if (StringUtils.hasText(token) && jwtProvider.validateAccessToken(token)) {
-      Long id = jwtProvider.getMemberPrimaryKeyId(token).orElse(null);
-
-      if (id != null) {
-        var userDetails = userDetailsService.loadUserByUsername(id.toString());
-        var authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
-            userDetails.getAuthorities());
-
-        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.info("JWT 인증 성공 - 사용자 ID: {}", id);
+    try {
+      // JWT 토큰 검증
+      if (StringUtils.hasText(token) && jwtProvider.validateAccessToken(token)) {
+        jwtProvider.getMemberPrimaryKeyId(token).ifPresentOrElse(id -> {
+          try {
+            // 사용자 인증 설정
+            var userDetails = userDetailsService.loadUserByUsername(id.toString());
+            var authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
+                userDetails.getAuthorities());
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            log.info("JWT 인증 성공 - 사용자 ID: {}", id);
+          } catch (Exception e) {
+            log.error("사용자 로드 중 예외 발생: {}", e.getMessage());
+          }
+        }, () -> {
+          log.warn("JWT에서 사용자 ID 추출 실패");
+          setUnauthorizedResponse(response, "Invalid token payload");
+        });
+      } else {
+        log.warn("유효하지 않은 JWT 토큰 요청 - IP: {}, URL: {}", request.getRemoteAddr(), request.getRequestURI());
+        setUnauthorizedResponse(response, "Invalid or expired token");
+        return;
       }
-    } else {
-      log.warn("유효하지 않은 JWT 토큰 요청 - IP: {}, URL: {}", request.getRemoteAddr(),
-          request.getRequestURI());
+    } catch (Exception e) {
+      log.error("JWT 처리 중 오류 발생: {}", e.getMessage());
+      setUnauthorizedResponse(response, "Token processing error");
+      return;
     }
 
+    // 필터 체인 진행
     filterChain.doFilter(request, response);
   }
 
@@ -68,6 +82,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       return bearerToken.substring(7);
     }
     return null;
+  }
+
+  /**
+   * HTTP 응답을 401 Unauthorized로 설정
+   */
+  private void setUnauthorizedResponse(HttpServletResponse response, String message) {
+    try {
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401 Unauthorized
+      response.getWriter().write(message);
+    } catch (IOException e) {
+      log.error("응답 작성 중 오류 발생: {}", e.getMessage());
+    }
   }
 
 }
