@@ -56,7 +56,7 @@ public class SecurityConfig {
             .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
                 "/webjars/**", "/", "/admin/course/**", "/admin/schedule/**" ,"/login", "/admin/login", "/register", "/refresh","/api/**").permitAll()
             // 해당 경로는 인증 필요
-            .requestMatchers("/api/test").authenticated()
+            .requestMatchers("/jwt/test").authenticated()
             // 관리자 전용 엔드포인트 접근 설정 예시
             .requestMatchers("/admin/**").hasRole("ADMIN")
             // 나머지 모든 요청은 인증을 오구

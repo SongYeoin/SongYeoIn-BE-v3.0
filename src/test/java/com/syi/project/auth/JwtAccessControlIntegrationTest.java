@@ -57,7 +57,7 @@ public class JwtAccessControlIntegrationTest {
   @Test
   @DisplayName("유효한 토큰으로 보호된 엔드포인트 접근 성공 테스트")
   void testAccessProtectedEndpointWithValidToken() throws Exception {
-    mockMvc.perform(get("/api/test")
+    mockMvc.perform(get("/jwt/test")
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
@@ -68,7 +68,7 @@ public class JwtAccessControlIntegrationTest {
   void testAccessProtectedEndpointWithInvalidToken() throws Exception {
     String invalidToken = "InvalidToken";
 
-    mockMvc.perform(get("/api/test")
+    mockMvc.perform(get("/jwt/test")
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + invalidToken)
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isUnauthorized());
@@ -77,7 +77,7 @@ public class JwtAccessControlIntegrationTest {
   @Test
   @DisplayName("토큰 없이 보호된 엔드포인트 접근 실패 테스트")
   void testAccessProtectedEndpointWithoutToken() throws Exception {
-    mockMvc.perform(get("/api/test")
+    mockMvc.perform(get("/jwt/test")
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isUnauthorized());
   }
