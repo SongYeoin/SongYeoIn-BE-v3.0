@@ -3,9 +3,12 @@ package com.syi.project.file.service;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.file.dto.FileDownloadDTO;
+import com.syi.project.file.dto.FileUpdateDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.enums.FileStatus;
 import com.syi.project.file.repository.FileRepository;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -24,7 +27,60 @@ public class FileService {
   private final FileRepository fileRepository;
   private final S3Uploader s3Uploader;
 
-  // 파일을 S3에 업로드하고, 업로드된 파일의 메타데이터를 데이터베이스에 저장하는 메서드
+  // 다중 파일 업로드
+  @Transactional
+  public List<File> uploadFiles(List<MultipartFile> multipartFiles, String dirName, Member uploader) {
+    List<File> uploadedFiles = new ArrayList<>();
+
+    for (MultipartFile file : multipartFiles) {
+      try {
+        File uploadedFile = uploadFile(file, dirName, uploader);
+        uploadedFiles.add(uploadedFile);
+      } catch (Exception e) {
+        log.error("파일 업로드 실패: {}", file.getOriginalFilename());
+        // 이미 업로드된 파일들 롤백
+        uploadedFiles.forEach(uploaded -> {
+          try {
+            deleteFile(uploaded.getId(), uploader);
+          } catch (Exception ex) {
+            log.error("파일 롤백 실패: {}", uploaded.getOriginalName());
+          }
+        });
+        throw new RuntimeException("다중 파일 업로드 중 오류가 발생했습니다.", e);
+      }
+    }
+    return uploadedFiles;
+  }
+
+  // 다중 파일 수정
+  @Transactional
+  public List<File> updateFiles(FileUpdateDTO updateDTO, String dirName, Member modifier) {
+    List<File> updatedFiles = new ArrayList<>();
+
+    // 1. 삭제 요청된 파일들 처리
+    if (updateDTO.getDeleteFileIds() != null && !updateDTO.getDeleteFileIds().isEmpty()) {
+      for (Long fileId : updateDTO.getDeleteFileIds()) {
+        deleteFile(fileId, modifier);
+      }
+    }
+
+    // 2. 새로운 파일들 추가
+    if (updateDTO.getNewFiles() != null && !updateDTO.getNewFiles().isEmpty()) {
+      for (MultipartFile newFile : updateDTO.getNewFiles()) {
+        try {
+          File uploadedFile = uploadFile(newFile, dirName, modifier);
+          updatedFiles.add(uploadedFile);
+        } catch (Exception e) {
+          log.error("새 파일 업로드 실패: {}", newFile.getOriginalFilename());
+          throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
+        }
+      }
+    }
+
+    return updatedFiles;
+  }
+
+  // 단일 파일 업로드
   @Transactional
   public File uploadFile(MultipartFile multipartFile, String dirName, Member uploader) {
     try {
@@ -32,7 +88,7 @@ public class FileService {
       String fileUrl = s3Uploader.uploadFile(multipartFile, dirName);
       String objectKey = extractObjectKeyFromUrl(fileUrl);
 
-      // 2. DB에 파일 메타데이터 저장
+      // 2. DB에 메타데이터 저장
       File file = File.builder()
           .originalName(multipartFile.getOriginalFilename())
           .objectKey(objectKey)
@@ -43,10 +99,45 @@ public class FileService {
           .status(FileStatus.ACTIVE)
           .build();
 
-      return fileRepository.save(file); // 메타데이터 저장 후 리턴
+      return fileRepository.save(file);
     } catch (IOException e) {
       log.error("파일 업로드 실패: {}", e.getMessage());
       throw new RuntimeException("파일 업로드에 실패했습니다.", e);
+    }
+  }
+
+  @Transactional
+  public File updateFile(Long fileId, MultipartFile newFile, String dirName, Member modifier) {
+    File existingFile = fileRepository.findById(fileId)
+        .orElseThrow(() -> new IllegalArgumentException("파일이 존재하지 않습니다."));
+
+    // 새 파일이 없으면 기존 파일 유지
+    if (newFile == null || newFile.isEmpty()) {
+      return existingFile;
+    }
+
+    try {
+      // 1. 새 파일 업로드 시도
+      String newFileUrl = s3Uploader.uploadFile(newFile, dirName);
+
+      // 2. 기존 파일 삭제
+      s3Uploader.deleteFile(existingFile.getPath());
+
+      // 3. 파일 메타데이터 업데이트
+      String newObjectKey = extractObjectKeyFromUrl(newFileUrl);
+      existingFile.updateFile(
+          newFile.getOriginalFilename(),
+          newObjectKey,
+          dirName + "/" + newObjectKey,
+          newFile.getSize(),
+          newFile.getContentType(),
+          modifier
+      );
+
+      return fileRepository.save(existingFile);
+    } catch (Exception e) {
+      log.error("파일 수정 실패: {}", e.getMessage());
+      throw new RuntimeException("파일 수정에 실패했습니다.", e);
     }
   }
 
@@ -58,29 +149,36 @@ public class FileService {
         .orElseThrow(() -> new IllegalArgumentException("파일이 존재하지 않습니다."));
 
     // 2. S3에서 실제 파일 삭제
-    s3Uploader.deleteFile(file.getPath());
-    file.delete(member);  // Member 객체 전달, status를 DELETED로 변경
+    try {
+      s3Uploader.deleteFile(file.getPath());
+      file.delete(member); // Member 객체 전달, status를 DELETED로 변경
+    } catch (Exception e) {
+      log.error("파일 삭제 실패: {}", e.getMessage());
+      throw new RuntimeException("파일 삭제에 실패했습니다.", e);
+    }
   }
 
   // 파일 다운로드
   public FileDownloadDTO downloadFile(Long fileId, Member member) {
-    // 1. DB에서 파일 정보 조회
     File file = fileRepository.findById(fileId)
         .orElseThrow(() -> new IllegalArgumentException("파일이 존재하지 않습니다."));
 
-    // 2. S3에서 파일 스트림 가져오기
-    // Resource 타입 변환 처리
-    Resource resource = new InputStreamResource(s3Uploader.downloadFile(file.getPath()));
+    try {
+      Resource resource = new InputStreamResource(s3Uploader.downloadFile(file.getPath()));
 
-    return FileDownloadDTO.builder()
-        .originalName(file.getOriginalName())
-        .contentType(file.getMimeType())
-        .resource(resource)
-        .build();
+      return FileDownloadDTO.builder()
+          .originalName(file.getOriginalName())
+          .contentType(file.getMimeType())
+          .resource(resource)
+          .build();
+    } catch (Exception e) {
+      log.error("파일 다운로드 실패: {}", e.getMessage());
+      throw new RuntimeException("파일 다운로드에 실패했습니다.", e);
+    }
   }
 
   // 파일 URL에서 S3 객체 키를 추출하는 헬퍼 메서드
   private String extractObjectKeyFromUrl(String fileUrl) {
-    return fileUrl.substring(fileUrl.lastIndexOf("/") + 1); // URL에서 객체 키만 추출
+    return fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
   }
 }
