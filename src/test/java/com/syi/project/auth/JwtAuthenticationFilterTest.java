@@ -1,5 +1,6 @@
 package com.syi.project.auth;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -9,6 +10,7 @@ import com.syi.project.common.config.JwtAuthenticationFilter;
 import com.syi.project.common.config.JwtProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
@@ -86,6 +88,9 @@ public class JwtAuthenticationFilterTest {
 
     jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
-    verify(filterChain).doFilter(request, response);
+    verify(filterChain, org.mockito.Mockito.never()).doFilter(request, response);
+
+    assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
+    assertEquals("Invalid or expired token", response.getContentAsString().trim());
   }
 }

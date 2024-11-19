@@ -61,7 +61,7 @@ public class JwtProvider {
         .compact();                               // 최종 토큰 문자열 생성
 
     log.info("Access Token 생성 완료 - 사용자 ID: {}, 만료 시간: {}", id, validity);
-    log.debug("Access Token - {}", token);
+    log.debug("Access Token - 일부 정보: {}", token.substring(0, 10) + "...");
     return token;
   }
 
@@ -86,7 +86,7 @@ public class JwtProvider {
         .compact();                             // Refresh Token 생성
 
     log.info("Refresh Token 생성 완료 - 사용자 ID(기본키): {}, 만료 시간: {}", id, validity);
-    log.debug("Refresh Token - {}", token);
+    log.debug("Refresh Token - 일부 정보: {}", token.substring(0, 10) + "...");
     return token;
 
   }
@@ -99,9 +99,22 @@ public class JwtProvider {
    */
   public Optional<Long> getMemberPrimaryKeyId(String token) {
     try {
-      String id = getClaims(token).map(Claims::getSubject).orElse(null);
+      Optional<String> idOptional = getClaims(token).map(Claims::getSubject);
+
+      if (idOptional.isEmpty() || idOptional.get().isBlank()) {
+        log.warn("토큰에서 사용자 기본키 ID 추출 실패 - subject가 null이거나 비어 있습니다.");
+        return Optional.empty();
+      }
+
+      String id = idOptional.get();
       log.info("토큰에서 사용자 기본키 ID 추출 성공 - 사용자 기본키 ID: {}", id);
-      return Optional.of(Long.valueOf(id));
+
+      try {
+        return Optional.of(Long.valueOf(id));
+      } catch (NumberFormatException e) {
+        log.error("토큰에서 추출한 ID가 숫자 형식이 아닙니다. ID: {}", id, e);
+        return Optional.empty();
+      }
     } catch (Exception e) {
       log.error("토큰에서 사용자 ID 추출 실패 - 원인: {}", e.getMessage());
       return Optional.empty();
@@ -154,14 +167,16 @@ public class JwtProvider {
    */
   private boolean validateToken(String token, String tokenType) {
     try {
-      // 토큰의 Claims 객체 추출 및 만료 시간 검증
       Claims claims = getClaims(token).orElseThrow();
-      boolean isValid = !claims.getExpiration().before(new Date());
-      log.info("{} 유효성 검증 결과 - 만료 시간: {}, 현재 시간: {}, 유효 여부: {}",
-          tokenType, claims.getExpiration(), new Date(), isValid);
-      return isValid;
+      boolean isExpired = claims.getExpiration().before(new Date());
+      if (isExpired) {
+        log.warn("{} 만료됨 - 만료 시간: {}, 현재 시간: {}", tokenType, claims.getExpiration(), new Date());
+        return false;
+      }
+      log.info("{} 유효성 검증 성공 - 만료 시간: {}", tokenType, claims.getExpiration());
+      return true;
     } catch (Exception e) {
-      log.warn("유효하지 않은 {} - 원인:{}", tokenType, e.getMessage());
+      log.warn("유효하지 않은 {} - 원인: {}", tokenType, e.getMessage());
       return false;
     }
   }
@@ -181,9 +196,15 @@ public class JwtProvider {
       Claims claims = parser.parseClaimsJws(token).getBody();
       log.info("토큰에서 Claims 추출 성공 - Claims: {}", claims);
       return Optional.of(claims);
+    } catch (io.jsonwebtoken.ExpiredJwtException e) {
+      log.warn("토큰 만료 - 원인: {}", e.getMessage());
+    } catch (io.jsonwebtoken.security.SecurityException e) {
+      log.error("JWT 서명 검증 실패 - 원인: {}", e.getMessage());
+    } catch (io.jsonwebtoken.MalformedJwtException e) {
+      log.error("JWT 형식이 잘못됨 - 원인: {}", e.getMessage());
     } catch (Exception e) {
       log.error("토큰에서 Claims 추출 실패 - 원인: {}", e.getMessage());
-      return Optional.empty();
     }
+    return Optional.empty();
   }
 }
