@@ -34,6 +34,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       FilterChain filterChain)
       throws ServletException, IOException {
 
+    String requestURI = request.getRequestURI();
+
+    // Swagger 경로 및 기타 인증 제외 경로 설정
+    if (requestURI.startsWith("/swagger-ui") || requestURI.startsWith("/v3/api-docs") ||
+        requestURI.startsWith("/webjars") || requestURI.equals("/")) {
+      filterChain.doFilter(request, response);
+      return;
+    }
+
     String token = getTokenFromRequest(request);
 
     try {
