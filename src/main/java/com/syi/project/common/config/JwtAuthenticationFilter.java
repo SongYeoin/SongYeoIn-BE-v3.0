@@ -22,6 +22,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final CustomUserDetailsService userDetailsService;
 
   /**
+   * 특정 경로를 필터링하지 않도록 설정
+   *
+   * @param request HTTP 요청 객체
+   * @return 필터링 제외 여부
+   */
+  @Override
+  protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    String requestURI = request.getRequestURI();
+    return requestURI.equals("/favicon.ico") ||
+        requestURI.startsWith("/swagger-ui") ||
+        requestURI.startsWith("/v3/api-docs") ||
+        requestURI.startsWith("/webjars") ||
+        requestURI.equals("/") ||
+        requestURI.startsWith("/login") ||
+        requestURI.startsWith("/admin/login") ||
+        requestURI.startsWith("/register") ||
+        requestURI.startsWith("/refresh") ||
+        requestURI.startsWith("/api/");
+  }
+
+  /**
    * HTTP 요청을 필터링하여 JWT 토큰을 검증하고 인증된 사용자를 SecurityContext에 설정
    *
    * @param request     HTTP 요청 객체
@@ -34,15 +55,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       FilterChain filterChain)
       throws ServletException, IOException {
 
-    String requestURI = request.getRequestURI();
-
-    // Swagger 경로 및 기타 인증 제외 경로 설정
-    if (requestURI.startsWith("/swagger-ui") || requestURI.startsWith("/v3/api-docs") ||
-        requestURI.startsWith("/webjars") || requestURI.equals("/")) {
-      filterChain.doFilter(request, response);
-      return;
-    }
-
     String token = getTokenFromRequest(request);
 
     try {
@@ -51,7 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         jwtProvider.getMemberPrimaryKeyId(token).ifPresentOrElse(id -> {
           try {
             // 사용자 인증 설정
-            var userDetails = userDetailsService.loadUserByUsername(id.toString());
+            var userDetails = userDetailsService.loadUserById(id);
             var authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
                 userDetails.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -65,7 +77,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           setUnauthorizedResponse(response, "Invalid token payload");
         });
       } else {
-        log.warn("유효하지 않은 JWT 토큰 요청 - IP: {}, URL: {}", request.getRemoteAddr(), request.getRequestURI());
+        log.warn("유효하지 않은 JWT 토큰 요청 - IP: {}, URL: {}", request.getRemoteAddr(),
+            request.getRequestURI());
         setUnauthorizedResponse(response, "Invalid or expired token");
         return;
       }

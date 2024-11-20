@@ -69,7 +69,7 @@ public class JwtAuthenticationFilterTest {
         "",
         Collections.singletonList(new SimpleGrantedAuthority(testUserRole))
     );
-    when(userDetailsService.loadUserByUsername(String.valueOf(testUserId))).thenReturn(userDetails);
+    when(userDetailsService.loadUserById(testUserId)).thenReturn(userDetails);
 
     // 필터 체인 수행
     jwtAuthenticationFilter.doFilter(request, response, filterChain);
