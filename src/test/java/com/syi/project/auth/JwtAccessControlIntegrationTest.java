@@ -50,7 +50,7 @@ public class JwtAccessControlIntegrationTest {
         new SimpleGrantedAuthority(testUserRole));
     UserDetails userDetails = new User(String.valueOf(testUserId), "", authorities);
 
-    when(userDetailsService.loadUserByUsername(String.valueOf(testUserId)))
+    when(userDetailsService.loadUserById(testUserId))
         .thenReturn(userDetails);
   }
 
