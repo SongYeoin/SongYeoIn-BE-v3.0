@@ -6,6 +6,9 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.enroll.entity.Enroll;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -34,5 +37,20 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
   @Override
   public List<Member> findStudentByCourseId(Long courseId) {
     return List.of();
+  }
+
+  @Override
+  public Map<Long, Integer> countEnrollsByCourseIds(List<Long> courseIds) {
+    return queryFactory
+        .select(enroll.courseId, enroll.count())
+        .from(enroll)
+        .where(enroll.courseId.in(courseIds))
+        .groupBy(enroll.courseId)
+        .fetch()
+        .stream()
+        .collect(Collectors.toMap(
+            tuple -> tuple.get(enroll.courseId),
+            tuple -> Objects.requireNonNull(tuple.get(enroll.count())).intValue()
+        ));
   }
 }

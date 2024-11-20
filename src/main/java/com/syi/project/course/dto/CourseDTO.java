@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -77,10 +78,16 @@ public class CourseDTO {
   @NotNull(message = "담당자 번호는 필수입니다.")
   private Long adminId;
 
+  @Schema(description = "과정기간", example = "24")
+  private Long weeks;
+
+  @Schema(description = "수강생 수", example = "15")
+  private Integer counts;
+
   @Builder
   public CourseDTO(Long id, String name, String description, String adminName, String teacherName,
       LocalDate startDate, LocalDate endDate, String roomName, LocalDate enrollDate,
-      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long adminId) {
+      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long adminId,Long weeks, Integer counts) {
     this.id = id;
     this.name = name;
     this.description = description;
@@ -94,6 +101,8 @@ public class CourseDTO {
     this.status = status != null ? status : CourseStatus.Y;
     this.deletedBy = deletedBy;
     this.adminId = adminId;
+    this.weeks = weeks;
+    this.counts = counts;
   }
 
   public Course toEntity() {
@@ -113,7 +122,11 @@ public class CourseDTO {
 
   }
 
-  public static CourseDTO fromEntity(Course course) {
+  public static CourseDTO fromEntity(Course course, Integer counts) {
+    // 수강 기산 주 계산하기
+    long days = ChronoUnit.DAYS.between(course.getStartDate(), course.getEndDate());
+    long weeks = (days + 6) / 7; // 올림 처리된 주 수 계산
+
 
     return CourseDTO.builder()
         .id(course.getId())
@@ -127,6 +140,8 @@ public class CourseDTO {
         .enrollDate(course.getEnrollDate())
         .modifiedDate(course.getModifiedDate())
         .adminId(course.getAdminId())
+        .weeks(weeks)
+        .counts(counts)
         .build();
   }
 

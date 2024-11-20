@@ -2,14 +2,21 @@ package com.syi.project.course.service;
 
 import static com.syi.project.course.dto.CourseDTO.fromEntity;
 
+import com.syi.project.auth.entity.Member;
+import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CoursePatchDTO;
 import com.syi.project.course.entity.Course;
 import com.syi.project.course.repository.CourseRepository;
+import com.syi.project.enroll.repository.EnrollRepository;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,24 +27,48 @@ import org.springframework.transaction.annotation.Transactional;
 public class CourseService{
 
   private final CourseRepository courseRepository;
+  private final MemberRepository memberRepository;
+  private final EnrollRepository enrollRepository;
 
 
   /* 교육과정 전체 조회 */
-  public List<CourseDTO> getAllCourses() {
-    log.info("get all courses");
-    /*deletdBy가 null이 아니라면 조회하지 않기 추가하기*/
-    List<Course> courses = courseRepository.findAll();
+  public Page<CourseDTO> getAllCourses(Long adminId, String type, String word, Pageable pageable) {
+    log.info("필터링된 교육 과정 조회 - 타입: {}, 검색어: {}", type, word);
+    log.info("관리자 ID: {}", adminId);
 
-    if (courses.isEmpty()) {
-      log.warn("No courses found in the database");
-      throw new NoSuchElementException("No courses found");
+    log.info("{} 관리자가 존재하는지 확인", adminId);
+    Member member = memberRepository.findById(adminId)
+        .orElseThrow(() -> {
+          log.error("회원 정보를 찾을 수 없음 - adminId: {}", adminId);
+          return new IllegalArgumentException("존재하지 않는 회원입니다.");
+        });
+    log.info("존재하는 관리자 입니다. 관리자 ID: {}", member.getId());
+
+    Page<Course> coursePage = courseRepository.findCoursesById(adminId,type, word,pageable);
+
+    if (coursePage.isEmpty()) {
+      log.warn("No coursePage found in the database");
+      throw new NoSuchElementException("No coursePage found");
     }
 
-    log.info("get {} courses from the database", courses.size());
-    // Course 엔티티 리스트를 DTO 리스트로 변환
-    return courses.stream()
-        .map(CourseDTO::fromEntity)
+    log.info("get {} coursePage from the database", coursePage.getTotalElements());
+
+    // enroll에서 해당 담당자가 맡는 반마다 학생 수 조회
+    List<Long> courseIds = coursePage.getContent().stream()
+        .map(Course::getId)
         .toList();
+
+    Map<Long, Integer> enrollCounts = enrollRepository.countEnrollsByCourseIds(courseIds);
+
+    // Course 엔티티 리스트를 DTO 리스트로 변환
+    List<CourseDTO> dtos = coursePage.getContent().stream()
+        .map(course -> {
+          Integer counts = enrollCounts.getOrDefault(course.getId(), 0); // 기본값 0
+          return CourseDTO.fromEntity(course, counts);
+        })
+        .toList();
+
+    return new PageImpl<>(dtos, pageable, coursePage.getTotalElements());
   }
 
   /* 교육과정 조회 */
@@ -50,13 +81,13 @@ public class CourseService{
           return new NoSuchElementException("Course not found with id " + id);
         });
     log.info("get course details for ID: {}", id);
-    return fromEntity(course);
+    return fromEntity(course, null);
 
   }
 
   /* 교육과정 등록 */
   @Transactional
-  public CourseDTO createCourse(CourseDTO courseDTO) {
+  public CourseDTO createCourse(CourseDTO courseDTO, Long memberId) {
     log.info("Registering a new course with data : {}", courseDTO);
 
     /* 1. courseDTO를 Course 엔티티 형식으로 바꾸기 */
@@ -76,7 +107,7 @@ public class CourseService{
 
     /* 3. 조회한 과정을 다시 dto 형식으로 바꿔서 return  */
     log.info("Course registered successfully with ID: {}", savedCourse.getId());
-    return fromEntity(savedCourse);
+    return fromEntity(savedCourse, null);
   }
 
 
@@ -104,7 +135,7 @@ public class CourseService{
     log.debug("Updated course data: {}", updatedCourse);
 
     // 4. 업데이트된 엔티티를 DTO로 변환하여 반환
-    return fromEntity(updatedCourse);
+    return fromEntity(updatedCourse, null);
   }
 
   /* 교육과정 삭제 */

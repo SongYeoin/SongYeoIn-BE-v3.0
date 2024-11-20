@@ -42,7 +42,7 @@ public class Course {
 
   @NotNull
   @Size(min = 2, max = 50, message = "교육 과정 설명은 2자 이상 50자 이하이어야 합니다.")
-  @Column(nullable = false, length = 50)
+  @Column(length = 50)
   private String description;
 
   @NotNull
@@ -52,7 +52,7 @@ public class Course {
 
   @NotNull
   @Size(min = 2, max = 30, message = "강사명은 2자 이상 30자 이하이어야 합니다.")
-  @Column(nullable = false, length = 30)
+  @Column(length = 30)
   private String teacherName;
 
   @DateTimeFormat(pattern = "yyyy-MM-dd")
@@ -67,7 +67,7 @@ public class Course {
 
   @NotBlank(message = "강의실은 필수입니다.")
   @Size(min = 2, max = 4, message = "강의실은 2자 이상 4자 이하이어야 합니다.")
-  @Column(nullable = false, length = 4)
+  @Column(length = 4)
   private String roomName;
 
   @NotNull
