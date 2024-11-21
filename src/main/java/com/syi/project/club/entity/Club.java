@@ -1,6 +1,7 @@
 package com.syi.project.club.entity;
 
 import com.syi.project.club.dto.ClubRequestDTO;
+import com.syi.project.club.file.ClubFile;
 import com.syi.project.common.enums.CheckStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -11,6 +12,9 @@ import org.hibernate.validator.constraints.Length;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Getter
@@ -19,6 +23,7 @@ public class Club{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "club_id")
     private Long id;    //코드번호
 
     @Column(nullable = false)
@@ -32,8 +37,10 @@ public class Club{
 
     @Length(max = 100, message = "100자 이하로 입력해주세요")
     private String content; //내용
+
     @DateTimeFormat(pattern="yyyy-MM-dd")
     private LocalDate regDate;  //작성일
+
     @DateTimeFormat(pattern="yyyy-MM-dd")
     @Column(nullable = false)
     private LocalDate studyDate;    //활동일
@@ -41,18 +48,11 @@ public class Club{
     @Enumerated(EnumType.STRING)
     @Column(length=1, nullable = false)
     private CheckStatus checkStatus; //승인상태('Y', 'N', 'W')
+
     private String checkMessage;    //승인메시지
 
     @Column(nullable = false)
     private Long courseId;  //프로그램정보
-
-
-//    private String fileOriginalName;    //원본파일이름
-//    private String fileSavedName;   //저장된 파일이름
-//    private String fileType;    //파일타입
-//    private Long fileSize;  //파일크기
-//    private String filepath;    //파일경로
-//    private LocalDate fileRegDate;  //파일등록날짜
 
     @Builder
     public Club(Long courseId, Long writerId, String participants, String content,
@@ -71,7 +71,7 @@ public class Club{
     // entity -> DTO
     public ClubRequestDTO.ClubCreate toCreateDTO() {
         return new ClubRequestDTO.ClubCreate(
-                this.participants, this.content, this.regDate, this.studyDate, this.checkStatus);
+                this.participants, this.content, this.studyDate);
     }
 
     public ClubRequestDTO.ClubUpdate toUpdateDTO() {
@@ -82,5 +82,13 @@ public class Club{
     public ClubRequestDTO.ClubApproval toApprovalDTO() {
         return new ClubRequestDTO.ClubApproval(
                 this.checkStatus, this.checkMessage);
+    }
+
+    // ClubFile과의 연관 관계 없이 처리하는 메서드
+    public ClubFile associateFile(Long fileId) {
+        return ClubFile.builder()
+                .clubId(this.id)
+                .fileId(fileId)
+                .build();
     }
 }

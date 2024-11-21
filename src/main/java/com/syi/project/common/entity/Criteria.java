@@ -1,6 +1,9 @@
 package com.syi.project.common.entity;
 
 import lombok.Data;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Data
 public class Criteria {
@@ -35,6 +38,11 @@ public class Criteria {
     public String toString() {
         return "Criteria [pageNum=" + pageNum + ", amount=" + amount + ", type=" + type + ", keyword=" + keyword
                 + "]";
+    }
+
+    // Pageable 객체 생성
+    public Pageable getPageable() {
+        return PageRequest.of(pageNum - 1, amount, Sort.by(Sort.Direction.DESC, "regDate"));
     }
 
 }

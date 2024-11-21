@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/admin/club")
 public class AdminClubController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminClubController.class);
