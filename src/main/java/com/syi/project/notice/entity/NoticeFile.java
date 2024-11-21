@@ -1,6 +1,6 @@
 package com.syi.project.notice.entity;
 
-import com.syi.project.common.entity.S3File;
+import com.syi.project.file.entity.File;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
@@ -30,12 +30,12 @@ public class NoticeFile {
   private Notice notice;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "s3_file_id", nullable = false)
-  private S3File s3File;
+  @JoinColumn(name = "file_id", nullable = false)
+  private File file;
 
   @Builder
-  public NoticeFile(Notice notice, S3File s3File) {
+  public NoticeFile(Notice notice, File file) {
     this.notice = notice;
-    this.s3File = s3File;
+    this.file = file;
   }
 }

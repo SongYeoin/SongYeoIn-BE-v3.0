@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -48,44 +49,48 @@ public class Notice {
   private Course course;
 
   @CreatedDate
-  private LocalDate noticeRegDate;
+  private LocalDate regDate;
 
   @LastModifiedDate
-  private LocalDate noticeModifyDate;
+  private LocalDate modifyDate;
 
-  private Long viewCount = 0L;
-
+  @Column(nullable = false)
   private boolean isGlobal;
 
-  @OneToMany(mappedBy = "notice", cascade = CascadeType.REMOVE, orphanRemoval = true)
-  private List<NoticeFile> noticeFiles;
+  @Column(nullable = false)
+  private Long viewCount = 0L;
 
+  @OneToMany(mappedBy = "notice", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  private List<NoticeFile> files = new ArrayList<>();
+
+  @Column(nullable = true)
   private Long deletedBy;
 
-  public boolean hasFiles() {
-    return noticeFiles != null && !noticeFiles.isEmpty();
-  }
-
   @Builder
-  public Notice(String title, String content, Member member, Course course, boolean isGlobal,
-      List<NoticeFile> noticeFiles) {
+  public Notice(String title, String content, Member member, Course course, boolean isGlobal) {
     this.title = title;
     this.content = content;
     this.member = member;
     this.course = course;
     this.isGlobal = isGlobal;
-    this.noticeFiles = noticeFiles;
   }
 
-  public void update(String title, String content, List<NoticeFile> noticeFiles, boolean isGlobal) {
+  public void addFile(NoticeFile noticeFile) {
+    this.files.add(noticeFile);
+  }
+
+  public void incrementViewCount() {
+    this.viewCount++;
+  }
+
+  public void update(String title, String content, boolean isGlobal) {
     this.title = title;
     this.content = content;
-    this.noticeFiles = noticeFiles;
     this.isGlobal = isGlobal;
   }
 
-  public void markAsDeleted(Long deletedBy) {
-    this.deletedBy = deletedBy;
+  public void markAsDeleted(Long memberId) {
+    this.deletedBy = memberId;
   }
 
 }
