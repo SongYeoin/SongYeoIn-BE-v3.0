@@ -2,7 +2,6 @@ package com.syi.project.notice.service;
 
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
-import com.syi.project.auth.service.MemberService;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.common.utils.S3Uploader;
