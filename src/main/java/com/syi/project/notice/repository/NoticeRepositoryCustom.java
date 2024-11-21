@@ -1,7 +1,6 @@
 package com.syi.project.notice.repository;
 
 import com.syi.project.notice.entity.Notice;
-import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
