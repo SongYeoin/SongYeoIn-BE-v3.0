@@ -196,14 +196,14 @@ public class MemberControllerTest {
   @DisplayName("로그인 실패 테스트 - 승인 대기 상태")
   void login_failure_pendingApproval() throws Exception {
     Mockito.when(memberService.login(any(MemberLoginRequestDTO.class), eq(Role.STUDENT)))
-        .thenThrow(new InvalidRequestException(ErrorCode.MEMBER_PENDING_APPROVAL));
+        .thenThrow(new InvalidRequestException(ErrorCode.USER_PENDING_APPROVAL));
 
     ResultActions result = mockMvc.perform(post("/login")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(loginRequestDTO)));
 
     result.andExpect(status().isForbidden())
-        .andExpect(jsonPath("$.message").value(ErrorCode.MEMBER_PENDING_APPROVAL.getMessage()));
+        .andExpect(jsonPath("$.message").value(ErrorCode.USER_NOT_APPROVED.getMessage()));
   }
 
   @Test
