@@ -13,6 +13,11 @@ public class InvalidRequestException extends RuntimeException {
     this.errorCode = errorCode;
   }
 
+  public InvalidRequestException(ErrorCode errorCode, String message) {
+    super(message);
+    this.errorCode = errorCode;
+  }
+
   public HttpStatus getHttpStatus() {
     return errorCode.getHttpStatus();
   }
