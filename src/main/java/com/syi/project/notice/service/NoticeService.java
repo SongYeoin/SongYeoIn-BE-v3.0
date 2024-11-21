@@ -2,11 +2,13 @@ package com.syi.project.notice.service;
 
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
+import com.syi.project.auth.service.MemberService;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.course.entity.Course;
 import com.syi.project.course.repository.CourseRepository;
+import com.syi.project.file.dto.FileDownloadDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.service.FileService;
 import com.syi.project.notice.dto.NoticeRequestDTO;
@@ -16,9 +18,11 @@ import com.syi.project.notice.entity.NoticeFile;
 import com.syi.project.notice.repository.NoticeRepository;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -102,15 +106,22 @@ public class NoticeService {
   }
 
   // 공지사항 목록 조회
-  public List<NoticeResponseDTO> getNotices(Long courseId, Long memberId) {
-    log.info("공지사항 목록 조회 시작 - courseId: {}, memberId: {}", courseId, memberId);
+  public Page<NoticeResponseDTO> getNotices(Long courseId, Long memberId, String titleKeyword,
+      Pageable pageable) {
+    log.info("공지사항 목록 조회 시작 - courseId: {}, memberId: {}, titleKeyword: {}, pageable: {}",
+        courseId, memberId, titleKeyword, pageable);
 
-    List<Notice> notices = noticeRepository.findNoticesByCourseIdAndGlobal(courseId);
+    Page<Notice> notices = noticeRepository.findNoticesByCourseIdAndGlobal(courseId, titleKeyword,
+        pageable);
 
-    List<NoticeResponseDTO> noticeDtos = notices.stream()
-        .map(notice -> NoticeResponseDTO.fromEntity(notice, s3Uploader))
-        .collect(Collectors.toList());
-    log.info("공지사항 목록 조회 완료 - 조회된 공지 수: {}", noticeDtos.size());
+    AtomicInteger postNumberCounter = new AtomicInteger(
+        notices.getNumber() * notices.getSize() + 1);
+    Page<NoticeResponseDTO> noticeDtos = notices.map(notice -> {
+      String postNumber =
+          notice.isGlobal() ? "전체" : String.valueOf(postNumberCounter.getAndIncrement());
+      return NoticeResponseDTO.fromEntityWithPostNumber(notice, postNumber, s3Uploader);
+    });
+    log.info("공지사항 목록 조회 완료 - 총 조회된 공지 수: {}", noticeDtos.getContent().size());
     return noticeDtos;
   }
 
@@ -209,8 +220,21 @@ public class NoticeService {
     });
 
     notice.markAsDeleted(memberId);
-    noticeRepository.delete(notice);
     log.info("공지사항 삭제 완료 - id: {}", id);
+  }
+
+  public FileDownloadDTO downloadNoticeFile(Long noticeId, Long fileId, Long memberId) {
+    Notice notice = noticeRepository.findById(noticeId)
+        .orElseThrow(() -> new IllegalArgumentException("공지사항을 찾을 수 없습니다."));
+
+    boolean isFileInNotice = notice.getFiles().stream()
+        .anyMatch(noticeFile -> noticeFile.getFile().getId().equals(fileId));
+    if (!isFileInNotice) {
+      throw new IllegalArgumentException("파일이 해당 공지사항에 포함되지 않습니다.");
+    }
+
+    Member member = getMember(memberId);
+    return fileService.downloadFile(fileId, member);
   }
 
   // 사용자 정보 호출

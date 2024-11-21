@@ -57,7 +57,7 @@ public class Notice {
   @Column(nullable = false)
   private boolean isGlobal;
 
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "BIGINT DEFAULT 0")
   private Long viewCount = 0L;
 
   @OneToMany(mappedBy = "notice", cascade = CascadeType.REMOVE, orphanRemoval = true)
