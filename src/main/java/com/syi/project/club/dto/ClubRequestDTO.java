@@ -14,27 +14,22 @@ public class ClubRequestDTO {
     public static class ClubCreate{
         private String participants;  // 참여자
         private String content;  // 내용
-        private LocalDate regDate;  // 작성일
         private LocalDate studyDate;  // 활동일
-        private CheckStatus checkStatus;  // 승인 상태
 
-        public ClubCreate(String participants, String content,
-                                 LocalDate regDate, LocalDate studyDate, CheckStatus checkStatus){
+        public ClubCreate(String participants, String content, LocalDate studyDate){
             this.participants = participants;
             this.content = content;
-            this.regDate = regDate != null ? regDate : LocalDate.now();
             this.studyDate = studyDate;
-            this.checkStatus = checkStatus != null ? checkStatus : CheckStatus.W;
         }
 
         // DTO -> entity
-        public Club toEntity(Long writerId, Long courseId){
+        public Club toEntity(Long writerId, Long courseId, LocalDate regDate, CheckStatus checkStatus){
             return Club.builder()
                     .participants(participants)
                     .content(content)
                     .studyDate(studyDate)
-                    .checkStatus(checkStatus != null ? checkStatus : CheckStatus.W)
-                    .regDate(regDate != null ? regDate : LocalDate.now())
+                    .checkStatus(checkStatus)
+                    .regDate(regDate)
                     .writerId(writerId)
                     .courseId(courseId)
                     .build();

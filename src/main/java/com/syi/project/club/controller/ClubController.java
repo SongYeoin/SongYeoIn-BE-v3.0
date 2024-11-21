@@ -2,9 +2,13 @@ package com.syi.project.club.controller;
 
 import com.syi.project.club.dto.ClubRequestDTO;
 import com.syi.project.club.dto.ClubResponseDTO;
+import com.syi.project.club.entity.Club;
 import com.syi.project.club.service.ClubService;
+import com.syi.project.common.config.JwtProvider;
 import com.syi.project.common.entity.Criteria;
+import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.course.service.CourseService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,20 +16,27 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.util.*;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/club")
 public class ClubController {
 
     private static final Logger log = LoggerFactory.getLogger(ClubController.class);
 
     @Autowired
     private ClubService clubService;
+    @Autowired
+    private JwtProvider jwtProvider;
 
     public ClubController(ClubService clubService) {
         this.clubService = clubService;
@@ -38,11 +49,6 @@ public class ClubController {
 //    private String fileUploadPath;
 
     // 등록
-    @GetMapping("/club/register")
-    public void clubRegister(@RequestParam(value = "courseId", required = false) Long courseId) {
-        log.info("등록 파트 진입");
-        System.out.println("enroll get courseId : " + courseId);
-    }
 
     // 등록 (비동기 처리)
 //    @GetMapping("/club/register")
@@ -55,32 +61,49 @@ public class ClubController {
 //        }
 //    }
 
-    @PostMapping("/club/register")
-    @ResponseBody
-    public ResponseEntity<Map<String, String>> clubRegister(@RequestBody ClubRequestDTO.ClubCreate club, @AuthenticationPrincipal Long memberId, @RequestParam(value = "courseId", required = false) Long courseId) {
-        log.info("ClubDTO : " + club);
-
-        System.out.println("enroll post courseId : " + courseId);
-
-        Map<String, String> response = new HashMap<>();
-
-        if(clubService.register(club, courseId, memberId)) {
-            response.put("result", "enroll success");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        }else{
-            response.put("result", "enroll failed");
-            response.put("message", "Please try again later");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-//        if (result) {
-//            return ResponseEntity.ok("Club registered successfully.");
-//        } else {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Club registration failed.");
+//    @PostMapping
+//    @ResponseBody
+//    public ResponseEntity<Map<String, String>> createClub(@RequestBody ClubRequestDTO.ClubCreate club,
+//                                                          AuthenticationPrincipal Long memberId,
+//                                                          @RequestParam(value = "courseId", required = false) Long courseId) {
+//        log.info("ClubDTO : " + club);
+//
+//        System.out.println("enroll post courseId : " + courseId);
+//
+//        Map<String, String> response = new HashMap<>();
+//
+//        if(clubService.register(club, courseId, memberId)) {
+//            response.put("result", "enroll success");
+//            return new ResponseEntity<>(response, HttpStatus.OK);
+//        }else{
+//            response.put("result", "enroll failed");
+//            response.put("message", "Please try again later");
+//            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
 //        }
+////        if (result) {
+////            return ResponseEntity.ok("Club registered successfully.");
+////        } else {
+////            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Club registration failed.");
+////        }
+//    }
+
+    // 등록
+    @PostMapping
+    public ResponseEntity<ClubResponseDTO.ClubList> createClub(@RequestBody ClubRequestDTO.ClubCreate dto,
+                                                               @RequestParam Long courseId,
+                                                               @RequestHeader("Authorization") String token) {
+
+        Long writerId = jwtProvider.getMemberPrimaryKeyId(token).orElse(null);
+        LocalDate regDate = LocalDate.now();
+        CheckStatus checkStatus = CheckStatus.W;
+
+        ClubResponseDTO.ClubList response = clubService.createClub(dto, writerId, courseId, regDate, checkStatus);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+
     // 페이징 처리된 club 목록 조회 (비동기 처리)
-    @GetMapping("/club/list")
+    @GetMapping
     public Map<String, Object> getClubListByCourseId(@RequestParam(value = "courseId", required = false) Long courseId,
                                                      @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
                                                      @RequestParam(value = "type", required = false) String type,
@@ -88,9 +111,6 @@ public class ClubController {
         if (courseId == null) {
             return Collections.emptyMap();
         }
-
-        // Pageable 객체 생성
-        //Pageable pageable = PageRequest.of(pageNum - 1, 10, Sort.by(Sort.Order.asc("clubNo"))); // pageNum - 1 because Pageable starts from 0
 
         // Criteria 설정
         Criteria cri = new Criteria();
@@ -132,6 +152,21 @@ public class ClubController {
 
 
 
+
+
+
+
+
+    // Get Club
+//    @GetMapping("/{clubId}")
+//    public ResponseEntity<ClubResponseDTO.ClubList> getClub(@PathVariable Long clubId,
+//                                                            @RequestParam String url) {
+//        ClubResponseDTO.ClubList response = clubService.getClub(clubId, url);
+//        return ResponseEntity.ok(response);
+//    }
+
+
+
     // 상세조회 (비동기 처리)
 //    @GetMapping("/club/get")
 //    public ResponseEntity<ClubDTO> clubGetPageGET(@RequestParam("clubNo") int clubNo) {
@@ -162,63 +197,38 @@ public class ClubController {
 //    }
 
 
-//    // 수정
-//    @PostMapping("/club/modify")
-//    public String clubModify(@RequestBody ClubResponseDTO club,
-//                             @RequestParam("clubNo") int clubNo,
-//                             @RequestParam(value = "courseId", required = false) Long courseId,
-//                             @RequestParam(value = "file", required = false) MultipartFile file) throws Exception {
+    // 수정
+//    @PostMapping
+//    public ResponseEntity<ClubResponseDTO.ClubList> updateClub(@PathVariable Long courseId,
+//                                                               @RequestBody ClubRequestDTO.ClubUpdate dto,
+//                                                               @RequestParam String url) {
+//        ClubResponseDTO.ClubList response = clubService.updateClub();
+//
+//
+//    public ResponseEntity<String> clubModify(@RequestBody @Valid ClubResponseDTO club,
+//                                             @RequestParam("clubNo") int clubNo,
+//                                             @RequestParam(value = "courseId", required = false) Long courseId,
+//                                             @RequestParam(value = "file", required = false) MultipartFile file) {
 //
 //        // 승인 상태일 때 파일 첨부 검증
 //        if ("승인".equals(club.getCheckStatus())) {
 //            if (file == null || file.isEmpty()) {
-//                return "파일을 선택해 주세요.";
+//                return ResponseEntity.badRequest().body("파일을 선택해 주세요.");
 //            }
 //        }
 //
-//        // 파일 업로드 처리
-//        if (file != null && !file.isEmpty()) {
-//            // 파일 이름 정리 (파일의 불필요한 경로, 요소를 제거하고 이름만 남겨놓음)
-//            String fileName = StringUtils.cleanPath(file.getOriginalFilename());
-//            // 파일이 저장될 경로 설정
-//            Path uploadPath = Paths.get(fileUploadPath);
 //
-//            log.info(">>> File upload path: {}", uploadPath);
 //
-//            // 업로드 경로가 존재하지 않으면 생성
-//            if (!Files.exists(uploadPath)) {
-//                log.info(">>> Creating directory: {}", uploadPath);
-//                Files.createDirectories(uploadPath);
-//            }
+//            // 클럽 정보 수정
+//            clubService.modify(club);
+//            return ResponseEntity.ok("modify success");
 //
-//            // 파일 저장 경로 설정
-//            Path filePath = uploadPath.resolve(fileName);
-//            log.info(">>> File path: {}", filePath);
-//
-//            try {
-//                // 기존 파일 삭제
-//                if (club.getfileOriginalName() != null && !club.getfileOriginalName().isEmpty()) {
-//                    Path oldFilePath = uploadPath.resolve(club.getfileOriginalName());
-//                    if (Files.exists(oldFilePath)) {
-//                        log.info(">>> Deleting old file: {}", oldFilePath);
-//                        Files.delete(oldFilePath);
-//                    }
-//                }
-//
-//                // 파일 저장
-//                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-//                club.setFileName(fileName); // 파일 이름 설정
-//                log.info(">>> File uploaded successfully: {}", fileName);
-//            } catch (IOException e) {
-//                log.error(">>> File upload failed: {}", fileName, e);
-//                throw new Exception("파일 업로드 실패", e);
-//            }
+//        } catch (IOException e) {
+//            log.severe(">>> File upload failed: " + e.getMessage());
+//            return ResponseEntity.status(500).body("파일 업로드 실패");
 //        }
-//
-//        // 클럽 정보 수정
-//        clubService.modify(club);
-//        return "modify success";
 //    }
+//}
 //
 //    // 첨부파일 다운로드
 //    @GetMapping("/club/downloadFile")
@@ -260,5 +270,28 @@ public class ClubController {
 //        clubService.delete(clubNo);
 //        return "delete success";
 //    }
+
+
+//
+//    // Update Club
+//    @PutMapping("/{clubId}")
+//    public ResponseEntity<ClubResponseDTO.ClubList> updateClub(@PathVariable Long clubId,
+//                                                               @RequestBody ClubRequestDTO.ClubUpdate dto,
+//                                                               @RequestParam String url) {
+//        ClubResponseDTO.ClubList response = clubService.updateClub(clubId, dto, url);
+//        return ResponseEntity.ok(response);
+//    }
+//
+//    // Approve Club
+//    @PatchMapping("/{clubId}/approval")
+//    public ResponseEntity<ClubResponseDTO.ClubList> approveClub(@PathVariable Long clubId,
+//                                                                @RequestBody ClubRequestDTO.ClubApproval dto,
+//                                                                @RequestParam String checkerId,
+//                                                                @RequestParam String url) {
+//        ClubResponseDTO.ClubList response = clubService.approveClub(clubId, dto, checkerId, url);
+//        return ResponseEntity.ok(response);
+//    }
+//
+//
 }
 

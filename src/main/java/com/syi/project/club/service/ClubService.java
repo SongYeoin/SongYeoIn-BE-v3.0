@@ -5,12 +5,16 @@ import com.syi.project.club.dto.ClubRequestDTO;
 import com.syi.project.club.entity.Club;
 import com.syi.project.club.repository.ClubRepository;
 import com.syi.project.common.entity.Criteria;
+import com.syi.project.common.enums.CheckStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 @Service
 public class ClubService {
@@ -20,30 +24,44 @@ public class ClubService {
 
     //등록
     @Transactional
-    public boolean register(ClubRequestDTO.ClubCreate clubDTO, Long courseId, Long memberId) {
-        Club club = Club.builder()
-                .courseId(courseId)  // 프로그램
-                .writerId(memberId)  // 작성자명
-                .checkStatus(clubDTO.getCheckStatus())
-                .studyDate(clubDTO.getStudyDate())
-                .regDate(clubDTO.getRegDate())
-                .participants(clubDTO.getParticipants())
-                .content(clubDTO.getContent())
-                .build();
-        clubRepository.save(club);  // Save the club to the database
-        return true;
+    public ClubResponseDTO.ClubList createClub(ClubRequestDTO.ClubCreate clubDTO, Long writerId, Long courseId, LocalDate regDate, CheckStatus checkStatus) {
+//        Club club = Club.builder()
+//                .courseId(courseId)  // 프로그램
+//                .writerId(writerId)  // 작성자명
+//                .checkStatus(checkStatus)
+//                .studyDate(clubDTO.getStudyDate())
+//                .regDate(regDate)
+//                .participants(clubDTO.getParticipants())
+//                .content(clubDTO.getContent())
+//                .build();
+//        clubRepository.save(club);
+        Club club = clubDTO.toEntity(writerId, courseId, regDate, checkStatus);
+        club = clubRepository.save(club);
+
+        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(writerId), null, null);
     }
 
     //리스트(페이징)
     public Page<ClubResponseDTO.ClubList> getClubListWithPaging(Criteria cri, Long courseId) {
         // Pageable 객체 생성 (cri에서 pageNum과 amount 가져오기)
-        Pageable pageable = PageRequest.of(cri.getPageNum() - 1, cri.getAmount()); // 0-based index
+        Pageable pageable = cri.getPageable();
 
-        // System.out.println("service: " + clubRepository.findClubsByCriteria(cri, courseId, pageable));
-        // 페이징과 조건에 맞는 동아리 목록 조회
-        // return clubRepository.findClubsByCriteria(cri, courseId, pageable);
-        return null;
+         System.out.println("service: " + clubRepository.findClubListByCourseId(cri, courseId, pageable));
+         //페이징과 조건에 맞는 동아리 목록 조회
+         return clubRepository.findClubListByCourseId(cri, courseId, pageable)
+                 .map(club -> ClubResponseDTO.ClubList.toDTO(
+                         club,
+                         getMemberName(club.getWriterId()),
+                         club.getCheckerId() != null ? getMemberName(club.getCheckerId()) : null,
+                         null // URL이나 다른 파일 관련 로직이 필요하면 추가
+                 ));
     }
+
+    private String getMemberName(Long memberId) {
+        // 더미 메서드: 실제 MemberService 로직으로 대체
+        return memberId != null ? "Member" + memberId : null;
+    }
+
 
 //    private ClubDTO convertToDTO(Club club) {
 //        return new ClubDTO(club.getClubNo(), club.getcourseId(), club.getName(), club.getStatus());
@@ -146,6 +164,36 @@ public class ClubService {
 //        clubDTO.setFilepath(club.getFilepath());
 //        clubDTO.setFileRegDate(club.getFileRegDate());
 //        return clubDTO;
+//    }
+
+//
+//
+//
+//    // Update Club
+//    public ClubResponseDTO.ClubList updateClub(Long clubId, ClubRequestDTO.ClubUpdate dto, String url) {
+//        Club club = clubRepository.findById(clubId)
+//                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Club입니다."));
+//
+//        club = dto.toEntity(); // 업데이트할 내용 반영
+//        clubRepository.save(club);
+//        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(club.getWriterId()), null, url);
+//    }
+//
+//    // Approval
+//    public ClubResponseDTO.ClubList approveClub(Long clubId, ClubRequestDTO.ClubApproval dto, String checkerId, String url) {
+//        Club club = clubRepository.findById(clubId)
+//                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Club입니다."));
+//
+//        club = dto.toEntity(); // 승인 상태 변경 반영
+//        clubRepository.save(club);
+//        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(club.getWriterId()), checkerId, url);
+//    }
+//
+//    // Find Club
+//    public ClubResponseDTO.ClubList getClub(Long clubId, String url) {
+//        Club club = clubRepository.findById(clubId)
+//                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Club입니다."));
+//        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(club.getWriterId()), String.valueOf(club.getCheckerId()), url);
 //    }
 }
 
