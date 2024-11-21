@@ -104,11 +104,11 @@ public class MemberService {
     switch (member.getCheckStatus()) {
       case W -> {
         log.warn("로그인 실패 - 승인 대기 상태: 사용자 Username: {}", requestDTO.getUsername());
-        throw new InvalidRequestException(ErrorCode.MEMBER_PENDING_APPROVAL);
+        throw new InvalidRequestException(ErrorCode.USER_PENDING_APPROVAL);
       }
       case N -> {
         log.warn("로그인 실패 - 미승인 상태: 사용자 Username: {}", requestDTO.getUsername());
-        throw new InvalidRequestException(ErrorCode.MEMBER_NOT_APPROVED);
+        throw new InvalidRequestException(ErrorCode.USER_NOT_APPROVED);
       }
     }
 

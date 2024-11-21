@@ -262,7 +262,7 @@ class MemberServiceTest {
         InvalidRequestException.class,
         () -> memberService.login(requestDTO, Role.STUDENT)
     );
-    assertEquals(ErrorCode.MEMBER_PENDING_APPROVAL.getMessage(), exception.getMessage());
+    assertEquals(ErrorCode.USER_PENDING_APPROVAL.getMessage(), exception.getMessage());
   }
 
   @Test
@@ -279,7 +279,7 @@ class MemberServiceTest {
         InvalidRequestException.class,
         () -> memberService.login(requestDTO, Role.STUDENT)
     );
-    assertEquals(ErrorCode.MEMBER_NOT_APPROVED.getMessage(), exception.getMessage());
+    assertEquals(ErrorCode.USER_NOT_APPROVED.getMessage(), exception.getMessage());
   }
 
   @Test
