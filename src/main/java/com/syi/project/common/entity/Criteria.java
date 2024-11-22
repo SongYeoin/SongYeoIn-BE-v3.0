@@ -45,4 +45,14 @@ public class Criteria {
         return PageRequest.of(pageNum - 1, amount, Sort.by(Sort.Direction.DESC, "regDate"));
     }
 
+    public void setKeywordFromTypeAndKeyword(String type, String keyword) {
+        if ("C".equals(type)) {
+            this.keyword = "대기".equals(keyword) ? "W" :
+                    "승인".equals(keyword) ? "Y" :
+                            "미승인".equals(keyword) ? "N" : "";
+        } else {
+            this.keyword = keyword;
+        }
+    }
+
 }

@@ -5,6 +5,7 @@ import com.syi.project.club.dto.ClubResponseDTO;
 import com.syi.project.club.entity.Club;
 import com.syi.project.club.service.ClubService;
 import com.syi.project.common.config.JwtProvider;
+import com.syi.project.common.dto.PageInfoDTO;
 import com.syi.project.common.entity.Criteria;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.course.service.CourseService;
@@ -45,51 +46,10 @@ public class ClubController {
     @Autowired
     private CourseService courseService;
 
-//    @Value("C:/upload/temp")
-//    private String fileUploadPath;
-
-    // 등록
-
-    // 등록 (비동기 처리)
-//    @GetMapping("/club/register")
-//    public ResponseEntity<String> clubRegister(@RequestBody ClubDTO club) {
-//        boolean success = clubService.register(club);
-//        if (success) {
-//            return new ResponseEntity<>("register success", HttpStatus.OK);
-//        } else {
-//            return new ResponseEntity<>("register fail", HttpStatus.BAD_REQUEST);
-//        }
-//    }
-
-//    @PostMapping
-//    @ResponseBody
-//    public ResponseEntity<Map<String, String>> createClub(@RequestBody ClubRequestDTO.ClubCreate club,
-//                                                          AuthenticationPrincipal Long memberId,
-//                                                          @RequestParam(value = "courseId", required = false) Long courseId) {
-//        log.info("ClubDTO : " + club);
-//
-//        System.out.println("enroll post courseId : " + courseId);
-//
-//        Map<String, String> response = new HashMap<>();
-//
-//        if(clubService.register(club, courseId, memberId)) {
-//            response.put("result", "enroll success");
-//            return new ResponseEntity<>(response, HttpStatus.OK);
-//        }else{
-//            response.put("result", "enroll failed");
-//            response.put("message", "Please try again later");
-//            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-//        }
-////        if (result) {
-////            return ResponseEntity.ok("Club registered successfully.");
-////        } else {
-////            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Club registration failed.");
-////        }
-//    }
 
     // 등록
     @PostMapping
-    public ResponseEntity<ClubResponseDTO.ClubList> createClub(@RequestBody ClubRequestDTO.ClubCreate dto,
+    public ResponseEntity<ClubResponseDTO.ClubList> createClub(@Valid @RequestBody ClubRequestDTO.ClubCreate dto,
                                                                @RequestParam Long courseId,
                                                                @RequestHeader("Authorization") String token) {
 
@@ -104,12 +64,12 @@ public class ClubController {
 
     // 페이징 처리된 club 목록 조회 (비동기 처리)
     @GetMapping
-    public Map<String, Object> getClubListByCourseId(@RequestParam(value = "courseId", required = false) Long courseId,
+    public ResponseEntity<Map<String, Object>> getClubListByCourseId(@RequestParam(value = "courseId", required = false) Long courseId,
                                                      @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
                                                      @RequestParam(value = "type", required = false) String type,
                                                      @RequestParam(value = "keyword", required = false) String keyword) {
         if (courseId == null) {
-            return Collections.emptyMap();
+            return ResponseEntity.ok(Collections.emptyMap());
         }
 
         // Criteria 설정
@@ -118,42 +78,58 @@ public class ClubController {
         cri.setType(type);
 
         // 승인 상태 키워드 변환
-        if ("C".equals(type)) {
-            cri.setKeyword("대기".equals(keyword) ? "W" : "승인".equals(keyword) ? "Y" : "미승인".equals(keyword) ? "N" : "");
-        } else {
-            cri.setKeyword(keyword);
-        }
+        cri.setKeywordFromTypeAndKeyword(type, keyword);
+//        if ("C".equals(type)) {
+//            cri.setKeyword("대기".equals(keyword) ? "W" : "승인".equals(keyword) ? "Y" : "미승인".equals(keyword) ? "N" : "");
+//        } else {
+//            cri.setKeyword(keyword);
+//        }
 
         // 페이징된 결과 조회
         Page<ClubResponseDTO.ClubList> clubPage = clubService.getClubListWithPaging(cri, courseId);
 
         Map<String, Object> response = new HashMap<>();
         response.put("list", clubPage.getContent());    //페이징된 동아리 리스트
-        response.put("pageInfo", getPageInfo(clubPage));    //페이지정보
+        response.put("pageInfo", new PageInfoDTO(
+                clubPage.getTotalElements(),
+                clubPage.getTotalPages(),
+                clubPage.getNumber() + 1,
+                clubPage.getSize(),
+                clubPage.hasNext(),
+                clubPage.hasPrevious()
+        ));    //페이지정보
 
-        return response;
+        return ResponseEntity.ok(response);
     }
 
     // 페이지 정보 반환 (Pageable에서 제공하는 기본 정보 사용)
-    private Map<String, Object> getPageInfo(Page<ClubResponseDTO.ClubList> clubPage) {
-        Map<String, Object> pageInfo = new HashMap<>();
-        pageInfo.put("totalElements", clubPage.getTotalElements()); // 전체 데이터 개수
-        pageInfo.put("totalPages", clubPage.getTotalPages()); // 전체 페이지 수
-        pageInfo.put("currentPage", clubPage.getNumber() + 1); // 현재 페이지 (1부터 시작)
-        pageInfo.put("pageSize", clubPage.getSize()); // 한 페이지당 항목 수
-        pageInfo.put("hasNext", clubPage.hasNext()); // 다음 페이지 존재 여부
-        pageInfo.put("hasPrevious", clubPage.hasPrevious()); // 이전 페이지 존재 여부
-        return pageInfo;
+//    private Map<String, Object> getPageInfo(Page<ClubResponseDTO.ClubList> clubPage) {
+//        Map<String, Object> pageInfo = new HashMap<>();
+//        pageInfo.put("totalElements", clubPage.getTotalElements()); // 전체 데이터 개수
+//        pageInfo.put("totalPages", clubPage.getTotalPages()); // 전체 페이지 수
+//        pageInfo.put("currentPage", clubPage.getNumber() + 1); // 현재 페이지 (1부터 시작)
+//        pageInfo.put("pageSize", clubPage.getSize()); // 한 페이지당 항목 수
+//        pageInfo.put("hasNext", clubPage.hasNext()); // 다음 페이지 존재 여부
+//        pageInfo.put("hasPrevious", clubPage.hasPrevious()); // 이전 페이지 존재 여부
+//        return pageInfo;
+//    }
+
+    //상세
+    @GetMapping("/{clubId}")
+    public ResponseEntity<Map<String, Object>> getClubDetail(@PathVariable("clubId") Long clubId) {
+        ClubResponseDTO.ClubDetail club = clubService.getClubDetail(clubId);
+
+        if (club == null) {
+            // 클럽 정보가 없을 경우 404 반환
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("error", "Club not found"));
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("club", club);
+
+        return ResponseEntity.ok(response);
     }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -200,15 +176,46 @@ public class ClubController {
     // 수정
 //    @PostMapping
 //    public ResponseEntity<ClubResponseDTO.ClubList> updateClub(@PathVariable Long courseId,
+//                                                               @RequestParam("clubNo") int clubNo,
 //                                                               @RequestBody ClubRequestDTO.ClubUpdate dto,
-//                                                               @RequestParam String url) {
+//                                                               @RequestParam MultipartFile file,
+//                                                               @RequestHeader("Authorization") String token) throws Exception {
+//
+//        clubService.findById(clubNo);
+//
+//
 //        ClubResponseDTO.ClubList response = clubService.updateClub();
 //
 //
-//    public ResponseEntity<String> clubModify(@RequestBody @Valid ClubResponseDTO club,
-//                                             @RequestParam("clubNo") int clubNo,
-//                                             @RequestParam(value = "courseId", required = false) Long courseId,
-//                                             @RequestParam(value = "file", required = false) MultipartFile file) {
+//
+//            // 승인 상태에 따른 수정 권한 검증
+//            if ("미승인".equals(clubEntity.getCheckStatus())) {
+//                return ResponseEntity.status(403).body("미승인 상태에서는 수정이 불가능합니다.");
+//            }
+//
+//            if ("승인".equals(clubEntity.getCheckStatus()) && file == null) {
+//                return ResponseEntity.badRequest().body("승인 상태에서는 파일만 수정 가능합니다.");
+//            }
+//
+//            try {
+//                if (file != null && !file.isEmpty()) {
+//                    // 파일을 S3에 업로드하고 URL 반환
+//                    String fileUrl = s3FileService.uploadFile(file);
+//                    club.setFileName(fileUrl); // 반환된 URL을 클럽 DTO에 설정
+//                }
+//
+//                // 클럽 정보 수정 (파일 URL 포함)
+//                clubService.modify(club);
+//
+//                return ResponseEntity.ok("modify success");
+//
+//            } catch (IOException e) {
+//                log.severe("파일 업로드 중 오류 발생: " + e.getMessage());
+//                return ResponseEntity.status(500).body("파일 업로드 실패");
+//            }
+//        }
+//
+//
 //
 //        // 승인 상태일 때 파일 첨부 검증
 //        if ("승인".equals(club.getCheckStatus())) {
@@ -228,7 +235,7 @@ public class ClubController {
 //            return ResponseEntity.status(500).body("파일 업로드 실패");
 //        }
 //    }
-//}
+
 //
 //    // 첨부파일 다운로드
 //    @GetMapping("/club/downloadFile")

@@ -1,8 +1,11 @@
 package com.syi.project.club.entity;
 
 import com.syi.project.club.dto.ClubRequestDTO;
+import com.syi.project.club.dto.ClubResponseDTO;
 import com.syi.project.club.file.ClubFile;
 import com.syi.project.common.enums.CheckStatus;
+import com.syi.project.file.entity.File;
+import com.syi.project.file.repository.FileRepository;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
@@ -54,6 +57,8 @@ public class Club{
     @Column(nullable = false)
     private Long courseId;  //프로그램정보
 
+    private List<Long> clubFileIds; // 파일 ID 목록
+
     @Builder
     public Club(Long courseId, Long writerId, String participants, String content,
                 LocalDate regDate, LocalDate studyDate, CheckStatus checkStatus, Long checkerId, String checkMessage) {
@@ -91,4 +96,22 @@ public class Club{
                 .fileId(fileId)
                 .build();
     }
+
+    // Club에서 파일 URL을 가져오는 메서드 (연관 관계 없이 접근)
+    public List<String> getFileUrls(List<ClubFile> clubFiles, FileRepository fileRepository) {
+        List<String> fileUrls = new ArrayList<>();
+        for (ClubFile clubFile : clubFiles) {
+            // ClubFile을 통해 fileId를 사용하여 File 엔티티를 조회
+            Long fileId = clubFile.getFileId();
+            File file = fileRepository.findById(fileId).orElse(null);  // fileId로 File을 조회
+            if (file != null && file.getPath() != null && !file.getPath().isEmpty()) {
+                fileUrls.add("clip_icon"); // 파일 위치가 있으면 클립 아이콘 표시
+            } else {
+                fileUrls.add(""); // 파일 위치가 없으면 공백
+            }
+        }
+        return fileUrls;
+    }
+
+
 }
