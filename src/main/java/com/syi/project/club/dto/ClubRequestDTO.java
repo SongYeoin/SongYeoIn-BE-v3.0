@@ -2,6 +2,7 @@ package com.syi.project.club.dto;
 
 import com.syi.project.club.entity.Club;
 import com.syi.project.common.enums.CheckStatus;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
