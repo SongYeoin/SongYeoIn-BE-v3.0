@@ -89,10 +89,4 @@ public class ClubRepositoryCustomImpl implements ClubRepositoryCustom {
         return new PageImpl<>(clubs, pageable, total); // 결과를 페이징 처리하여 반환
     }
 
-    //    public List<ClubDTO> findAll() {
-//        return queryFactory.select(Projections.bean(ClubDTO.class,
-//                club.id))
-//                .from(club).fetch();
-//    }
-
 }

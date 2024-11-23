@@ -42,13 +42,11 @@ public class ClubRequestDTO {
     public static class ClubUpdate{
         private String participants;
         private String content;
-        private LocalDate regDate;
         private LocalDate studyDate;
 
-        public ClubUpdate(String participants, String content, LocalDate regDate, LocalDate studyDate){
+        public ClubUpdate(String participants, String content, LocalDate studyDate){
             this.participants = participants;
             this.content = content;
-            this.regDate = regDate != null ? regDate : LocalDate.now();
             this.studyDate = studyDate;
         }
 
@@ -58,7 +56,6 @@ public class ClubRequestDTO {
                     .participants(participants)
                     .content(content)
                     .studyDate(studyDate)
-                    .regDate(regDate != null ? regDate : LocalDate.now())
                     .build();
         }
     }

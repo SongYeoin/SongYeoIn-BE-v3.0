@@ -13,9 +13,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ClubRepository extends JpaRepository<Club, Long>, ClubRepositoryCustom {
 
-    //등록
-    Club save(Club club);
-
     // 클래스 번호(courseId)에 해당하는 동아리 목록을 페이징 처리하여 조회
     Page<Club> findClubListByCourseId(Criteria cri, Long courseId, Pageable pageable);
 
