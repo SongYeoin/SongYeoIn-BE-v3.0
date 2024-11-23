@@ -57,7 +57,7 @@ public class Club{
     @Column(nullable = false)
     private Long courseId;  //프로그램정보
 
-    private List<Long> clubFileIds; // 파일 ID 목록
+    private Long fileId; // 파일 ID 목록
 
     @Builder
     public Club(Long courseId, Long writerId, String participants, String content,
@@ -81,7 +81,7 @@ public class Club{
 
     public ClubRequestDTO.ClubUpdate toUpdateDTO() {
         return new ClubRequestDTO.ClubUpdate(
-                this.participants, this.content, this.regDate, this.studyDate);
+                this.participants, this.content, this.studyDate);
     }
 
     public ClubRequestDTO.ClubApproval toApprovalDTO() {
@@ -113,5 +113,21 @@ public class Club{
         return fileUrls;
     }
 
+    public void updateDetails(String participants, String content, LocalDate studyDate, LocalDate regDate) {
+        this.participants = participants;
+        this.content = content;
+        this.studyDate = studyDate;
+        this.regDate = regDate;
+    }
+
+    public void updateFileId(Long fileId) {
+        this.fileId = fileId;
+    }
+
+    public void updateApprove(Long writerId, CheckStatus checkStatus, String checkMessage) {
+        this.checkStatus = checkStatus;
+        this.checkMessage = checkMessage;
+        this.writerId = writerId;
+    }
 
 }

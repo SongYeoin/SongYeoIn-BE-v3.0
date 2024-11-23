@@ -38,9 +38,15 @@ public enum ErrorCode {
   VALIDATION_FAILED("COMMON_001", "입력값이 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
 
   // 시스템 관련 에러
-  INTERNAL_SERVER_ERROR("SYSTEM_001", "서버 내부 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
+  INTERNAL_SERVER_ERROR("SYSTEM_001", "서버 내부 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
-  private final String code;
+  // 동아리 관련 에러
+  CANNOT_MODIFY_APPROVED("CLUB_001", "승인된 상태에서는 수정할 수 없습니다.", HttpStatus.FORBIDDEN),
+  CANNOT_MODIFY_PENDING("CLUB_002", "미승인된 상태에서는 수정할 수 없습니다.", HttpStatus.FORBIDDEN),
+  INVALID_REQUEST("CLUB_003", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST);
+
+
+    private final String code;
   private final String message;
   private final HttpStatus httpStatus;
 
