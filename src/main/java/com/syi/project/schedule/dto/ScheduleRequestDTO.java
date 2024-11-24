@@ -16,6 +16,26 @@ import lombok.ToString;
 @Schema(description = "시간표 요청 DTO")
 public class ScheduleRequestDTO {
 
+
+  /* 시간표 수정 요청 시 */
+  @Getter
+  @ToString
+  public static class ScheduleUpdateRequestDTO{
+    private Long scheduleId;
+    private List<PeriodRequestDTO> updatedPeriods; // 수정된 교시
+    private List<PeriodRequestDTO> newPeriods; // 새로 추가된 교시
+    private List<Long> deletedPeriodIds; // 삭제된 교시 ID
+
+    @Builder
+    public ScheduleUpdateRequestDTO(Long scheduleId,List<PeriodRequestDTO> updatedPeriods,
+        List<PeriodRequestDTO> newPeriods, List<Long> deletedPeriodIds) {
+      this.scheduleId = scheduleId;
+      this.updatedPeriods = updatedPeriods;
+      this.newPeriods = newPeriods;
+      this.deletedPeriodIds = deletedPeriodIds;
+    }
+  }
+
   @Schema(description = "시간표 ID", example = "1")
   private Long id;
 

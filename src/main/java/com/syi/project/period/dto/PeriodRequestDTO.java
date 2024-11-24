@@ -14,7 +14,17 @@ import lombok.ToString;
 @Schema(description = "교시 요청 DTO")
 public class PeriodRequestDTO {
 
+  public interface Create {
+
+  }
+
+  public interface Update {
+
+  }
+
   @Schema(description = "교시 ID", example = "1")
+/*  @NotNull(groups = Update.class)
+  @Null(groups = Create.class)*/
   private Long id;
 
   @Schema(description = "요일", example = "월요일")
@@ -23,7 +33,6 @@ public class PeriodRequestDTO {
 
   @Schema(description = "교시 이름", example = "1교시")
   @NotNull(message = "교시 이름을 입력해야 합니다.")
-
   private String name;
 
   @Schema(description = "시작 시간", example = "14:00")

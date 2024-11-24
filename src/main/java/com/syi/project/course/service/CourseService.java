@@ -2,13 +2,23 @@ package com.syi.project.course.service;
 
 import static com.syi.project.course.dto.CourseDTO.fromEntity;
 
+import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CoursePatchDTO;
+import com.syi.project.course.dto.CoursePatchDTO.CoursePatchResponseDTO;
+import com.syi.project.course.dto.CourseResponseDTO.AdminList;
+import com.syi.project.course.dto.CourseResponseDTO.CourseDetailDTO;
 import com.syi.project.course.entity.Course;
 import com.syi.project.course.repository.CourseRepository;
 import com.syi.project.enroll.repository.EnrollRepository;
+import com.syi.project.enroll.service.EnrollService;
+import com.syi.project.period.repository.PeriodRepository;
+import com.syi.project.schedule.dto.ScheduleResponseDTO;
+import com.syi.project.schedule.dto.ScheduleResponseDTO.ScheduleUpdateResponseDTO;
+import com.syi.project.schedule.repository.ScheduleRepository;
+import com.syi.project.schedule.service.ScheduleService;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -29,6 +39,10 @@ public class CourseService{
   private final CourseRepository courseRepository;
   private final MemberRepository memberRepository;
   private final EnrollRepository enrollRepository;
+  private final ScheduleRepository scheduleRepository;
+  private final PeriodRepository periodRepository;
+  private final ScheduleService scheduleService;
+  private final EnrollService enrollService;
 
 
   /* 교육과정 전체 조회 */
@@ -64,7 +78,7 @@ public class CourseService{
     List<CourseDTO> dtos = coursePage.getContent().stream()
         .map(course -> {
           Integer counts = enrollCounts.getOrDefault(course.getId(), 0); // 기본값 0
-          return CourseDTO.fromEntity(course, counts);
+          return fromEntity(course, counts);
         })
         .toList();
 
@@ -72,17 +86,76 @@ public class CourseService{
   }
 
   /* 교육과정 조회 */
-  public CourseDTO getCourseById(long id) {
+  public CourseDetailDTO getCourseById(long courseId) {
     /*deletdBy가 null이 아니라면 조회하지 않기 추가하기*/
-    log.info("get course details for ID: {}", id);
-    Course course = courseRepository.findById(id)
+    log.info("get course details for ID: {}", courseId);
+    Course course = courseRepository.findById(courseId)
         .orElseThrow(() -> {
-          log.error("Course not found with ID: {}", id);
-          return new NoSuchElementException("Course not found with id " + id);
+          log.error("Course not found with ID: {}", courseId);
+          return new NoSuchElementException("Course not found with id " + courseId);
         });
-    log.info("get course details for ID: {}", id);
-    return fromEntity(course, null);
+    log.info("get course details for ID: {}", courseId);
 
+    /* 조회한 course를 CourseDTO 형태로 변환 */
+    CourseDTO courseDTO = fromEntity(course, null);
+
+    log.info("변환된 CourseDTO: {}", courseDTO);
+
+    /* 시간표 조회 */
+    ScheduleResponseDTO results = scheduleRepository.findScheduleWithPeriodsByCourseId(courseId);
+
+    /*Schedule schedule = null;
+    List<PeriodResponseDTO> periods = new ArrayList<>();
+    if (results.isEmpty()) {
+      log.warn("경고 : 교육과정 ID {}에 대한 시간표가 비어있습니다.", courseId);
+      //throw new NoSuchElementException("시간표가 비어있습니다.");
+    }else{
+      log.info("{} 개의 교시 조회", results.size());
+
+      // Schedule 데이터와 Period 리스트를 추출
+      try {
+        schedule = results.get(0).get(0, Schedule.class);
+        periods = results.stream()
+            .map(tuple -> {
+                Period period = tuple.get(1,Period.class); // Period 엔티티 가져오기
+                return PeriodResponseDTO.fromEntity(period); // DTO로 변환
+      }).toList();
+      } catch (NullPointerException e) {
+        log.error("등록된 시간표가 없습니다.", e);
+        throw new RuntimeException("등록된 시간표가 없습니다. courseId: " + courseId, e);
+      } catch (IndexOutOfBoundsException | ClassCastException e) {
+        log.error("에러 발생: 교육과정 ID {}에 대한 시간표를 찾을 수 없습니다.", courseId);
+        throw new RuntimeException("시간표를 찾을 수 없습니다. courseId: " + courseId, e);
+      }
+    }*/
+
+
+
+    /*ScheduleResponseDTO scheduleResponseDTO = schedule != null
+    ? ScheduleResponseDTO.builder()
+        .id(schedule.getId())
+        .courseId(schedule.getCourseId())
+        .periods(periods).build()
+        : ScheduleResponseDTO.builder()
+            .id(null)
+            .courseId(null)
+            .periods(Collections.emptyList()).build();*/
+
+    log.info("변환된 scheduleResponseDTO: {}", results);
+
+    /*// 수강생 목록
+    Page<Member> members = memberRepository.findMemberByCourseId(courseId, pageable);
+    Page<MemberDTO> memberList = members.map(member -> MemberDTO.builder()
+            .name(member.getName())
+            .birthday(member.getBirthday())
+            .email(member.getEmail()).build());
+
+    log.info("변환된 List<MemberDTO>: {}", memberList);*/
+
+    return CourseDetailDTO.builder()
+        .course(courseDTO)
+        .schedule(results)
+        .build();
   }
 
   /* 교육과정 등록 */
@@ -111,53 +184,91 @@ public class CourseService{
   }
 
 
-  /* 교육과정 수정 */
+  /* 교육과정 수정 및 교시 수정 */
   @Transactional
-  public CourseDTO updateCourse(Long id, CoursePatchDTO coursePatchDTO) {
-    log.info("Updating course with ID: {}. Patch data: {}", id, coursePatchDTO);
+  public CoursePatchResponseDTO updateCourseAndSchedule(Long courseId, CoursePatchDTO coursePatchDTO) {
+    log.info("Updating course with ID: {}. Patch data: {}", courseId, coursePatchDTO);
 
     // 1. ID로 Course 조회, 없으면 예외 발생
-    Course course = courseRepository.findById(id)
+    Course course = courseRepository.findById(courseId)
         .orElseThrow(() -> {
-          log.error("Course not found with ID: {}", id);
-          return new NoSuchElementException("Course not found with id " + id);
+          log.error("Course not found with ID: {}", courseId);
+          return new NoSuchElementException("Course not found with id " + courseId);
         });
 
     log.debug("Original course data before update: {}", course);
 
     // 2. 필드 업데이트
-    course.updateWith(coursePatchDTO);
+    course.updateWith(coursePatchDTO.getCourse());
 
     // 3. 업데이트된 Course를 저장
     Course updatedCourse = courseRepository.save(course);
 
-    log.info("Course with ID: {} updated successfully", id);
+    log.info("Course with ID: {} updated successfully", courseId);
     log.debug("Updated course data: {}", updatedCourse);
 
     // 4. 업데이트된 엔티티를 DTO로 변환하여 반환
-    return fromEntity(updatedCourse, null);
+    CourseDTO updatedCourseDTO = fromEntity(updatedCourse, null);
+
+    ScheduleUpdateResponseDTO updatedScheduleDTO = null;
+    // 교시 업데이트
+    if (coursePatchDTO.getSchedule().getScheduleId() != null) {
+      updatedScheduleDTO = scheduleService.updateSchedule(courseId,coursePatchDTO.getSchedule());
+    }
+
+    return CoursePatchResponseDTO.builder()
+        .course(updatedCourseDTO)
+        .schedule(updatedScheduleDTO)
+        .build();
   }
 
   /* 교육과정 삭제 */
   @Transactional
-  public void deleteCourse(Long id) {
-    log.info("Deleting course with ID: {}", id);
+  public void deleteCourse(Long memberId,Long courseId) {
+    log.info("교육 과정 ID {} 삭제, 삭제자 {}", courseId,memberId);
 
-    Course existingCourse = courseRepository.findById(id)
+    Course existingCourse = courseRepository.findById(courseId)
         .orElseThrow(() -> {
-          log.error("Course not found with ID: {}", id);
-          return new NoSuchElementException("Course not found with id " + id);
+          log.error("Course not found with courseId: {}", courseId);
+          return new NoSuchElementException("Course not found with courseId " + courseId);
         });
 
     // 2. 로그인한 사람의 id를 얻어오기
-    //existingCourse.updateDeletedBy(memberId);
-
+    existingCourse.updateDeletedBy(memberId);
     // 3. 업데이트된 existingCourse 저장
     courseRepository.save(existingCourse);
-    log.info("Course with ID: {} deleted successfully", id);
+    log.info("교육 과정 ID {}, 삭제자 {} 삭제 완료", courseId,memberId);
+
+    // 교시 삭제
+    scheduleService.deletePeriod(memberId,courseId);
+    log.info("교시 삭제 완료");
+
+    // enroll 에서  삭제
+    enrollService.deleteEnrollmentByCourseId(memberId,courseId);
 
 
-    /*courseRepository.deleteById(id);*/
 
+  }
+
+  public List<AdminList> getAdminList() {
+    log.info("get admin list");
+    List<AdminList> adminList = memberRepository.findAdminList()
+        .stream()
+        .map(member -> new AdminList(member.getId(), member.getName()))
+        .toList();
+
+    log.info("admin list: {}", adminList);
+    return adminList;
+  }
+
+  public Page<MemberDTO> getMembersByCourse(Long courseId, Pageable pageable) {
+    log.info("get student list by courseId: {}", courseId);
+    return memberRepository.findMemberByCourseId(courseId, pageable)
+        .map(member -> MemberDTO.builder()
+            .id(member.getId())
+            .name(member.getName())
+            .birthday(member.getBirthday())
+            .email(member.getEmail())
+            .build());
   }
 }

@@ -1,6 +1,7 @@
 package com.syi.project.schedule.controller;
 
 
+import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.schedule.dto.ScheduleRequestDTO;
 import com.syi.project.schedule.dto.ScheduleResponseDTO;
 import com.syi.project.schedule.service.ScheduleService;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -59,7 +61,7 @@ public class ScheduleController {
     return ResponseEntity.ok(schedule);
   }
 
-  @PatchMapping("{id}")
+ /* @PatchMapping("{id}")
   @Operation(summary = "시간표 수정", description = "시간표를 수정합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "시간표를 성공적으로 수정했습니다."),
@@ -72,16 +74,20 @@ public class ScheduleController {
     log.info("Schedule with ID: {} updated successfully", id);
     return ResponseEntity.ok(updatedSchedule);
   }
+*/
 
+
+  // 반 ID 얻어와서 해당하는 시간표 다 삭제
   @DeleteMapping("{id}")
   @Operation(summary = "시간표 삭제", description = "시간표를 삭제합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "시간표가 성공적으로 삭제되었습니다."),
       })
   public ResponseEntity<Void> deleteSchedule(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
       @Parameter(description = "삭제할 시간표의 ID", required = true) @PathVariable Long id) {
     log.info("Request to delete schedule with ID: {}", id);
-    scheduleService.deletePeriod(id);
+    scheduleService.deletePeriod(userDetails.getId(),id);
     log.info("Schedule with ID: {} deleted successfully", id);
     return ResponseEntity.noContent().build();
   }

@@ -3,6 +3,7 @@ package com.syi.project.auth.repository;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,4 +31,16 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
       @Param("role") Role role,
       Pageable pageable
   );
+
+  @Query("SELECT m FROM Member m where(m.role = 'ADMIN' and  m.isDeleted = false)")
+  List<Member> findAdminList();
+
+
+  @Query(value = "SELECT m FROM Enroll e " +
+      "JOIN Member m ON e.memberId = m.id " +
+      "WHERE e.courseId = :courseId AND e.deletedBy IS NULL",
+      countQuery = "SELECT COUNT(m) FROM Enroll e " +
+          "JOIN Member m ON e.memberId = m.id " +
+          "WHERE e.courseId = :courseId AND e.deletedBy IS NULL")
+  Page<Member> findMemberByCourseId(@Param("courseId") Long courseId, Pageable pageable);
 }

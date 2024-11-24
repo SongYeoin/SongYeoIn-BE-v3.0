@@ -1,5 +1,6 @@
 package com.syi.project.schedule.dto;
 
+import com.syi.project.period.dto.PeriodRequestDTO;
 import com.syi.project.period.dto.PeriodResponseDTO;
 import com.syi.project.period.eneity.Period;
 import com.syi.project.schedule.entity.Schedule;
@@ -16,6 +17,26 @@ import lombok.ToString;
 @ToString
 @Schema(description = "시간표 응답 DTO")
 public class ScheduleResponseDTO {
+
+  /* 시간표 수정 요청 시 */
+  @Getter
+  @ToString
+  public static class ScheduleUpdateResponseDTO{
+    private Long scheduleId;
+    private List<PeriodResponseDTO> updatedPeriods; // 수정된 교시
+    private List<PeriodResponseDTO> newPeriods; // 새로 추가된 교시
+    /*private List<Long> deletedPeriodIds; // 삭제된 교시 ID*/
+
+    @Builder
+    public ScheduleUpdateResponseDTO(Long scheduleId,List<PeriodResponseDTO> updatedPeriods,
+        List<PeriodResponseDTO> newPeriods) {
+      this.scheduleId = scheduleId;
+      this.updatedPeriods = updatedPeriods;
+      this.newPeriods = newPeriods;
+      //this.deletedPeriodIds = deletedPeriodIds;
+    }
+  }
+
 
   @Schema(description = "시간표 ID", example = "1")
   private Long id;

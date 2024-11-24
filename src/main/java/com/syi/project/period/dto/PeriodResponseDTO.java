@@ -51,6 +51,7 @@ public class PeriodResponseDTO {
     this.id = id;
     this.courseId = courseId;
     this.scheduleId = scheduleId;
+    this.dayOfWeek = dayOfWeek;
     this.name = name;
     this.startTime = startTime;
     this.endTime = endTime;

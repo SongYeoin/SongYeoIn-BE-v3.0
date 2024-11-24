@@ -3,6 +3,7 @@ package com.syi.project.course.entity;
 
 import com.syi.project.common.annotation.StartBeforeEnd;
 import com.syi.project.common.enums.CourseStatus;
+import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CoursePatchDTO;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,8 +41,8 @@ public class Course {
   @Column(nullable = false, unique = true, length = 20)
   private String name;
 
-  @NotNull
-  @Size(min = 2, max = 50, message = "교육 과정 설명은 2자 이상 50자 이하이어야 합니다.")
+  //@NotNull
+  @Size(max = 50, message = "교육 과정 설명은 50자 이하이어야 합니다.")
   @Column(length = 50)
   private String description;
 
@@ -50,8 +51,8 @@ public class Course {
   @Column(nullable = false, length = 30)
   private String adminName;
 
-  @NotNull
-  @Size(min = 2, max = 30, message = "강사명은 2자 이상 30자 이하이어야 합니다.")
+ // @NotNull
+  @Size(max = 30, message = "강사명은 30자 이하이어야 합니다.")
   @Column(length = 30)
   private String teacherName;
 
@@ -65,8 +66,8 @@ public class Course {
   @Column(nullable = false)
   private LocalDate endDate;
 
-  @NotBlank(message = "강의실은 필수입니다.")
-  @Size(min = 2, max = 4, message = "강의실은 2자 이상 4자 이하이어야 합니다.")
+  //@NotBlank(message = "강의실은 필수입니다.")
+  @Size( max = 4, message = "강의실은 4자 이하이어야 합니다.")
   @Column(length = 4)
   private String roomName;
 
@@ -110,7 +111,7 @@ public class Course {
   }
 
   /* 수정할 때  dto 필드 ->entity 필드 업데이트 */
-  public void updateWith(CoursePatchDTO dto) {
+  public void updateWith(CourseDTO dto) {
     if (dto.getName() != null) {
       this.name = dto.getName();
     }
