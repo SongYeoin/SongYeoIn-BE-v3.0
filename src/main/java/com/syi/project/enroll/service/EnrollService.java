@@ -6,7 +6,6 @@ import com.syi.project.enroll.entity.Enroll;
 import com.syi.project.enroll.repository.EnrollRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class EnrollService {
 
   private final EnrollRepository enrollRepository;
-  ;
 
   // 수강이력 조회
   public List<EnrollResponseDTO> findEnrollmentsByMemberId(Long memberId) {
