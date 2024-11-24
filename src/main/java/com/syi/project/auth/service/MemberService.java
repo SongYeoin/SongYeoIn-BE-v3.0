@@ -126,9 +126,9 @@ public class MemberService {
   }
 
   // 회원목록
-  public Page<MemberDTO> getFilteredMembers(CheckStatus checkStatus, Role role, Pageable pageable) {
-    log.info("필터링된 회원 목록 조회 - 상태: {}, 역할: {}", checkStatus, role);
-    Page<Member> members = memberRepository.findByStatusAndRole(checkStatus, role, pageable);
+  public Page<MemberDTO> getFilteredMembers(CheckStatus checkStatus, Role role, String word, Pageable pageable) {
+    log.info("회원 목록 조회 - 상태: {}, 역할: {}, 검색어: {}", checkStatus, role, word);
+    Page<Member> members = memberRepository.findByStatusAndRole(checkStatus, role, word, pageable);
     return members.map(MemberDTO::fromEntity);
   }
 
@@ -158,6 +158,7 @@ public class MemberService {
   }
 
   // 역할
+  @Transactional
   public void updateMemberRole(Long id, Role newRole) {
     Member member = memberRepository.findByIdAndIsDeletedFalse(id)
         .orElseThrow(() -> {

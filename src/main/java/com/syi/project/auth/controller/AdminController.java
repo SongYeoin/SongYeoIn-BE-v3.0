@@ -69,10 +69,11 @@ public class AdminController {
       @RequestParam(value = "checkStatus", required = false) CheckStatus checkStatus,
       @Parameter(description = "회원 역할 필터", required = false)
       @RequestParam(value = "role", required = false) Role role,
+      @Parameter(description = "검색어 (이름)", required = false)
+      @RequestParam(value = "word", required = false) String word,
       @PageableDefault(size = 15) Pageable pageable) {
-
-    log.info("회원 목록 조회 요청 - 필터링 상태: {}, 역할: {}", checkStatus, role);
-    Page<MemberDTO> members = memberService.getFilteredMembers(checkStatus, role, pageable);
+    log.info("회원 목록 조회 요청 - 상태: {}, 역할: {}, 검색어: {}", checkStatus, role, word);
+    Page<MemberDTO> members = memberService.getFilteredMembers(checkStatus, role, word, pageable);
     log.info("회원 목록 조회 성공 - 총 {}명", members.getTotalElements());
     return new ResponseEntity<>(members, HttpStatus.OK);
   }
