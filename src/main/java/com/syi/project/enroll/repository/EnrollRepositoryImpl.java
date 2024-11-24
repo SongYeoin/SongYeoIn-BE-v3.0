@@ -1,9 +1,13 @@
 package com.syi.project.enroll.repository;
 
 import static com.syi.project.enroll.entity.QEnroll.enroll;
+import static com.syi.project.course.entity.QCourse.course;
 
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.auth.entity.Member;
+import com.syi.project.enroll.dto.EnrollResponseDTO;
+import com.syi.project.enroll.dto.QEnrollResponseDTO;
 import com.syi.project.enroll.entity.Enroll;
 import java.util.List;
 import java.util.Map;
@@ -19,9 +23,19 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
   private final JPAQueryFactory queryFactory;
 
   @Override
-  public List<Enroll> findEnrollmentsByMemberId(Long memberId) {
+  public List<EnrollResponseDTO> findEnrollmentsByMemberId(Long memberId) {
     return queryFactory
-        .selectFrom(enroll)
+        .select(Projections.constructor(
+            EnrollResponseDTO.class,
+            enroll.id,
+            course.id,
+            course.name,
+            course.adminName,
+            course.enrollDate,
+            course.endDate
+        ))
+        .from(enroll)
+        .join(course).on(enroll.courseId.eq(course.id))
         .where(enroll.memberId.eq(memberId).and(enroll.deletedBy.isNull()))
         .fetch();
   }
