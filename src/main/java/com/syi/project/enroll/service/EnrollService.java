@@ -52,13 +52,19 @@ public class EnrollService {
   // 수강신청 삭제 반 ID로
   @Transactional
   public void deleteEnrollmentByCourseId(Long adminId, Long courseId) {
-    log.info("교육과정 ID로 수강신청 삭제: {}, 삭제자(관리자) ID: {}", courseId, adminId);
-    if (enrollRepository.findEnrollmentsByCourseId(courseId).stream()
-        .noneMatch(enroll -> enroll.getCourseId().equals(courseId))) {
-      throw new EntityNotFoundException("해당 ID의 수강 신청이 존재하지 않습니다: " + courseId);
+    log.info("교육과정 ID로 수강 목록 삭제: {}, 삭제자(관리자) ID: {}", courseId, adminId);
+
+    List<Enroll> existingEnroll = enrollRepository.findEnrollmentsByCourseId(courseId);
+    if (existingEnroll == null || existingEnroll.isEmpty()) {
+      throw new EntityNotFoundException("해당 courseId의 수강 신청이 존재하지 않습니다: " + courseId);
     }
 
-    enrollRepository.deleteEnrollmentByCourseId(adminId,courseId);
+    for (Enroll enroll: existingEnroll) {
+      enrollRepository.deleteEnrollmentByCourseId(adminId,courseId);
+      log.info("1개의 수강신청 목록 삭제");
+    }
+
+    log.info("courseId {}에 해당하는 수강신청 목록 삭제 완료",courseId);
   }
 
 }

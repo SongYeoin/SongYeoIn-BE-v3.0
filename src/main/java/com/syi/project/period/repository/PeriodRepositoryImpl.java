@@ -24,7 +24,8 @@ public class PeriodRepositoryImpl implements PeriodRepositoryCustom {
     return queryFactory.select(period)
         .from(period)
         .where(period.scheduleId.eq(scheduleId)
-            .and(period.id.in(periodIdsToCheck)))
+            .and(period.id.in(periodIdsToCheck))
+            .and(period.deletedBy.isNull()))
         .fetch();
   }
 
@@ -39,7 +40,9 @@ public class PeriodRepositoryImpl implements PeriodRepositoryCustom {
             schedule.courseId)
         .from(period)
         .join(schedule).on(period.scheduleId.eq(schedule.id))
-        .where(period.dayOfWeek.containsIgnoreCase(dayOfWeekString))
+        .where(period.dayOfWeek.containsIgnoreCase(dayOfWeekString)
+            .and(period.deletedBy.isNull())
+            .and(schedule.deletedBy.isNull()))
         .orderBy(period.scheduleId.asc())
         .fetch();
 
@@ -55,5 +58,13 @@ public class PeriodRepositoryImpl implements PeriodRepositoryCustom {
             null
         )).toList();
 
+  }
+
+  @Override
+  public List<Period> findByCourseId(Long courseId) {
+    return queryFactory.selectFrom(period)
+        .where(period.courseId.eq(courseId)
+            .and(period.deletedBy.isNull()))
+        .fetch();
   }
 }
