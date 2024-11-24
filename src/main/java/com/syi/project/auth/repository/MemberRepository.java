@@ -24,11 +24,16 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   Optional<Member> findByIdAndIsDeletedFalse(Long id);
 
   // 회원 목록 조회
-  @Query("SELECT m FROM Member m WHERE (:checkStatus IS NULL OR m.checkStatus = :checkStatus) " +
-      "AND (:role IS NULL OR m.role = :role) AND m.isDeleted = false")
+  @Query("SELECT m FROM Member m " +
+      "WHERE (:checkStatus IS NULL OR m.checkStatus = :checkStatus) " +
+      "AND (:role IS NULL OR m.role = :role) " +
+      "AND (:word IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :word, '%'))) " +
+      "AND m.isDeleted = false " +
+      "ORDER BY m.enrollDate DESC")
   Page<Member> findByStatusAndRole(
       @Param("checkStatus") CheckStatus checkStatus,
       @Param("role") Role role,
+      @Param("word") String word,
       Pageable pageable
   );
 
