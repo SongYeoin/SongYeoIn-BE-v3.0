@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional(readOnly = true)
-public class CourseService{
+public class CourseService {
 
   private final CourseRepository courseRepository;
   private final MemberRepository memberRepository;
@@ -58,7 +58,7 @@ public class CourseService{
         });
     log.info("존재하는 관리자 입니다. 관리자 ID: {}", member.getId());
 
-    Page<Course> coursePage = courseRepository.findCoursesById(adminId,type, word,pageable);
+    Page<Course> coursePage = courseRepository.findCoursesById(adminId, type, word, pageable);
 
     if (coursePage.isEmpty()) {
       log.warn("No coursePage found in the database");
@@ -186,7 +186,8 @@ public class CourseService{
 
   /* 교육과정 수정 및 교시 수정 */
   @Transactional
-  public CoursePatchResponseDTO updateCourseAndSchedule(Long courseId, CoursePatchDTO coursePatchDTO) {
+  public CoursePatchResponseDTO updateCourseAndSchedule(Long courseId,
+      CoursePatchDTO coursePatchDTO) {
     log.info("Updating course with ID: {}. Patch data: {}", courseId, coursePatchDTO);
 
     // 1. ID로 Course 조회, 없으면 예외 발생
@@ -213,7 +214,7 @@ public class CourseService{
     ScheduleUpdateResponseDTO updatedScheduleDTO = null;
     // 교시 업데이트
     if (coursePatchDTO.getSchedule().getScheduleId() != null) {
-      updatedScheduleDTO = scheduleService.updateSchedule(courseId,coursePatchDTO.getSchedule());
+      updatedScheduleDTO = scheduleService.updateSchedule(courseId, coursePatchDTO.getSchedule());
     }
 
     return CoursePatchResponseDTO.builder()
@@ -224,8 +225,8 @@ public class CourseService{
 
   /* 교육과정 삭제 */
   @Transactional
-  public void deleteCourse(Long memberId,Long courseId) {
-    log.info("교육 과정 ID {} 삭제, 삭제자 {}", courseId,memberId);
+  public void deleteCourse(Long memberId, Long courseId) {
+    log.info("교육 과정 ID {} 삭제, 삭제자 {}", courseId, memberId);
 
     Course existingCourse = courseRepository.findById(courseId)
         .orElseThrow(() -> {
@@ -237,17 +238,17 @@ public class CourseService{
     existingCourse.updateDeletedBy(memberId);
     // 3. 업데이트된 existingCourse 저장
     courseRepository.save(existingCourse);
-    log.info("교육 과정 ID {}, 삭제자 {} 삭제 완료", courseId,memberId);
+    log.info("교육 과정 ID {}, 삭제자 {} 삭제 완료", courseId, memberId);
 
     // 교시 삭제
-    scheduleService.deletePeriod(memberId,courseId);
+    scheduleService.deletePeriod(memberId, courseId);
     log.info("시간표, 교시 삭제 완료");
 
     // enroll 에서  삭제
-    enrollService.deleteEnrollmentByCourseId(memberId,courseId);
+    enrollService.deleteEnrollmentByCourseId(memberId, courseId);
     log.info("수강 테이블에서 수강생 목록 삭제 완료");
 
-    log.info("courseId {}에 대한 시간표, 수강신청 목록 삭제 완료",courseId);
+    log.info("courseId {}에 대한 시간표, 수강신청 목록 삭제 완료", courseId);
 
   }
 
@@ -271,5 +272,14 @@ public class CourseService{
             .birthday(member.getBirthday())
             .email(member.getEmail())
             .build());
+  }
+
+  /* 교육과정 조회 */
+  public List<CourseDTO> getAvailableCourses() {
+    log.info("deletedBy가 null인 교육 과정 조회");
+    return courseRepository.findByDeletedByIsNull()
+        .stream()
+        .map(course -> CourseDTO.fromEntity(course, null)) // studentCounts를 null로 전달
+        .toList();
   }
 }
