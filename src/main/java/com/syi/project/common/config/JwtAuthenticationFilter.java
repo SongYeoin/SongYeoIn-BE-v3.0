@@ -36,7 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         requestURI.startsWith("/webjars") ||
         requestURI.equals("/") ||
         requestURI.startsWith("/login") ||
-        requestURI.startsWith("/admin/login") ||
+        requestURI.startsWith("/admin/member/login") ||
         requestURI.startsWith("/register") ||
         requestURI.startsWith("/refresh") ||
         requestURI.startsWith("/api/");
@@ -56,6 +56,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
 
     String token = getTokenFromRequest(request);
+
+    // 토큰 확인
+    if (token == null) {
+      log.warn("Authorization 헤더가 비어 있습니다. 요청 URL: {}", request.getRequestURI());
+      setUnauthorizedResponse(response, "Authorization header is missing or invalid");
+      return;
+    }
 
     try {
       // JWT 토큰 검증

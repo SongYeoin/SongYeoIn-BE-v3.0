@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/admin/member")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "관리자 회원 API", description = "회원가입, 로그인, 회원정보 수정 기능")
@@ -58,7 +58,7 @@ public class AdminController {
     return new ResponseEntity<>(responseDTO, HttpStatus.OK);
   }
 
-  @GetMapping("/list")
+  @GetMapping
   @Operation(summary = "회원 목록 조회", description = "회원 상태, 역할에 따른 필터링과 페이징 기능을 지원하는 모든 회원 정보 조회 기능입니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "조회 성공"),
