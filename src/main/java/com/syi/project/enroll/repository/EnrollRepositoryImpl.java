@@ -53,4 +53,19 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
             tuple -> Objects.requireNonNull(tuple.get(enroll.count())).intValue()
         ));
   }
+
+  @Override
+  public List<Enroll> findEnrollmentsByCourseId(Long courseId) {
+    return queryFactory.selectFrom(enroll)
+        .where(enroll.courseId.eq(courseId))
+        .fetch();
+  }
+
+  @Override
+  public void deleteEnrollmentByCourseId(Long adminId, Long courseId) {
+    queryFactory.update(enroll)
+        .set(enroll.deletedBy, adminId)
+        .where(enroll.courseId.eq(courseId))
+        .execute();
+  }
 }

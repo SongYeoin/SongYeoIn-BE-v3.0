@@ -1,8 +1,11 @@
 package com.syi.project.course.controller;
 
+import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CoursePatchDTO;
+import com.syi.project.course.dto.CoursePatchDTO.CoursePatchResponseDTO;
+import com.syi.project.course.dto.CourseResponseDTO;
 import com.syi.project.course.service.CourseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -76,29 +79,63 @@ public class CourseController {
     return ResponseEntity.ok(courses);
   }
 
+  @GetMapping("/modal")
+  public ResponseEntity<List<CourseResponseDTO.AdminList>> getAdminList() {
+    log.info("모달창에서 사용할 담당자 리스트 조회");
+    List<CourseResponseDTO.AdminList> adminList = courseService.getAdminList();
+    log.info("성공적으로 {} 명의 담당자 리스트를 조회했습니다.", adminList.size());
+    return ResponseEntity.ok(adminList);
+  }
+
   /* 교육과정 상세 조회 */
   @Operation(summary = "교육 과정 상세 조회", description = "등록된 교육 과정을 상세 조회합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "교육 과정이 성공적으로 조회되었습니다."),
       })
   @GetMapping("{id}")
-  public ResponseEntity<CourseDTO> getCourseById(@Parameter(description = "상세 조회할 교육과정의 ID", required = true) @PathVariable Long id) {
+  public ResponseEntity<CourseResponseDTO.CourseDetailDTO> getCourseById(
+      @Parameter(description = "상세 조회할 교육과정의 ID", required = true) @PathVariable Long id) {
     log.info("Request to get course with ID: {}", id);
-    CourseDTO course = courseService.getCourseById(id);
-    log.info("get course with ID: {} successfully", id);
-    return ResponseEntity.ok(course);
+    CourseResponseDTO.CourseDetailDTO courseDetail = courseService.getCourseById(id);
+    log.info("get course with ID: {} successfully", courseDetail.getCourse().getId());
+    return ResponseEntity.ok(courseDetail);
+  }
+  /*@Operation(summary = "교육 과정 상세 조회", description = "등록된 교육 과정을 상세 조회합니다.",
+      responses = {
+          @ApiResponse(responseCode = "200", description = "교육 과정이 성공적으로 조회되었습니다."),
+      })
+  @GetMapping("{id}")
+  public ResponseEntity<CourseResponseDTO.CourseDetailDTO> getCourseById(@Parameter(description = "상세 조회할 교육과정의 ID", required = true) @PathVariable Long id,
+      @ParameterObject Pageable pageable) {
+    log.info("Request to get course with ID: {}", id);
+    CourseResponseDTO.CourseDetailDTO courseDetail = courseService.getCourseById(id,pageable);
+    log.info("get course with ID: {} successfully", courseDetail.getCourse().getId());
+    return ResponseEntity.ok(courseDetail);
+  }*/
+
+
+  @GetMapping("/{courseId}/members")
+  public ResponseEntity<Page<MemberDTO>> getCourseMembers(@PathVariable Long courseId,
+      @PageableDefault(size = 5) Pageable pageable) {
+    log.info("Request to get course members with ID: {}", courseId);
+    Page<MemberDTO> members = courseService.getMembersByCourse(courseId, pageable);
+    return ResponseEntity.ok(members);
   }
 
-  @PatchMapping("{id}")
+  @PatchMapping("{courseId}")
   @Operation(summary = "교육 과정 수정", description = "교육 과정을 수정합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "교육 과정을 성공적으로 수정했습니다."),
       })
-  public ResponseEntity<CourseDTO> updateCourse(@Parameter(description = "수정할 교육과정의 ID", required = true) @PathVariable Long id,
+  public ResponseEntity<CoursePatchResponseDTO> updateCourseAndSchedule(
+      @Parameter(description = "수정할 교육과정의 ID", required = true) @PathVariable Long courseId,
       @RequestBody CoursePatchDTO coursePatchDTO) {
-    log.info("Request to update course with ID: {}. Update data: {}", id, coursePatchDTO);
-    CourseDTO updatedCourse = courseService.updateCourse(id, coursePatchDTO);
-    log.info("Course with ID: {} updated successfully", id);
+    log.info("Request to update course with ID: {}. Update data: {}", courseId,
+        coursePatchDTO.getCourse());
+    log.info("Request to update period. Update data: {}", coursePatchDTO.getSchedule());
+    CoursePatchResponseDTO updatedCourse = courseService.updateCourseAndSchedule(courseId,
+        coursePatchDTO);
+    log.info("Course with ID: {} updated successfully", courseId);
     return ResponseEntity.ok(updatedCourse);
   }
 
@@ -107,9 +144,10 @@ public class CourseController {
       responses = {
           @ApiResponse(responseCode = "200", description = "교육 과정이 성공적으로 삭제되었습니다."),
       })
-  public ResponseEntity<Void> deleteCourse(@Parameter(description = "삭제할 교육과정의 ID", required = true) @PathVariable Long id) {
+  public ResponseEntity<Void> deleteCourse(@AuthenticationPrincipal CustomUserDetails userDetails,
+      @Parameter(description = "삭제할 교육과정의 ID", required = true) @PathVariable Long id) {
     log.info("Request to delete course with ID: {}", id);
-    courseService.deleteCourse(id);
+    courseService.deleteCourse(userDetails.getId(),id);
     log.info("Course with ID: {} deleted successfully", id);
     return ResponseEntity.noContent().build();
   }

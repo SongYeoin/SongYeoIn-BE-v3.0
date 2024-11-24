@@ -32,12 +32,15 @@ public class CourseRepositoryCustomImpl implements
         and(course.deletedBy.isNull()));
 
     // 필터링 조건이 하나밖에 안된다는 전체
-    if (type != null && !TextUtils.isBlank(word)) {
+    /*if (type != null && !TextUtils.isBlank(word)) {
       switch (type) {
         case "name" -> predicate.and(course.name.containsIgnoreCase(word));
         case "roomName" -> predicate.and(course.roomName.containsIgnoreCase(word));
         //case "status" -> predicate.and(course.status.in(word);
       }
+    }*/
+    if(!TextUtils.isBlank(word)) {
+      predicate.and(course.name.containsIgnoreCase(word));
     }
 
     // 현재 페이지 데이터
@@ -45,6 +48,7 @@ public class CourseRepositoryCustomImpl implements
         .where(predicate)
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
+        .orderBy(course.enrollDate.desc(),course.name.asc())
         .fetch();
 
     // 전체 데이터 개수

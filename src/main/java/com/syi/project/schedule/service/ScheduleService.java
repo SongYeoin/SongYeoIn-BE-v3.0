@@ -2,12 +2,13 @@ package com.syi.project.schedule.service;
 
 import static com.syi.project.schedule.dto.ScheduleResponseDTO.fromEntity;
 
-import com.querydsl.core.Tuple;
 import com.syi.project.period.dto.PeriodRequestDTO;
 import com.syi.project.period.eneity.Period;
 import com.syi.project.period.repository.PeriodRepository;
 import com.syi.project.schedule.dto.ScheduleRequestDTO;
+import com.syi.project.schedule.dto.ScheduleRequestDTO.ScheduleUpdateRequestDTO;
 import com.syi.project.schedule.dto.ScheduleResponseDTO;
+import com.syi.project.schedule.dto.ScheduleResponseDTO.ScheduleUpdateResponseDTO;
 import com.syi.project.schedule.entity.Schedule;
 import com.syi.project.schedule.repository.ScheduleRepository;
 import java.time.LocalDate;
@@ -92,38 +93,21 @@ public class ScheduleService {
 
     log.info("교육과정 ID {}에 대한 시간표를 처리 중입니다.", courseId);
 
-    List<Tuple> results = scheduleRepository.findScheduleWithPeriodsByCourseId(courseId);
+    ScheduleResponseDTO results = scheduleRepository.findScheduleWithPeriodsByCourseId(courseId);
+    log.info("변환된 scheduleResponseDTO: {}", results);
 
-    if (results.isEmpty()) {
-      log.warn("경고 : 교육과정 ID {}에 대한 시간표가 비어있습니다.", courseId);
-      throw new NoSuchElementException("시간표가 비어있습니다.");
-    }
-
-    log.info("{} 개의 시간표 조회 중", results.size());
-
-    // Schedule 데이터와 Period 리스트를 추출하여 DTO로 변환
-    Schedule schedule;
-    List<Period> periods;
-    try {
-      schedule = results.get(0).get(0, Schedule.class);
-      periods = results.stream()
-          .map(tuple -> tuple.get(1, Period.class))
-          .toList();
-    } catch (NullPointerException e) {
-      log.error("등록된 시간표가 없습니다.", e);
-      throw new RuntimeException("등록된 시간표가 없습니다. courseId: " + courseId, e);
-    } catch (IndexOutOfBoundsException | ClassCastException e) {
-      log.error("에러 발생: 교육과정 ID {}에 대한 시간표를 찾을 수 없습니다.", courseId);
-      throw new RuntimeException("시간표를 찾을 수 없습니다. courseId: " + courseId, e);
-    }
-
-    return ScheduleResponseDTO.fromEntity(schedule, periods);
+    return results;
   }
 
   /* 시간표 수정 */
   @Transactional
-  public ScheduleResponseDTO updateSchedule(long scheduleId, ScheduleRequestDTO scheduleDTO) {
-    log.info("시간표 ID {} 를 수정 중입니다, 수정될 데이터: {}", scheduleId, scheduleDTO);
+  public ScheduleUpdateResponseDTO updateSchedule(Long courseId,ScheduleUpdateRequestDTO request) {
+    log.info("ID {} 번 시간표 수정", request.getScheduleId());
+    log.debug("수정될 교시 정보: {}", request.getUpdatedPeriods());
+    log.debug("새로 추가할 교시 정보: {}", request.getNewPeriods());
+    log.debug("삭제될 교시 ID 리스트: {}", request.getDeletedPeriodIds());
+
+    Long scheduleId = request.getScheduleId();
 
     // 1. ID로 Schedule, Period 조회, 없으면 예외 발생
     Schedule schedule = scheduleRepository.findById(scheduleId)
@@ -132,8 +116,7 @@ public class ScheduleService {
           return new NoSuchElementException("시간표를 찾을 수 없습니다. scheduleId: " + scheduleId);
         });
 
-    List<PeriodRequestDTO> patchPeriodList = scheduleDTO.getPeriods();
-    log.info("요청된 Period 목록: {}", patchPeriodList);
+    List<PeriodRequestDTO> patchPeriodList = request.getUpdatedPeriods();
     log.debug("요청된 Period 목록: {}", patchPeriodList);
 
     List<Long> periodIdsToCheck = patchPeriodList.stream()
@@ -143,7 +126,6 @@ public class ScheduleService {
 
     List<Period> existingPeriods = periodRepository.findPeriodsByScheduleIdForPatch(scheduleId,
         periodIdsToCheck);
-    log.info("존재하는 Period 목록: {}", existingPeriods);
     log.debug("존재하는 Period 목록: {}", existingPeriods);
 
     if (existingPeriods.size() != patchPeriodList.size()) {
@@ -183,25 +165,53 @@ public class ScheduleService {
     log.info("교시 성공적으로 수정했습니다.");
     log.debug("교시 수정된 데이터: {}", updatedPeriod);
 
+    // 새롭게 등록하는 교시 저장하는 로직
+    ScheduleResponseDTO createdSchedule = null;
+    List<PeriodRequestDTO> newPeriods = request.getNewPeriods();
+    if (newPeriods != null && !newPeriods.isEmpty()) {
+      createdSchedule = createSchedule(
+          new ScheduleRequestDTO(null, null, null, null,courseId, newPeriods));
+    } else {
+      log.info("새로 추가할 교시 정보가 없습니다.");
+    }
+
+    // 삭제할 교시 목록 있을 시(냅다 삭제)
+    if (request.getDeletedPeriodIds() != null) {
+      for (Long periodId : request.getDeletedPeriodIds()) {
+        periodRepository.deleteById(periodId);
+      }
+    }
+
     // 4. 업데이트된 엔티티를 DTO로 변환하여 반환
-    return fromEntity(updatedSchedule, updatedPeriod);
+    ScheduleResponseDTO updatedScheduleDTO = fromEntity(updatedSchedule, updatedPeriod);
+
+    return ScheduleUpdateResponseDTO.builder()
+        .scheduleId(scheduleId)
+        .updatedPeriods(updatedScheduleDTO.getPeriods())
+        .newPeriods(
+            createdSchedule != null ? createdSchedule.getPeriods() : List.of()) // Null-safe 처리
+        .build();
   }
 
   /* 시간표 삭제 */
+  // 반 ID 얻어와서 해당하는 시간표 deletedBy 삭제
   @Transactional
-  public void deletePeriod(long periodId) {
-    log.info("Updating deletedBy with ID: {}", periodId);
+  public void deletePeriod(Long memberId,Long courseId) {
+    log.info("교시 삭제 By 교육 과정 ID: {} , 삭제자: {}", courseId, memberId);
 
-    Period existingPeriod = periodRepository.findById(periodId)
+    Period existingPeriod = periodRepository.findByCourseId(courseId)
         .orElseThrow(() -> {
-          log.error("Period not found with ID: {}", periodId);
-          return new NoSuchElementException("Period not found with id " + periodId);
+          log.error("Period not found with courseId: {}", courseId);
+          return new NoSuchElementException("Period not found with courseId " + courseId);
         });
 
     // 2. 로그인한 사람의 id를 얻어오기
-    //existingPeriod.updateDeletedBy(memberId);
+    existingPeriod.updateDeletedBy(memberId);
 
-    log.info("Period with ID: {} deleted successfully", periodId);
+    // deletedBy로 삭제 완료
+    periodRepository.save(existingPeriod);
+
+    log.info("Period with courseId: {} deleted successfully", courseId);
 
   }
 

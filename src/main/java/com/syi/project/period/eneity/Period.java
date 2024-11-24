@@ -88,6 +88,10 @@ public class Period {
       this.dayOfWeek = dto.getDayOfWeek();
     }
 
+    if (dto.getName() != null) {
+      this.name = dto.getName();
+    }
+
     if (dto.getStartTime() != null) {
       this.startTime = dto.getStartTime();
     }

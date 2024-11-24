@@ -6,6 +6,7 @@ import com.syi.project.course.entity.Course;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.lang.Nullable;
 
 @Getter
 /*@Setter*/
@@ -22,42 +24,55 @@ import org.springframework.format.annotation.DateTimeFormat;
 @StartBeforeEnd(message = "종료 날짜는 시작 날짜 이후여야 합니다.")
 public class CourseDTO {
 
+  public interface Create {
+
+  }
+
+  public interface Update {
+
+  }
+
   @Schema(description = "교육 과정 ID", example = "1")
+  @NotNull(groups = CourseDTO.Update.class)
+  @Null(groups = CourseDTO.Create.class)
   private Long id;
 
   @Schema(description = "교육 과정명", example = "자바 스프링 백엔드 과정")
-  @NotBlank(message = "교육 과정명은 필수입니다.")
+  @NotBlank(groups = Create.class,message = "교육 과정명은 필수입니다.")
   @Size(min = 2, max = 20,message = "교육 과정명은 2자 이상 20자 이하이어야 합니다.")
   private String name;
 
   @Schema(description = "교육과정 설명", example = "자바와 스픠링을 배우고 익힙니다.")
-  @NotBlank(message = "교육과정 설명은 필수입니다.")
-  @Size(min = 2, max = 50, message = "교육 과정 설명은 2자 이상 50자 이하이어야 합니다.")
+  //@NotBlank(message = "교육과정 설명은 필수입니다.")
+  @Nullable
+  @Size(min = 0, max = 50, message = "교육 과정 설명은 50자 이하이어야 합니다.")
   private String description;
 
   @Schema(description = "담당자명", example = "황정미")
-  @NotBlank(message = "담당자명은 필수입니다.")
+  @NotBlank(groups = Create.class,message = "담당자명은 필수입니다.")
   @Size(min = 2, max = 30, message = "담당자명은 2자 이상 30자 이하이어야 합니다.")
   private String adminName;
 
   @Schema(description = "강사명", example = "정민신")
-  @NotBlank(message = "강사명은 필수입니다.")
-  @Size(min = 2, max = 30, message = "강사명은 2자 이상 30자 이하이어야 합니다.")
+  //@NotBlank(message = "강사명은 필수입니다.")
+  @Nullable
+  @Size(max = 30, message = "강사명은 30자 이하이어야 합니다.")
   private String teacherName;
 
   @Schema(description = "개강 날짜", example = "2024-04-11")
-  @NotNull(message = "개강 날짜는 필수입니다.")
+  @NotNull(groups = Create.class,message = "개강 날짜는 필수입니다.")
   @DateTimeFormat(pattern = "yyyy-MM-dd")
   private LocalDate startDate;
 
   @Schema(description = "종강 날짜", example = "2024-09-16")
-  @NotNull(message = "종강 날짜는 필수입니다.")
+  @NotNull(groups = Create.class,message = "종강 날짜는 필수입니다.")
   @DateTimeFormat(pattern = "yyyy-MM-dd")
   private LocalDate endDate;
 
   @Schema(description = "강의실", example = "302")
-  @NotBlank(message = "강의실은 필수입니다.")
-  @Size(min = 2, max = 4, message = "강의실은 2자 이상 4자 이하이어야 합니다.")
+  //@NotBlank(message = "강의실은 필수입니다.")
+  @Nullable
+  @Size(max = 4, message = "강의실은 4자 이하이어야 합니다.")
   private String roomName;
 
   @Schema(description = "등록일", example = "2024-11-11")
@@ -75,7 +90,7 @@ public class CourseDTO {
   private Long deletedBy;
 
   @Schema(description = "담당자 번호", example = "1")
-  @NotNull(message = "담당자 번호는 필수입니다.")
+  @NotNull(groups = Create.class,message = "담당자 번호는 필수입니다.")
   private Long adminId;
 
   @Schema(description = "과정기간", example = "24")
@@ -122,7 +137,7 @@ public class CourseDTO {
 
   }
 
-  public static CourseDTO fromEntity(Course course, Integer counts) {
+  public static CourseDTO fromEntity(Course course, Integer studentCounts) {
     // 수강 기산 주 계산하기
     long days = ChronoUnit.DAYS.between(course.getStartDate(), course.getEndDate());
     long weeks = (days + 6) / 7; // 올림 처리된 주 수 계산
@@ -141,8 +156,9 @@ public class CourseDTO {
         .modifiedDate(course.getModifiedDate())
         .adminId(course.getAdminId())
         .weeks(weeks)
-        .counts(counts)
+        .counts(studentCounts)
         .build();
   }
+
 
 }
