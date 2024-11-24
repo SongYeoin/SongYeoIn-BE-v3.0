@@ -7,7 +7,6 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.enroll.dto.EnrollResponseDTO;
-import com.syi.project.enroll.dto.QEnrollResponseDTO;
 import com.syi.project.enroll.entity.Enroll;
 import java.util.List;
 import java.util.Map;
