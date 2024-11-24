@@ -2,10 +2,12 @@ package com.syi.project.club.dto;
 
 import com.syi.project.club.entity.Club;
 import com.syi.project.club.file.ClubFile;
+import com.syi.project.common.dto.PageInfoDTO;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.file.dto.FileDownloadDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.repository.FileRepository;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

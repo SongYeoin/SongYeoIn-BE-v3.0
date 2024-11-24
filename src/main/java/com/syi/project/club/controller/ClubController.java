@@ -116,39 +116,26 @@ public class ClubController {
 //    }
 
     //상세
-    @GetMapping("/{clubId}")
-    public ResponseEntity<Map<String, Object>> getClubDetail(@PathVariable("clubId") Long clubId) {
+    @GetMapping("/{clubId}/detail")
+    public ResponseEntity<ClubResponseDTO.ClubDetail> getClubDetail(@PathVariable("clubId") Long clubId) {
         ClubResponseDTO.ClubDetail club = clubService.getClubDetail(clubId);
-
-        if (club == null) {
-            // 클럽 정보가 없을 경우 404 반환
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Collections.singletonMap("error", "Club not found"));
-        }
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("club", club);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(club);
     }
 
     //수정
     @GetMapping("/{clubId}")
     public ResponseEntity<ClubResponseDTO.ClubDetail> updateClub(@PathVariable Long clubId,
                                                                  @AuthenticationPrincipal CustomUserDetails customUserDetails) {
-        try {
-            Long loggedInUserId = customUserDetails.getId();
-            // 작성자 확인 및 클럽 정보 조회
-            Club club = clubService.getClub(clubId);
-            if (!club.getWriterId().equals(loggedInUserId)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // 작성자만 조회할 수 있음
-            }
 
-            ClubResponseDTO.ClubDetail clubResponse = clubService.getClubDetail(clubId);
-            return ResponseEntity.ok(clubResponse);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // 클럽이 없을 때
+        Long loggedInUserId = customUserDetails.getId();
+        Club club = clubService.getClub(clubId);
+
+        if (!club.getWriterId().equals(loggedInUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // 작성자만 조회할 수 있음
         }
+
+        ClubResponseDTO.ClubDetail clubResponse = clubService.getClubDetail(clubId);
+        return ResponseEntity.ok(clubResponse);
     }
 
     @PutMapping("/{clubId}")
@@ -158,18 +145,9 @@ public class ClubController {
             @RequestPart(value = "file", required = false) MultipartFile file,
             @AuthenticationPrincipal CustomUserDetails customUserDetails){
 
-        try {
-            Long loggedInUserId = customUserDetails.getId();
-            ClubResponseDTO.ClubList clubResponse = clubService.updateClub(clubId, clubRequest, file, loggedInUserId);
-            return ResponseEntity.ok(clubResponse);
-        } catch (InvalidRequestException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ErrorResponse(e.getErrorCode()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse(ErrorCode.INVALID_REQUEST));
-        }
-
+        Long loggedInUserId = customUserDetails.getId();
+        ClubResponseDTO.ClubList clubResponse = clubService.updateClub(clubId, clubRequest, file, loggedInUserId);
+        return ResponseEntity.ok(clubResponse);
     }
 
     //삭제
@@ -179,33 +157,25 @@ public class ClubController {
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestParam(value = "courseId", required = false) Long courseId) {
 
-        try {
-            // 로그인한 사용자의 ID 가져오기
-            Long loggedInUserId = customUserDetails.getId();
-            Club club = clubService.getClub(clubId);
+        // 로그인한 사용자의 ID 가져오기
+        Long loggedInUserId = customUserDetails.getId();
+        Club club = clubService.getClub(clubId);
 
-            if (!club.getWriterId().equals(loggedInUserId)) {
-                throw new IllegalArgumentException("Only the creator can delete the club.");
-            }
-
-            if (club.getCheckStatus() != CheckStatus.W) {
-                throw new IllegalArgumentException("Only clubs with pending approval can be deleted.");
-            }
-
-            clubService.delete(clubId, loggedInUserId);
-
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Club deleted successfully");
-            response.put("redirectUrl", courseId != null ? "/club/list?courseId=" + courseId : null);
-
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Collections.singletonMap("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("error", "Failed to delete club: " + e.getMessage()));
+        if (!club.getWriterId().equals(loggedInUserId)) {
+            throw new IllegalArgumentException("Only the creator can delete the club.");
         }
+
+        if (club.getCheckStatus() != CheckStatus.W) {
+            throw new IllegalArgumentException("Only clubs with pending approval can be deleted.");
+        }
+
+        clubService.delete(clubId, loggedInUserId);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Club deleted successfully");
+        response.put("redirectUrl", courseId != null ? "/club/list?courseId=" + courseId : null);
+
+        return ResponseEntity.ok(response);
     }
 
 

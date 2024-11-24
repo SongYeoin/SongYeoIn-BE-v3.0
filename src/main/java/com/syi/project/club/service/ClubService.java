@@ -149,6 +149,13 @@ public class ClubService {
                 .orElseThrow(() -> new IllegalArgumentException("클럽이 존재하지 않습니다."));
     }
 
+    //작성자확인
+    private void verifyWriter(Long writerId, Long loggedInUserId) {
+        if (!writerId.equals(loggedInUserId)) {
+            throw new InvalidRequestException(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
     //수정
     public ClubResponseDTO.ClubList updateClub(Long clubId, ClubRequestDTO.ClubUpdate clubUpdate,
                                                MultipartFile file, Long loggedInUserId) {
@@ -157,9 +164,7 @@ public class ClubService {
                 .orElseThrow(() -> new NoSuchElementException("클럽이 존재하지 않습니다."));
 
         // 작성자와 로그인 사용자가 동일한지 확인
-        if (!club.getWriterId().equals(loggedInUserId)) {
-            throw new InvalidRequestException(ErrorCode.ACCESS_DENIED);
-        }
+        verifyWriter(club.getWriterId(), loggedInUserId);
 
         // 승인 상태에 따른 수정 처리
         if (club.getCheckStatus() == CheckStatus.W) {
@@ -178,18 +183,17 @@ public class ClubService {
                 throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_APPROVED);
             }
 
+            Member member = memberRepository.findById(loggedInUserId)
+                    .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
             // 파일 처리
             if (file != null) {
                 String dirName = "club/" + clubId;
                 if (club.getFileId() != null) {
                     // 기존 파일이 있는 경우 수정
-                    Member member = memberRepository.findById(loggedInUserId)
-                            .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
                     fileService.updateFile(club.getFileId(), file, dirName, member); // 간단한 Member 객체 생성
                 } else {
                     // 새로운 파일 업로드
-                    Member member = memberRepository.findById(loggedInUserId)
-                            .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
                     File uploadedFile = fileService.uploadFile(file, dirName, member);
                     club.updateFileId(uploadedFile.getId());
                 }
@@ -222,24 +226,17 @@ public class ClubService {
         return ClubResponseDTO.ClubList.toListDTO(updatedClub, writer, adminName, Collections.emptyList());
     }
 
-    // 삭제
-//    @Transactional
-//    public int delete(int clubNo) {
-//        Club club = clubRepository.findById((long) clubNo).orElse(null);
-//        if (club != null) {
-//            clubRepository.delete(club);
-//            return 1;
-//        }
-//        return 0; // 실패시 0 반환
-//    }
+    //삭제
     @Transactional
     public void delete(Long clubId, Long loggedInUserId) {
         Club club = clubRepository.findById(clubId)
-                .orElseThrow(() -> new IllegalArgumentException("Club with ID " + clubId + " does not exist."));
+                .orElseThrow(() -> new IllegalArgumentException("클럽이 존재하지 않습니다. ID: " + clubId));
 
         // 작성자와 로그인한 사용자 비교
-        if (!club.getWriterId().equals(loggedInUserId)) {
-            throw new IllegalArgumentException("You do not have permission to delete this club.");
+        verifyWriter(club.getWriterId(), loggedInUserId);
+
+        if (club.getCheckStatus() != CheckStatus.W) {
+            throw new InvalidRequestException(ErrorCode.CANNOT_DELETE_APPROVED);
         }
 
         clubRepository.deleteById(clubId);
@@ -251,7 +248,7 @@ public class ClubService {
                 .orElseThrow(() -> new IllegalArgumentException("Club with ID " + clubId + " does not exist."));
 
         if (club.getCheckStatus() != CheckStatus.W) {
-            throw new IllegalArgumentException("Only clubs with pending approval can be deleted.");
+            throw new InvalidRequestException(ErrorCode.CANNOT_DELETE_APPROVED);
         }
 
         clubRepository.deleteById(clubId);

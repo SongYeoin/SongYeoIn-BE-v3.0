@@ -46,7 +46,7 @@ public enum ErrorCode {
   INVALID_REQUEST("CLUB_003", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST);
 
 
-    private final String code;
+  private final String code;
   private final String message;
   private final HttpStatus httpStatus;
 
