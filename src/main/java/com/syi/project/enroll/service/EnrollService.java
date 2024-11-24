@@ -23,10 +23,7 @@ public class EnrollService {
   // 수강이력 조회
   public List<EnrollResponseDTO> findEnrollmentsByMemberId(Long memberId) {
     log.info("회원 ID로 수강이력 조회: {}", memberId);
-    return enrollRepository.findEnrollmentsByMemberId(memberId)
-        .stream()
-        .map(EnrollResponseDTO::new)
-        .collect(Collectors.toList());
+    return enrollRepository.findEnrollmentsByMemberId(memberId);
   }
 
   // 수강신청
