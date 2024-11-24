@@ -47,7 +47,7 @@ public class Member {
   private Boolean isDeleted = false;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(nullable = false, length = 7)
   private Role role;
 
   private String profileUrl;
