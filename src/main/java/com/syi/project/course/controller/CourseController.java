@@ -146,7 +146,7 @@ public class CourseController {
       })
   public ResponseEntity<Void> deleteCourse(@AuthenticationPrincipal CustomUserDetails userDetails,
       @Parameter(description = "삭제할 교육과정의 ID", required = true) @PathVariable Long id) {
-    log.info("Request to delete course with ID: {}", id);
+    log.info("교육과정 ID {} 를 삭제하는 요청, 삭제자: {}", id, userDetails.getId());
     courseService.deleteCourse(userDetails.getId(),id);
     log.info("Course with ID: {} deleted successfully", id);
     return ResponseEntity.noContent().build();

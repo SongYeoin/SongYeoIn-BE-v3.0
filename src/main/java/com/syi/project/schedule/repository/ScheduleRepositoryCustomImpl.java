@@ -82,5 +82,13 @@ public class ScheduleRepositoryCustomImpl implements ScheduleRepositoryCustom {
 
   }
 
+  @Override
+  public Schedule findByCourseId(Long courseId) {
+    return queryFactory.selectFrom(schedule)
+        .where(schedule.courseId.eq(courseId)
+            .and(schedule.deletedBy.isNull()))
+        .fetchOne();
+  }
+
 
 }

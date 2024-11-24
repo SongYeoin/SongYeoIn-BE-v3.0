@@ -8,6 +8,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PeriodRepository extends JpaRepository<Period, Long> ,PeriodRepositoryCustom {
-
-  Optional<Period> findByCourseId(Long courseId);
 }

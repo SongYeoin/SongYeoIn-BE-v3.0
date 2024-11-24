@@ -241,12 +241,13 @@ public class CourseService{
 
     // 교시 삭제
     scheduleService.deletePeriod(memberId,courseId);
-    log.info("교시 삭제 완료");
+    log.info("시간표, 교시 삭제 완료");
 
     // enroll 에서  삭제
     enrollService.deleteEnrollmentByCourseId(memberId,courseId);
+    log.info("수강 테이블에서 수강생 목록 삭제 완료");
 
-
+    log.info("courseId {}에 대한 시간표, 수강신청 목록 삭제 완료",courseId);
 
   }
 
