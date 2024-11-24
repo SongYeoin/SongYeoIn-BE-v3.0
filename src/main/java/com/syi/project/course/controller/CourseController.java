@@ -151,4 +151,12 @@ public class CourseController {
     log.info("Course with ID: {} deleted successfully", id);
     return ResponseEntity.noContent().build();
   }
+
+  @GetMapping("/list")
+  public ResponseEntity<List<CourseDTO>> getAvailableCourses() {
+    log.info("교육 과정 조회 요청");
+    List<CourseDTO> availableCourses = courseService.getAvailableCourses();
+    log.info("성공적으로 {} 개의 교육 과정을 조회했습니다.", availableCourses.size());
+    return ResponseEntity.ok(availableCourses);
+  }
 }
