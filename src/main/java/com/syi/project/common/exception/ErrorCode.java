@@ -43,7 +43,8 @@ public enum ErrorCode {
   // 동아리 관련 에러
   CANNOT_MODIFY_APPROVED("CLUB_001", "승인된 상태에서는 수정할 수 없습니다.", HttpStatus.FORBIDDEN),
   CANNOT_MODIFY_PENDING("CLUB_002", "미승인된 상태에서는 수정할 수 없습니다.", HttpStatus.FORBIDDEN),
-  INVALID_REQUEST("CLUB_003", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST);
+  CANNOT_DELETE_APPROVED("CLUB_003", "대기상태에서만 삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
+  INVALID_REQUEST("CLUB_004", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST);
 
 
   private final String code;
