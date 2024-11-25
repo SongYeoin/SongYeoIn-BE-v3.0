@@ -106,12 +106,12 @@ public class AdminClubController {
     }
 
     //수정
-    @GetMapping("/{clubId}")
-    public ResponseEntity<ClubResponseDTO.ClubDetail> updateClub(@PathVariable Long clubId,
-                                                                 @AuthenticationPrincipal CustomUserDetails customUserDetails) {
-        ClubResponseDTO.ClubDetail clubResponse = clubService.getClubDetail(clubId);
-        return ResponseEntity.ok(clubResponse);
-    }
+//    @GetMapping("/{clubId}")
+//    public ResponseEntity<ClubResponseDTO.ClubDetail> updateClub(@PathVariable Long clubId,
+//                                                                 @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+//        ClubResponseDTO.ClubDetail clubResponse = clubService.getClubDetail(clubId);
+//        return ResponseEntity.ok(clubResponse);
+//    }
 
     @PutMapping("/{clubId}")
     public ResponseEntity<ClubResponseDTO.ClubList> updateClub(

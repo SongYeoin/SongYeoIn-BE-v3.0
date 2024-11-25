@@ -1,6 +1,6 @@
 package com.syi.project.club.service;
 
-import com.syi.project.auth.dto.AuthUserDTO;
+import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.club.dto.ClubRequestDTO;
 import com.syi.project.club.dto.ClubResponseDTO;
@@ -10,7 +10,6 @@ import com.syi.project.club.file.ClubFileRepository;
 import com.syi.project.club.repository.ClubRepository;
 import com.syi.project.common.entity.Criteria;
 import com.syi.project.common.enums.CheckStatus;
-import com.syi.project.common.enums.Role;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.file.entity.File;
@@ -21,7 +20,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.syi.project.auth.entity.Member;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
