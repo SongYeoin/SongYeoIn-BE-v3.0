@@ -18,16 +18,32 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Schema(description = "출석 요청 DTO")
 public class AttendanceRequestDTO {
 
-  public interface Update {
+  @Getter
+  @ToString
+  public static class AllAttendancesRequestDTO{
+    @NotNull(message = "날짜는 필수입니다.")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate date; // The attendance date, must be present
 
+    @Size(max = 50, message = "학생 이름은 최대 50자까지 가능합니다.")
+    private String studentName; // Optional field for filtering by student name
+
+    private String status; // Optional field for filtering by attendance status (PRESENT, LATE, ABSENT)
+
+    @Builder
+    public AllAttendancesRequestDTO(LocalDate date, String studentName, String status) {
+      this.date = date;
+      this.studentName = studentName;
+      this.status = status;
+    }
   }
 
   @Schema(description = "출석 ID", example = "1")
-  @NotNull(groups = Update.class, message = "출석 ID는 필수입니다.")
-  private Long attendanceId;
+  @NotNull(message = "출석 ID는 필수입니다.")
+  private Long id;
 
   @Schema(description = "출석 상태", example = "")
-  @NotNull(groups = Update.class, message = "출석 상태는 필수입니다.")
+  @NotNull(message = "출석 상태는 필수입니다.")
   private String status;
 
   @Schema(description = "출석 날짜", example = "")
@@ -68,10 +84,10 @@ public class AttendanceRequestDTO {
 
 
   @Builder
-  public AttendanceRequestDTO(Long attendanceId, String status, LocalDate date,
+  public AttendanceRequestDTO(Long id, String status, LocalDate date,
       LocalDateTime enrollDate, LocalDateTime modifiedDate, Long periodId, Long courseId,
       Long memberId, String memo, String studentName,LocalDate startDate,LocalDate endDate,List<Long> attendanceIds) {
-    this.attendanceId = attendanceId;
+    this.id = id;
     this.status = status;
     this.date = date;
     this.enrollDate = enrollDate;

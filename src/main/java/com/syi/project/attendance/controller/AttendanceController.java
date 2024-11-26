@@ -1,9 +1,11 @@
 package com.syi.project.attendance.controller;
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListDTO;
 import com.syi.project.attendance.dto.response.AttendanceTotalResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.service.AttendanceService;
+import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.course.service.CourseService;
 import com.syi.project.schedule.dto.ScheduleResponseDTO;
@@ -17,7 +19,10 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,15 +60,20 @@ public class AttendanceController {
   }
 
   // 출석 전체 조회_수강생
-  @GetMapping
-  public ResponseEntity<AttendanceTotalResponseDTO> getAllAttendance(
-      @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO) {
+  @GetMapping("course/{courseId}/{attendanceId}")
+  public ResponseEntity<Page<AdminAttendListDTO>> getAllAttendance(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long courseId,
+      @PathVariable Long attendanceId,
+      @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO,
+      Pageable pageable) {
     log.info("출석 전체 조회 요청");
     log.info("조회 요청된 attendanceRequestDTO: {}", attendanceRequestDTO);
-    AttendanceTotalResponseDTO attendances = attendanceService.getAllAttendances(
-        attendanceRequestDTO);
+    /*AttendanceResponseDTO.AdminAttendListDTO attendances = attendanceService.getAllAttendances(
+        userDetails, courseId, attendanceRequestDTO, pageable);
     log.info("출석 조회된 정보: {}", attendances);
-    return ResponseEntity.ok(attendances);
+    return ResponseEntity.ok(attendances);*/
+    return null;
   }
 
   //  출석 상세 조회_수강생

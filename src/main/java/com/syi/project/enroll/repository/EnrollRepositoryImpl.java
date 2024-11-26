@@ -1,5 +1,6 @@
 package com.syi.project.enroll.repository;
 
+import static com.syi.project.auth.entity.QMember.member;
 import static com.syi.project.enroll.entity.QEnroll.enroll;
 import static com.syi.project.course.entity.QCourse.course;
 
@@ -80,5 +81,23 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
         .set(enroll.deletedBy, adminId)
         .where(enroll.courseId.eq(courseId))
         .execute();
+  }
+
+  /*@Override
+  public List<Long> findStudentIdByCourseId(Long courseId) {
+    return queryFactory.select(enroll.memberId)
+        .from(enroll)
+        .where(enroll.courseId.eq(courseId)
+            .and(enroll.deletedBy.isNull()))
+        .fetch();
+  }*/
+  @Override
+  public List<Long> findStudentIdByCourseId(Long courseId) {
+    return queryFactory.select(enroll.memberId)
+        .from(enroll)
+        .leftJoin(member).on()
+        .where(enroll.courseId.eq(courseId)
+            .and(enroll.deletedBy.isNull()))
+        .fetch();
   }
 }

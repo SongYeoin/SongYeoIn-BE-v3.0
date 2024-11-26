@@ -24,6 +24,20 @@ import org.springframework.lang.Nullable;
 @StartBeforeEnd(message = "종료 날짜는 시작 날짜 이후여야 합니다.")
 public class CourseDTO {
 
+  @Getter
+  @ToString
+  public static class CourseListDTO{
+    private Long courseId;
+    private String courseName;
+
+    @Builder
+    public CourseListDTO(Long courseId, String courseName) {
+      this.courseId = courseId;
+      this.courseName = courseName;
+    }
+  }
+
+
   public interface Create {
 
   }

@@ -6,6 +6,7 @@ import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.course.dto.CourseDTO;
+import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.dto.CoursePatchDTO;
 import com.syi.project.course.dto.CoursePatchDTO.CoursePatchResponseDTO;
 import com.syi.project.course.dto.CourseResponseDTO.AdminList;
@@ -281,5 +282,10 @@ public class CourseService {
         .stream()
         .map(course -> CourseDTO.fromEntity(course, null)) // studentCounts를 null로 전달
         .toList();
+  }
+
+  public List<CourseListDTO> getAllCoursesByAdminId(Long adminId) {
+    log.info("adminId :{}",adminId);
+    return courseRepository.findCoursesByAdminId(adminId);
   }
 }

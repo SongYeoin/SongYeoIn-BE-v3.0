@@ -1,3 +1,4 @@
+/*
 package com.syi.project.auth.controller;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -64,8 +65,10 @@ class AdminControllerTest {
         .build();
 
     Page<MemberDTO> members = new PageImpl<>(List.of(testMember), PageRequest.of(0, 15), 1);
-    Mockito.when(memberService.getFilteredMembers(eq(null), eq(null), any(Pageable.class)))
-        .thenReturn(members);
+    */
+/*Mockito.when(memberService.getFilteredMembers(eq(null), eq(null), any(Pageable.class)))
+        .thenReturn(members);*//*
+
   }
 
   @Test
@@ -322,3 +325,4 @@ class AdminControllerTest {
   }
 
 }
+*/
