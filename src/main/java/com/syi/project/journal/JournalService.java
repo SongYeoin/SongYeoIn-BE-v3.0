@@ -1,7 +1,8 @@
-package com.syi.project.journal.service;
+package com.syi.project.journal;
 
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
+import com.syi.project.common.entity.Criteria;
 import com.syi.project.common.enums.Role;
 import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.course.entity.Course;
@@ -14,11 +15,14 @@ import com.syi.project.journal.entity.JournalFile;
 import com.syi.project.journal.repository.JournalFileRepository;
 import com.syi.project.journal.repository.JournalRepository;
 import com.syi.project.file.entity.File;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +41,55 @@ public class JournalService {
   private final S3Uploader s3Uploader;
 
   private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("hwp", "docx", "doc");
+
+  // 페이징 검색 메서드 추가
+  public Page<JournalResponseDTO> searchJournals(Criteria criteria, Long memberId, LocalDate startDate, LocalDate endDate) {
+    log.debug("교육일지 검색 시작 - memberId: {}, criteria: {}", memberId, criteria);
+
+    Member member = memberRepository.findById(memberId)
+        .orElseThrow(() -> {
+          log.error("회원 정보를 찾을 수 없음 - memberId: {}", memberId);
+          return new IllegalArgumentException("존재하지 않는 회원입니다.");
+        });
+
+    // 날짜 유효성 검증
+    validateDateRange(startDate, endDate);
+
+    // 페이지 사이즈 설정 (기본 20개)
+    if (criteria.getAmount() <= 0) {
+      criteria.setAmount(20);
+    }
+
+    // 페이지 번호 검증
+    if (criteria.getPageNum() <= 0) {
+      criteria.setPageNum(1);
+    }
+
+    Page<Journal> journalPage = journalRepository.findAllWithConditions(
+        criteria,
+        member.getRole() == Role.ADMIN ? null : memberId,  // 관리자가 아닌 경우 본인 글만 조회
+        startDate,
+        endDate
+    );
+
+    log.info("교육일지 검색 완료 - 총 {}건 검색됨", journalPage.getTotalElements());
+
+    return new PageImpl<>(
+        journalPage.getContent().stream()
+            .map(journal -> JournalResponseDTO.from(journal, s3Uploader))
+            .collect(Collectors.toList()),
+        criteria.getPageable(),
+        journalPage.getTotalElements()
+    );
+  }
+
+  // 날짜 범위 검증 메서드
+  private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      log.error("잘못된 날짜 범위 - startDate: {}, endDate: {}", startDate, endDate);
+      throw new IllegalArgumentException("시작일이 종료일보다 늦을 수 없습니다.");
+    }
+  }
 
   @Transactional
   public JournalResponseDTO createJournal(Long memberId, JournalRequestDTO requestDTO) {
