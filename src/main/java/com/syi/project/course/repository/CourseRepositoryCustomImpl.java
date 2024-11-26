@@ -3,7 +3,11 @@ package com.syi.project.course.repository;
 import static com.syi.project.course.entity.QCourse.course;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.syi.project.course.dto.CourseDTO;
+import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.entity.Course;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -58,5 +62,20 @@ public class CourseRepositoryCustomImpl implements
         .fetchOne();
 
     return new PageImpl<>(content, pageable, count);
+  }
+
+  @Override
+  public List<CourseListDTO> findCoursesByAdminId(Long adminId) {
+    return queryFactory
+        .select(Projections.constructor(
+            CourseListDTO.class,
+            course.id.as("courseId"),     // DTO 필드 이름과 매핑
+            course.name.as("courseName") // DTO 필드 이름과 매핑
+        ))
+        .from(course)
+        .where(course.adminId.eq(adminId)
+            .and(course.deletedBy.isNull()))
+        .orderBy(course.id.asc())
+        .fetch();
   }
 }

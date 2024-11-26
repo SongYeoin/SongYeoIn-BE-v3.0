@@ -1,16 +1,21 @@
 package com.syi.project.attendance.dto.response;
 
+import com.syi.project.attendance.dto.AttendanceDTO;
 import com.syi.project.attendance.entity.Attendance;
+import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.common.enums.AttendanceStatus;
+import com.syi.project.period.dto.PeriodResponseDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import org.springframework.data.domain.Page;
 
 @Getter
 @ToString
@@ -21,8 +26,85 @@ public class AttendanceResponseDTO {
 
   }
 
-  @Schema(description = "출석 ID", example = "1")
-  @NotNull(groups = Update.class, message = "출석 ID는 필수입니다.")
+  /*@Getter
+  @ToString
+  public static class CourseListDTO{
+    private List<CourseDTO> courseList;
+
+    @Builder
+    public CourseListDTO(List<CourseDTO> courseList) {
+      this.courseList = courseList;
+    }
+  }*/
+
+
+  @Getter
+  @ToString
+  public static class AdminAttendListDTO {
+
+    private Long studentId;
+    private String studentName;
+    private String courseName;
+    //private List<CourseListDTO> courseList;
+    private Page<AdminAttendList> attends;
+
+
+
+
+    /*@Builder
+    public AdminAttendListDTO(List<CourseListDTO> courseList, Page<AdminAttendList> attends) {
+      this.courseList = courseList;
+      this.attends = attends;
+    }*/
+  }
+
+  @Getter
+  @ToString
+  public static class AdminAttendList {
+
+    private Long studentId;
+    private String studentName;
+    private String courseName;
+    private LocalDate date;
+    private List<AttendanceDTO> attendanceList;
+
+    @Builder
+    public AdminAttendList(Long studentId, String studentName, String courseName, LocalDate date,
+        List<AttendanceDTO> attendanceList) {
+      this.studentId = studentId;
+      this.studentName = studentName;
+      this.courseName = courseName;
+      this.date = date;
+      this.attendanceList = attendanceList;
+    }
+  }
+
+
+  @Getter
+  @ToString
+  public static class AdminAttendDetailDTO{
+    private String studentName;
+    private String courseName;
+    private LocalDate date;
+    private String adminName;
+    private List<PeriodResponseDTO> periodList;
+    private Page<AttendanceDTO> attendances;
+
+    @Builder
+    public AdminAttendDetailDTO(String studentName, String courseName, LocalDate date,
+        String adminName,
+        List<PeriodResponseDTO> periodList, Page<AttendanceDTO> attendances) {
+      this.studentName = studentName;
+      this.courseName = courseName;
+      this.date = date;
+      this.adminName = adminName;
+      this.periodList = periodList;
+      this.attendances = attendances;
+    }
+  }
+
+
+  //@NotNull(groups = Update.class, message = "출석 ID는 필수입니다.")
   private Long attendanceId;
 
   @Schema(description = "출석 상태", example = "")

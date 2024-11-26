@@ -4,11 +4,14 @@ import static com.syi.project.attendance.dto.response.AttendanceResponseDTO.from
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
-import com.syi.project.attendance.dto.response.AttendanceTotalResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendDetailDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendList;
 import com.syi.project.attendance.entity.Attendance;
 import com.syi.project.attendance.repository.AttendanceRepository;
 import com.syi.project.auth.entity.Member;
+import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.common.enums.AttendanceStatus;
+import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.repository.CourseRepository;
 import com.syi.project.enroll.repository.EnrollRepository;
 import com.syi.project.period.eneity.Period;
@@ -27,6 +30,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,30 +50,40 @@ public class AttendanceService {
   private final PeriodRepository periodRepository;
   private final EnrollRepository enrollRepository;
 
-  // 수강생,담당자
+  // 담당자
   /* 출석 전체 조회 */
-  public AttendanceTotalResponseDTO getAllAttendances(AttendanceRequestDTO dto) {
-    /* 담당자는 courseId, memberId, date, member_name, attendance_status */
+  public Page<AdminAttendList> getAllAttendancesForAdmin(CustomUserDetails userDetails,
+      Long courseId, AttendanceRequestDTO.AllAttendancesRequestDTO dto, Pageable pageable) {
+    /* 담당자는 courseId, studentId, date, member_name, attendance_status */
+
+    log.info("전체 출석 조회");
+    log.debug("courseId: {}, date: {}", courseId, dto.getDate());
+    log.debug("필터링 조건 dto: studentName={}, status ={}",dto.getStudentName(), dto.getStatus());
+
+    return attendanceRepository.findPagedAdminAttendListByCourseId(courseId, dto, pageable);
+
+  }
+
+  // 수강생
+  // 출석 전체 조회
+ public Page<AdminAttendList> getAllAttendancesForStudent(CustomUserDetails userDetails,
+      Long courseId, AttendanceRequestDTO dto, Pageable pageable) {
     /* 수강생은 courseId, memberId , date(달, 일) */
     log.info("조건별로 출석 조회를 시도합니다.");
     log.debug("dto: memberId={}, courseId={} date={}", dto.getMemberId(), dto.getCourseId(),
         dto.getDate());
     log.debug("filter: name={}, status={}", dto.getStudentName(), dto.getStatus());
 
-    log.info("요청된 정보로 전체 출석 조회");
-    List<Attendance> results = attendanceRepository.findAllAttendance(dto);
+    log.info("자격 추출");
+    // Role 추출
+    String role = extractRole(userDetails);
+    log.debug("사용자 Role: {}", role);
 
-    if (results.isEmpty()) {
-      log.warn("경고 : 조회한 결과가 없습니다.");
-      throw new NoSuchElementException("조회된 출석이 없습니다.");
-    }
-    log.info("{} 개의 출석 조회", results.size());
+    Long adminId = userDetails.getId();
+    log.debug("사용자 Id: {}", adminId);
 
-    List<AttendanceResponseDTO> dtos = results.stream()
-        .map(AttendanceResponseDTO::fromEntity)
-        .toList();
+    return attendanceRepository.findPagedStudentAttendListByCourseId(courseId, dto, pageable);
 
-    return AttendanceTotalResponseDTO.fromEntity(null, dtos);
   }
 
   //  관리자
@@ -422,6 +439,23 @@ public class AttendanceService {
     log.info("{} 개의 출석 조회 완료", responseDTOList.size());
 
     return responseDTOList;
+  }
+
+  public String extractRole(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    return userDetails.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority) // Role 이름 추출
+        .findFirst() // Role이 여러 개인 경우 첫 번째만 가져옴
+        .orElseThrow(() -> new IllegalStateException("사용자 권한이 없습니다."));
+  }
+
+  public List<CourseListDTO> getAllCoursesByAdminId(CustomUserDetails userDetails) {
+    return courseRepository.findCoursesByAdminId(userDetails.getId());
+
+  }
+
+  public AdminAttendDetailDTO getAttendanceDetail(CustomUserDetails userDetails, Long courseId, AttendanceRequestDTO dto) {
+return null;
+
   }
 }
 
