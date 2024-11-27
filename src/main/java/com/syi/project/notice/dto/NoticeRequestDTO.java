@@ -5,10 +5,14 @@ import com.syi.project.course.entity.Course;
 import com.syi.project.notice.entity.Notice;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
+@ToString
 @Schema(description = "공지사항 요쳥 DTO")
 public class NoticeRequestDTO {
 

@@ -35,7 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@RequestMapping("/amdin/notice")
+@RequestMapping("/admin/notice")
 @Tag(name = "관리자 공지사항 API", description = "공지사항 관리 API")
 public class AdminNoticeController {
 
@@ -55,6 +55,8 @@ public class AdminNoticeController {
       @Parameter(description = "첨부 파일 목록") @RequestPart(value = "files", required = false) List<MultipartFile> files) {
     Long memberId = userDetails.getId();
     log.info("공지사항 생성 요청 - memberId: {}", memberId);
+    log.info("공지사항 생성 요청 - Request DTO: {}", requestDTO);
+    log.info("공지사항 생성 요청 - Files count: {}", files != null ? files.size() : 0);
     NoticeResponseDTO notice = noticeService.createNotice(memberId, requestDTO, files);
     return ResponseEntity.ok(notice);
   }
@@ -110,11 +112,14 @@ public class AdminNoticeController {
       @Parameter(description = "공지사항 ID", required = true) @PathVariable Long id,
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @Parameter(description = "공지사항 요청 데이터", required = true) @Valid @RequestPart("request") NoticeRequestDTO requestDTO,
-      @Parameter(description = "새로운 첨부 파일 목록") @RequestPart(value = "files", required = false) List<MultipartFile> newFiles,
+      @Parameter(description = "새로운 첨부 파일 목록") @RequestPart(value = "newFiles", required = false) List<MultipartFile> newFiles,
       @Parameter(description = "삭제할 첨부 파일 ID 목록") @RequestParam(value = "deleteFileIds", required = false) List<Long> deleteFileIds
   ) {
     Long memberId = userDetails.getId();
     log.info("공지사항 수정 요청 - id: {}, memberId: {}", id, memberId);
+    log.info("공지사항 수정 요청 - Request DTO: {}", requestDTO);
+    log.info("공지사항 수정 요청 - newFiles count: {}", newFiles != null ? newFiles.size() : 0);
+    log.info("공지사항 수정 요청 - deleteFileIds count: {}", deleteFileIds != null ? deleteFileIds.size() : 0);
     NoticeResponseDTO notice = noticeService.updateNotice(id, memberId, requestDTO, newFiles,
         deleteFileIds);
     return ResponseEntity.ok(notice);
