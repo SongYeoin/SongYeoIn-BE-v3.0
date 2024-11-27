@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/member")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "수강생 회원 API", description = "회원가입, 로그인, 회원정보 수정 기능")
