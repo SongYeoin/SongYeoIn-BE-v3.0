@@ -60,11 +60,11 @@ public class CourseService {
     log.info("존재하는 관리자 입니다. 관리자 ID: {}", member.getId());
 
     Page<Course> coursePage = courseRepository.findCoursesById(adminId, type, word, pageable);
-
+/*
     if (coursePage.isEmpty()) {
       log.warn("No coursePage found in the database");
       throw new NoSuchElementException("No coursePage found");
-    }
+    }*/
 
     log.info("get {} coursePage from the database", coursePage.getTotalElements());
 

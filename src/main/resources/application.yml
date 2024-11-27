@@ -11,10 +11,14 @@ server:
       enabled: true
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   datasource:
-    url: jdbc:mysql://localhost:3306/${MYSQL_DATABASE:songyeoin}?createDatabaseIfNotExist=true&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER:songyeoin}
-    password: ${MYSQL_PASSWORD:songyeoin}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
@@ -47,7 +51,7 @@ logging:
     com.ict: DEBUG
 
 jwt:
-  secret: "7ZWc7IOd7KCc7J6Q7Yq47Yq467Cx7Iuc7Yq4IO2VnOq1rOudvCDsoIDslYjsirXrs7Qg" # Base64 인코딩된 시크릿 키 (송여인스프링부트프로젝트)
+  secret: ${JWT_SECRET} # Base64 인코딩된 시크릿 키 (송여인스프링부트프로젝트)
   accessTokenValidity: 1800000 # Access Token 유효시간 (30분)
   refreshTokenValidity: 1209600000 # Refresh Token 유효시간 (14일)
 
@@ -57,9 +61,9 @@ cloud:
       access-key: ${AWS_ACCESS_KEY}    # 팀에서 공유하는 IAM 사용자 키
       secret-key: ${AWS_SECRET_KEY}    # 팀에서 공유하는 IAM 시크릿 키
     s3:
-      bucket: songyeoin-file-storage       # 버킷 이름
+      bucket: ${AWS_BUCKET}       # 버킷 이름
     region:
-      static: ap-northeast-2         # 서울 리전
+      static: ${AWS_REGION}         # 서울 리전
     stack:
       auto: false
 

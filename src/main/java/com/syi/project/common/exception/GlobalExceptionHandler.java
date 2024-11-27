@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.query.SemanticException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -18,6 +19,13 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 @Slf4j
 @RestController
 public class GlobalExceptionHandler {
+
+  @ExceptionHandler(SemanticException.class)
+  public ResponseEntity<?> handleQueryDslException(SemanticException ex) {
+    log.error("QueryDSL 오류 발생: {}", ex.getMessage());
+    return ResponseEntity.badRequest().body("잘못된 요청입니다: " + ex.getMessage());
+  }
+
 
   @ExceptionHandler(NoSuchElementException.class)
   public ResponseEntity<String> handleNoSuchElementException(NoSuchElementException ex) {

@@ -5,7 +5,7 @@ import static com.syi.project.attendance.dto.response.AttendanceResponseDTO.from
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendDetailDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendList;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
 import com.syi.project.attendance.entity.Attendance;
 import com.syi.project.attendance.repository.AttendanceRepository;
 import com.syi.project.auth.entity.Member;
@@ -52,7 +52,7 @@ public class AttendanceService {
 
   // 담당자
   /* 출석 전체 조회 */
-  public Page<AdminAttendList> getAllAttendancesForAdmin(CustomUserDetails userDetails,
+  public Page<AdminAttendListResponseDTO> getAllAttendancesForAdmin(CustomUserDetails userDetails,
       Long courseId, AttendanceRequestDTO.AllAttendancesRequestDTO dto, Pageable pageable) {
     /* 담당자는 courseId, studentId, date, member_name, attendance_status */
 
@@ -66,7 +66,7 @@ public class AttendanceService {
 
   // 수강생
   // 출석 전체 조회
- public Page<AdminAttendList> getAllAttendancesForStudent(CustomUserDetails userDetails,
+ public Page<AdminAttendListResponseDTO> getAllAttendancesForStudent(CustomUserDetails userDetails,
       Long courseId, AttendanceRequestDTO dto, Pageable pageable) {
     /* 수강생은 courseId, memberId , date(달, 일) */
     log.info("조건별로 출석 조회를 시도합니다.");
@@ -127,7 +127,7 @@ public class AttendanceService {
           log.error("에러: 출석 ID {} 에 대한 출석을 찾을 수 없습니다.", attendanceId);
           return new NoSuchElementException("Attendance not found with id " + attendanceId);
         });
-    AttendanceStatus newStatus = AttendanceStatus.fromStatus(dto.getStatus()); // 문자열을 Enum으로 변환
+    AttendanceStatus newStatus = AttendanceStatus.fromENStatus(dto.getStatus()); // 문자열을 Enum으로 변환
     attendance.updateStatus(newStatus);
     attendanceRepository.save(attendance);
 

@@ -1,6 +1,7 @@
 package com.syi.project.attendance.dto.request;
 
 import com.syi.project.attendance.entity.Attendance;
+import com.syi.project.common.enums.AttendanceStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -30,13 +31,24 @@ public class AttendanceRequestDTO {
 
     private String status; // Optional field for filtering by attendance status (PRESENT, LATE, ABSENT)
 
+
     @Builder
     public AllAttendancesRequestDTO(LocalDate date, String studentName, String status) {
       this.date = date;
       this.studentName = studentName;
       this.status = status;
+
+    }
+
+    // AttendanceStatus 변환 메서드
+    public AttendanceStatus getAttendanceStatus() {
+      if (status == null) {
+        return null;
+      }
+      return AttendanceStatus.fromENStatus(status); // 한글 -> Enum 변환
     }
   }
+
 
   @Schema(description = "출석 ID", example = "1")
   @NotNull(message = "출석 ID는 필수입니다.")

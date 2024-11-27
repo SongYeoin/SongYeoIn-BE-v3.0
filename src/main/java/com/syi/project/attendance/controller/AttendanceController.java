@@ -2,6 +2,7 @@ package com.syi.project.attendance.controller;
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceTotalResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.service.AttendanceService;
@@ -61,7 +62,7 @@ public class AttendanceController {
 
   // 출석 전체 조회_수강생
   @GetMapping("course/{courseId}/{attendanceId}")
-  public ResponseEntity<Page<AdminAttendListDTO>> getAllAttendance(
+  public ResponseEntity<Page<AdminAttendListResponseDTO>> getAllAttendance(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long courseId,
       @PathVariable Long attendanceId,
