@@ -1,7 +1,7 @@
 package com.syi.project.attendance.repository;
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendList;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
 import com.syi.project.attendance.entity.Attendance;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,7 +17,7 @@ public interface AttendanceRepositoryCustom {
 
   List<Attendance> findAttendanceByDateAndMemberId(LocalDate yesterday, Long id);
 
-  Page<AdminAttendList> findPagedAdminAttendListByCourseId(Long courseId, AttendanceRequestDTO.AllAttendancesRequestDTO dto, Pageable pageable);
+  Page<AdminAttendListResponseDTO> findPagedAdminAttendListByCourseId(Long courseId, AttendanceRequestDTO.AllAttendancesRequestDTO dto, Pageable pageable);
 
-  Page<AdminAttendList> findPagedStudentAttendListByCourseId(Long courseId, AttendanceRequestDTO dto, Pageable pageable);
+  Page<AdminAttendListResponseDTO> findPagedStudentAttendListByCourseId(Long courseId, AttendanceRequestDTO dto, Pageable pageable);
 }

@@ -1,5 +1,6 @@
 package com.syi.project.attendance.dto;
 
+import com.syi.project.common.enums.AttendanceStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,6 +42,7 @@ public class AttendanceDTO {
 
 
   private String periodName;
+
 
   @Builder
   public AttendanceDTO(Long id, String status, LocalDate date, LocalDateTime enrollDate,

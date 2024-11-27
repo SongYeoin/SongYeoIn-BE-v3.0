@@ -2,7 +2,6 @@ package com.syi.project.attendance.dto.response;
 
 import com.syi.project.attendance.dto.AttendanceDTO;
 import com.syi.project.attendance.entity.Attendance;
-import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.common.enums.AttendanceStatus;
 import com.syi.project.period.dto.PeriodResponseDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,7 +10,9 @@ import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -46,7 +47,7 @@ public class AttendanceResponseDTO {
     private String studentName;
     private String courseName;
     //private List<CourseListDTO> courseList;
-    private Page<AdminAttendList> attends;
+    private Page<AdminAttendListResponseDTO> attends;
 
 
 
@@ -60,22 +61,33 @@ public class AttendanceResponseDTO {
 
   @Getter
   @ToString
-  public static class AdminAttendList {
+  public static class AdminAttendListResponseDTO {
 
     private Long studentId;
     private String studentName;
     private String courseName;
     private LocalDate date;
-    private List<AttendanceDTO> attendanceList;
+    //private List<AttendanceDTO> attendanceList;
+    // 교시별 출석 상태 (교시 ID를 키로 사용)
+    private Map<String, String> periods;
 
-    @Builder
-    public AdminAttendList(Long studentId, String studentName, String courseName, LocalDate date,
+    /*@Builder
+    public AdminAttendListResponseDTO(Long studentId, String studentName, String courseName, LocalDate date,
         List<AttendanceDTO> attendanceList) {
       this.studentId = studentId;
       this.studentName = studentName;
       this.courseName = courseName;
       this.date = date;
       this.attendanceList = attendanceList;
+    }*/
+    @Builder
+    public AdminAttendListResponseDTO(Long studentId, String studentName, String courseName,
+        LocalDate date, Map<String, String> periods) {
+      this.studentId = studentId;
+      this.studentName = studentName;
+      this.courseName = courseName;
+      this.date = date;
+      this.periods = periods;
     }
   }
 

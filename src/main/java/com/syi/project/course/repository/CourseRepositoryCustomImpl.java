@@ -9,6 +9,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.entity.Course;
+import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
@@ -54,6 +55,12 @@ public class CourseRepositoryCustomImpl implements
         .limit(pageable.getPageSize())
         .orderBy(course.enrollDate.desc(),course.name.asc())
         .fetch();
+
+    // 데이터가 없어도 예외발생 하지 않도록 처리
+    if (content.isEmpty()) {
+      log.debug("조건에 맞는 데이터가 없습니다.");
+      return new PageImpl<>(Collections.emptyList(), pageable, 0);
+    }
 
     // 전체 데이터 개수
     Long count = queryFactory.select(course.count())

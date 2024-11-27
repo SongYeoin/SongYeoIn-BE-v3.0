@@ -170,7 +170,7 @@ public class ScheduleService {
     List<PeriodRequestDTO> newPeriods = request.getNewPeriods();
     if (newPeriods != null && !newPeriods.isEmpty()) {
       createdSchedule = createSchedule(
-          new ScheduleRequestDTO(null, null, null, null,courseId, newPeriods));
+          new ScheduleRequestDTO(scheduleId, null, null, null,courseId, newPeriods));
     } else {
       log.info("새로 추가할 교시 정보가 없습니다.");
     }

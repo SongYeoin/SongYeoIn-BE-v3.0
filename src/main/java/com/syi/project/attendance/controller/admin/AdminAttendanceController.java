@@ -2,10 +2,11 @@ package com.syi.project.attendance.controller.admin;
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendList;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
+import com.syi.project.common.enums.AttendanceStatus;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.service.CourseService;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -52,13 +54,13 @@ public class AdminAttendanceController {
           @ApiResponse(responseCode = "200", description = "출석을 성공적으로 조회했습니다."),
       })
   @GetMapping("/course/{courseId}") //기본적으로 날짜도 같이 옴
-  public ResponseEntity<Page<AdminAttendList>> getAllAttendances(
+  public ResponseEntity<Page<AdminAttendListResponseDTO>> getAllAttendances(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long courseId,
       @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
       @RequestParam(required = false) String studentName,
       @RequestParam(required = false) String status,
-      Pageable pageable) {
+      @PageableDefault(size = 10) Pageable pageable) {
     /* 필터링 추가 */
 
     log.info("출석 전체 조회 요청");
@@ -67,11 +69,11 @@ public class AdminAttendanceController {
 
     AttendanceRequestDTO.AllAttendancesRequestDTO requestDTO = new AttendanceRequestDTO.AllAttendancesRequestDTO(date, studentName, status);
 
-    Page<AdminAttendList> attendances = attendanceService.getAllAttendancesForAdmin(
+    Page<AdminAttendListResponseDTO> attendances = attendanceService.getAllAttendancesForAdmin(
         userDetails, courseId,
         requestDTO, pageable);
 
-    log.info("조회된 출석 정보: {} ", attendances);
+    log.info("조회된 출석 정보: {} ", attendances.getContent());
     return ResponseEntity.ok(attendances);
   }
 
