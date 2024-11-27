@@ -60,7 +60,7 @@ public class Notice {
   @Column(nullable = false, columnDefinition = "BIGINT DEFAULT 0")
   private Long viewCount = 0L;
 
-  @OneToMany(mappedBy = "notice", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  @OneToMany(mappedBy = "notice", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<NoticeFile> files = new ArrayList<>();
 
   @Column(nullable = true)

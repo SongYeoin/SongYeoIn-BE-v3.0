@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -60,7 +61,8 @@ public class NoticeService {
       "image/svg+xml",
       "image/webp",
       "application/x-hwp",
-      "application/x-hwpml"
+      "application/x-hwpml",
+      "application/haansofthwp"
   );
 
   // 공지사항 생성
@@ -135,10 +137,19 @@ public class NoticeService {
           return new InvalidRequestException(ErrorCode.NOTICE_NOT_FOUND);
         });
 
-    notice.incrementViewCount();
-    log.info("공지사항 조회수 증가 - id: {}, viewCount: {}", id, notice.getViewCount());
+    incrementViewCount(id);
 
     return NoticeResponseDTO.fromEntity(notice, s3Uploader);
+  }
+
+  // 조회수 증가
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void incrementViewCount(Long id) {
+    Notice notice = noticeRepository.findById(id)
+        .orElseThrow(() -> new InvalidRequestException(ErrorCode.NOTICE_NOT_FOUND));
+    log.info("공지사항 기존 조회수 - id: {}, viewCount: {}", id, notice.getViewCount());
+    notice.incrementViewCount();
+    log.info("공지사항 조회수 증가 - id: {}, viewCount: {}", id, notice.getViewCount());
   }
 
   // 공지사항 수정
