@@ -1,6 +1,5 @@
 package com.syi.project.attendance.dto.response;
 
-import com.syi.project.attendance.dto.AttendanceDTO;
 import com.syi.project.attendance.entity.Attendance;
 import com.syi.project.common.enums.AttendanceStatus;
 import com.syi.project.period.dto.PeriodResponseDTO;
@@ -10,7 +9,7 @@ import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import lombok.Builder;
@@ -91,27 +90,63 @@ public class AttendanceResponseDTO {
     }
   }
 
-
   @Getter
   @ToString
-  public static class AdminAttendDetailDTO{
+  public static class MemberInfoInDetail {
+
     private String studentName;
     private String courseName;
     private LocalDate date;
     private String adminName;
-    private List<PeriodResponseDTO> periodList;
-    private Page<AttendanceDTO> attendances;
 
     @Builder
-    public AdminAttendDetailDTO(String studentName, String courseName, LocalDate date,
-        String adminName,
-        List<PeriodResponseDTO> periodList, Page<AttendanceDTO> attendances) {
+    public MemberInfoInDetail(String studentName, String courseName, LocalDate date,
+        String adminName) {
       this.studentName = studentName;
       this.courseName = courseName;
       this.date = date;
       this.adminName = adminName;
+    }
+  }
+
+
+  @Getter
+  @ToString
+  public static class AttendDetailDTO {
+
+    private MemberInfoInDetail memberInfo;
+    private List<PeriodResponseDTO> periodList;
+    private Page<AttendanceStatusListDTO> attendances;
+
+    @Builder
+    public AttendDetailDTO(MemberInfoInDetail memberInfo,
+        List<PeriodResponseDTO> periodList, Page<AttendanceStatusListDTO> attendances) {
+      this.memberInfo = memberInfo;
       this.periodList = periodList;
       this.attendances = attendances;
+    }
+  }
+
+  @Getter
+  @ToString
+  public static class AttendanceStatusListDTO {
+
+    private Long attendanceId;
+    private String periodName;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private LocalDateTime enrollDate;
+    private String status;
+
+    @Builder
+    public AttendanceStatusListDTO(Long attendanceId, String periodName, LocalTime startTime, LocalTime endTime,
+        LocalDateTime enrollDate, String status) {
+      this.attendanceId = attendanceId;
+      this.periodName = periodName;
+      this.startTime = startTime;
+      this.endTime = endTime;
+      this.enrollDate = enrollDate;
+      this.status = status;
     }
   }
 
@@ -121,7 +156,7 @@ public class AttendanceResponseDTO {
 
   @Schema(description = "출석 상태", example = "")
   @NotNull(groups = Update.class, message = "출석 상태는 필수입니다.")
-  private AttendanceStatus status;
+  private String status;
 
   @Schema(description = "출석 날짜", example = "")
   private LocalDate date;
@@ -154,7 +189,7 @@ public class AttendanceResponseDTO {
 
 
   @Builder
-  public AttendanceResponseDTO(Long attendanceId, AttendanceStatus status, LocalDate date,
+  public AttendanceResponseDTO(Long attendanceId, String status, LocalDate date,
       LocalDateTime enrollDate, LocalDateTime modifiedDate, Long periodId, Long courseId,
       Long memberId, String memo ,String resultMessage) {
     this.attendanceId = attendanceId;
@@ -169,7 +204,7 @@ public class AttendanceResponseDTO {
     this.resultMessage = resultMessage;
   }
 
-  public static AttendanceResponseDTO fromEntity(Attendance attendance) {
+ /* public static AttendanceResponseDTO fromEntity(Attendance attendance) {
     return AttendanceResponseDTO.builder()
         .attendanceId(attendance.getId())
         .status(attendance.getStatus())
@@ -181,7 +216,7 @@ public class AttendanceResponseDTO {
         .memberId(attendance.getMemberId())
         .memo(attendance.getMemo())
         .build();
-  }
+  }*/
   public static AttendanceResponseDTO withMessage(String message) {
     return AttendanceResponseDTO.builder()
         .resultMessage(message)

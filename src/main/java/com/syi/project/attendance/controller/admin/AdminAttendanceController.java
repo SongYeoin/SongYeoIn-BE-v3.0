@@ -6,9 +6,7 @@ import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttend
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
-import com.syi.project.common.enums.AttendanceStatus;
 import com.syi.project.course.dto.CourseDTO;
-import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.service.CourseService;
 import com.syi.project.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -77,33 +75,23 @@ public class AdminAttendanceController {
     return ResponseEntity.ok(attendances);
   }
 
-  /* 담당자가 맡은 교육과정 조회*//*
-  @GetMapping("/courses")
-  public ResponseEntity<List<CourseListDTO>> getAllCourses(
-      @AuthenticationPrincipal CustomUserDetails userDetails) {
-    log.info("담당자가 맡은 교육과정 조회 요청");
-    log.debug("담당자 ID: {}",userDetails.getId());
-    List<CourseListDTO> courseList = courseService.getAllCoursesByAdminId(userDetails.getId());
-    log.info("조회해온 교육과정 개수: {}",courseList.size());
-    return ResponseEntity.ok(courseList);
-  }*/
-
 
   //  수강생 별 출석 조회(상세보기)
   @Operation(summary = "수강생 출석 상세 조회", description = "수강생 출석을 상세 조회합니다.",
       responses = {
           @ApiResponse(responseCode = "200", description = "수강생 출석이 성공적으로 조회되었습니다."),
       })
-  @GetMapping("/course/{courseId}/member/{studentId}")
-  public ResponseEntity<AttendanceResponseDTO.AdminAttendDetailDTO> getAttendanceByMemberId(
+  @GetMapping("/course/{courseId}/member/{studentId}")    //기본적으로 날짜도 같이 옴
+  public ResponseEntity<AttendanceResponseDTO.AttendDetailDTO> getAttendanceByMemberId(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long courseId,
       @PathVariable Long studentId,
-      @RequestBody @Valid AttendanceRequestDTO dto) {
+      @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+      Pageable pageable) {
     log.info("수강생 ID {} 출석 조회 요청", studentId);
     log.debug("studentId: {}, courseId: {}", studentId, courseId);
-    AttendanceResponseDTO.AdminAttendDetailDTO memberAttendance = attendanceService.getAttendanceDetail(
-        userDetails, courseId, dto);
+    AttendanceResponseDTO.AttendDetailDTO memberAttendance = attendanceService.findAttendanceByIds(
+        userDetails, courseId, studentId, date, pageable);
     log.info("조회된 학생 출석 정보: {}", memberAttendance);
     return ResponseEntity.ok(memberAttendance);
   }
@@ -114,15 +102,13 @@ public class AdminAttendanceController {
       responses = {
           @ApiResponse(responseCode = "200", description = "상세 출석을 성공적으로 수정했습니다."),
       })
-  public ResponseEntity<Void> updateAttendanceById(@PathVariable Long id,
-      @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO) {
-    log.info("수강생 ID {} 출석 수정 요청", attendanceRequestDTO.getMemberId());
-    log.info("수정 요청 정보: {}", attendanceRequestDTO);
-    /*AttendanceResponseDTO updateAttendance = */
-    attendanceService.updateAttendance(id, attendanceRequestDTO);
-    //log.info("수정된 정보: {}", updateAttendance);
-    //return ResponseEntity.ok(updateAttendance);
-    return ResponseEntity.noContent().build();
+  public ResponseEntity<AttendanceResponseDTO> updateAttendanceById(@PathVariable Long id,
+      @RequestParam String status) {
+    log.info("출석 ID {} 출석 수정 요청", id);
+    log.info("수정 요청 출석상태: {}", status);
+    AttendanceResponseDTO updateStatus = attendanceService.updateAttendance(id, status);
+    log.info("수정 완료");
+    return ResponseEntity.ok(updateStatus);
   }
 
 //  일괄 결석 처리

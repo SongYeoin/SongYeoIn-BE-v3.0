@@ -56,7 +56,7 @@ public class ScheduleRepositoryCustomImpl implements ScheduleRepositoryCustom {
         .from(schedule)
         .leftJoin(period).on(period.scheduleId.eq(schedule.id))
         .where(schedule.courseId.eq(courseId))
-        .orderBy(orderSpecifier)
+        .orderBy(orderSpecifier,period.startTime.asc())
         .fetch();
 
     if (scheduleWithPeriods.isEmpty() || scheduleWithPeriods.get(0).get(QSchedule.schedule) == null) {

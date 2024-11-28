@@ -8,9 +8,11 @@ import static com.syi.project.period.eneity.QPeriod.period;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.syi.project.attendance.dto.AttendanceDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
 import com.syi.project.common.enums.AttendanceStatus;
 import com.syi.project.period.eneity.Period;
@@ -22,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
 import org.springframework.data.domain.Page;
@@ -60,30 +63,77 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
   }
 */
   @Override
-  public List<Attendance> findAllAttendance(AttendanceRequestDTO dto) {
+  public Page<AttendanceStatusListDTO> findAttendanceDetailByIds(Long courseId, Long studentId,
+      LocalDate date, Pageable pageable) {
 
-    log.debug("findAllAttendance : memberId={}, courseId: {}, periodId={}, date={} ",
-        dto.getMemberId(), dto.getCourseId(), dto.getPeriodId(), dto.getDate());
+    log.debug("findAllAttendance : courseId={}, studentId: {}, date={} ",
+        courseId, studentId, date);
 
-    BooleanBuilder predicate = new BooleanBuilder();
+    BooleanBuilder predicate = new BooleanBuilder(attendance.courseId.eq(courseId)
+        .and(attendance.memberId.eq(studentId))
+        .and(attendance.date.eq(date)));
 
-    if (dto.getPeriodId() != null) {
-      predicate.and(attendance.periodId.eq(dto.getPeriodId()));
-    }
-    if (dto.getMemberId() != null) {
-      predicate.and(attendance.memberId.eq(dto.getMemberId()));
-    }
-    if (dto.getDate() != null) {
-      predicate.and(attendance.date.eq(dto.getDate()));
-    }
-    if (dto.getCourseId() != null) {
-      predicate.and(attendance.courseId.eq(dto.getCourseId()));
-    }
-
-    return queryFactory
-        .selectFrom(attendance)
+    List<Tuple> tuples  = queryFactory
+        .select(
+            period.dayOfWeek,
+            period.name,
+            period.startTime,
+            period.endTime,
+            attendance.id,
+            attendance.enrollDate,
+            attendance.status)
+        .from(attendance)
+        .join(period).on(attendance.periodId.eq(period.id))
         .where(predicate)
+        .offset(pageable.getOffset())
+        .limit(pageable.getPageSize())
         .fetch();
+
+    log.debug("Query result size: {}", tuples.size());
+    log.debug("쿼리 결과 튜플: {}", tuples);
+    tuples.forEach(tuple -> {
+      log.debug("Student ID: {}", tuple.get(member.id));
+      log.debug("Status: {}", tuple.get(attendance.status)); // status 값 확인
+    });
+
+    // 데이터가 비어 있는 경우 로그 출력
+    if (tuples.isEmpty()) {
+      log.debug("조건에 맞는 데이터가 없습니다. courseId={}, studentId={}, date={}", courseId, studentId, date);
+      return new PageImpl<>(Collections.emptyList(), pageable, 0L);
+    }else {
+      for (int i = 0; i < tuples.size(); i++) {
+        log.debug("Tuple [{}]: {}", i, tuples.get(i));
+      }
+    }
+
+    List<AttendanceStatusListDTO> content =tuples.stream()
+        .map(tuple -> AttendanceStatusListDTO.builder()
+            .periodName(Optional.ofNullable(tuple.get(period.name)).orElse("Unknown"))
+            .startTime(tuple.get(period.startTime))
+            .endTime(tuple.get(period.endTime))
+            .attendanceId(tuple.get(attendance.id))
+            .enrollDate(tuple.get(attendance.enrollDate))
+            .status(Optional.ofNullable(tuple.get(attendance.status))
+                .map(AttendanceStatus::toKorean) // null이 아닌 경우 한글 상태로 변환
+                .orElse("Unknown"))
+            .build())
+        .toList();
+
+    log.debug("변환된 List<AttendanceStatusListDTO>: {}",content);
+
+    Long total = queryFactory
+        .select(attendance.id.count())
+        .from(attendance)
+        .where(predicate)
+        .fetchOne();
+
+    // 데이터가 없어도 예외발생 하지 않도록 처리
+    if (content.isEmpty()) {
+      log.debug("no content 조건에 맞는 데이터가 없습니다.");
+      return new PageImpl<>(Collections.emptyList(), pageable, 0);
+    }
+
+    return new PageImpl<>(content, pageable, total);
   }
 
   @Override
@@ -149,7 +199,9 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .fetch();
 
     log.info("학생별 출석 데이터 조회");
+
     log.debug("조회된 출석 데이터: {}",tuples);
+
 
 
     Map<Long, AdminAttendListResponseDTO> attendanceMap = new HashMap<>();
@@ -214,6 +266,41 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
   public Page<AdminAttendListResponseDTO> findPagedStudentAttendListByCourseId(Long courseId,
       AttendanceRequestDTO dto, Pageable pageable) {
     return null;
+  }
+
+  @Override
+  public MemberInfoInDetail findMemberInfoByAttendance(Long courseId, Long studentId, LocalDate date) {
+    log.info("수강생 정보를 표시하기 위한 쿼리 실행");
+    log.debug("courseId:{}, studentId:{}, date:{}",courseId,studentId,date);
+
+    BooleanBuilder predicate = new BooleanBuilder(attendance.courseId.eq(courseId)
+        .and(attendance.memberId.eq(studentId))
+        .and(attendance.date.eq(date)));
+
+    Tuple tuple = queryFactory
+        .select(
+            member.name,
+            course.name,
+            attendance.date,
+            course.adminName)
+        .from(attendance)
+        .join(member).on(attendance.memberId.eq(member.id))
+        .join(course).on(attendance.courseId.eq(course.id))
+        .where(predicate)
+        .fetchOne();
+    log.debug("조회된 결과: {}",tuple);
+
+    if(tuple == null){
+      log.warn("출석 상세보기 페이지에서 수강생 정보를 표시할 데이터가 없습니다.");
+      return MemberInfoInDetail.builder().build();
+    }
+
+    return MemberInfoInDetail.builder()
+        .studentName(tuple.get(member.name))
+        .courseName(tuple.get(course.name))
+        .date(tuple.get(attendance.date))
+        .adminName(tuple.get(course.adminName))
+        .build();
   }
 
 }
