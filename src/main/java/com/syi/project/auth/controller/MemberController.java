@@ -1,10 +1,13 @@
 package com.syi.project.auth.controller;
 
 import com.syi.project.auth.dto.DuplicateCheckDTO;
+import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
 import com.syi.project.auth.dto.MemberSignUpRequestDTO;
 import com.syi.project.auth.dto.MemberSignUpResponseDTO;
+import com.syi.project.auth.dto.MemberUpdateRequestDTO;
+import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.common.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,7 +22,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -91,6 +97,36 @@ public class MemberController {
     MemberLoginResponseDTO responseDTO = memberService.login(requestDTO, Role.STUDENT);
     log.info("수강생 로그인 성공 - 로그인 ID: {}", requestDTO.getUsername());
     return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+  }
+
+  @PatchMapping("/update")
+  @Operation(summary = "회원정보 수정", description = "비밀번호와 이메일을 수정한 후 변경된 정보를 반환합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "회원정보 수정 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+      @ApiResponse(responseCode = "401", description = "권한 없음"),
+      @ApiResponse(responseCode = "404", description = "회원 정보 없음")
+  })
+  public ResponseEntity<MemberDTO> updateMemberInfo(
+      @Valid @RequestBody MemberUpdateRequestDTO requestDTO,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+    Long memberId = userDetails.getId();
+    MemberDTO updatedMember = memberService.updateMemberInfo(memberId, requestDTO);
+    return ResponseEntity.ok(updatedMember);
+  }
+
+  @DeleteMapping("/delete")
+  @Operation(summary = "회원탈퇴", description = "로그인된 사용자가 자신의 계정을 탈퇴합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "회원탈퇴 성공"),
+      @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
+      @ApiResponse(responseCode = "401", description = "권한 없음")
+  })
+  public ResponseEntity<Void> deleteMember(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    Long memberId = userDetails.getId();
+    memberService.deleteMember(memberId);
+    return ResponseEntity.ok().build();
   }
 
 }

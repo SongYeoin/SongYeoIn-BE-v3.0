@@ -78,4 +78,15 @@ public class Member {
     this.role = newRole;
   }
 
+  public void updatePassword(String newPassword) {
+    this.password = newPassword;
+  }
+
+  public void updateEmail(String newEmail) {
+    this.email = newEmail;
+  }
+
+  public void deactivate() {
+    this.isDeleted = true;
+  }
 }
