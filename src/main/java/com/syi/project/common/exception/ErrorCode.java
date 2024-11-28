@@ -13,6 +13,9 @@ public enum ErrorCode {
   USER_ALREADY_EXISTS("USER_004", "이미 사용 중인 회원 ID입니다.", HttpStatus.BAD_REQUEST),
   EMAIL_ALREADY_EXISTS("USER_005", "이미 사용 중인 이메일입니다.", HttpStatus.BAD_REQUEST),
   ACCESS_DENIED("USER_006", "접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
+  USER_UPDATE_FAILED("USER_007", "회원정보 수정에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+  EMAIL_DUPLICATE_ON_UPDATE("USER_008", "수정하려는 이메일이 이미 사용 중입니다.", HttpStatus.BAD_REQUEST),
+  PASSWORD_INVALID_ON_UPDATE("USER_009", "수정하려는 비밀번호가 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
 
   // 비밀번호 관련 에러
   PASSWORD_MISMATCH("AUTH_001", "비밀번호와 비밀번호 확인이 일치하지 않습니다.", HttpStatus.BAD_REQUEST),

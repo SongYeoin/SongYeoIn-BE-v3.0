@@ -6,6 +6,7 @@ import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
 import com.syi.project.auth.dto.MemberSignUpRequestDTO;
 import com.syi.project.auth.dto.MemberSignUpResponseDTO;
+import com.syi.project.auth.dto.MemberUpdateRequestDTO;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.common.config.JwtProvider;
@@ -167,6 +168,49 @@ public class MemberService {
         });
     member.updateRole(newRole);
     log.info("역할 변경 완료 - 회원 ID: {}, 새로운 역할: {}", id, newRole);
+  }
+
+  // 회원정보 수정
+  @Transactional
+  public MemberDTO updateMemberInfo(Long memberId, MemberUpdateRequestDTO requestDTO) {
+    Member member = memberRepository.findByIdAndIsDeletedFalse(memberId)
+        .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
+
+    // 현재 비밀번호 검증
+    if (requestDTO.getCurrentPassword() != null) {
+      if (!passwordEncoder.matches(requestDTO.getCurrentPassword(), member.getPassword())) {
+        throw new InvalidRequestException(ErrorCode.INVALID_PASSWORD);
+      }
+    }
+
+    // 비밀번호 수정
+    if (requestDTO.getPassword() != null && requestDTO.getConfirmPassword() != null) {
+      if (!requestDTO.getPassword().equals(requestDTO.getConfirmPassword())) {
+        throw new InvalidRequestException(ErrorCode.PASSWORD_MISMATCH);
+      }
+      member.updatePassword(passwordEncoder.encode(requestDTO.getPassword()));
+    }
+
+    // 이메일 수정
+    if (requestDTO.getEmail() != null) {
+      if (!member.getEmail().equals(requestDTO.getEmail()) &&
+          memberRepository.existsByEmail(requestDTO.getEmail())) {
+        throw new InvalidRequestException(ErrorCode.EMAIL_ALREADY_EXISTS);
+      }
+      member.updateEmail(requestDTO.getEmail());
+    }
+
+    return MemberDTO.fromEntity(member);
+  }
+
+  // 회원 탈퇴
+  @Transactional
+  public void deleteMember(Long memberId) {
+    // 회원 조회
+    Member member = memberRepository.findByIdAndIsDeletedFalse(memberId)
+        .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
+
+    member.deactivate();
   }
 
   // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드
