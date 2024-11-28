@@ -21,6 +21,7 @@ public class ClubResponseDTO {
     @Getter
     @NoArgsConstructor
     public static class ClubList{
+        private Long clubId;
         private String writer;
         private String checker;  // 승인자
         private CheckStatus checkStatus;  // 승인 상태
@@ -29,8 +30,9 @@ public class ClubResponseDTO {
         private LocalDate studyDate;  // 활동일
         private List<String> fileIcons; // 파일 상태 (아이콘 여부 또는 URL)
 
-        public ClubList(String writer, String checker, CheckStatus checkStatus, String checkMessage,
+        public ClubList(Long clubId, String writer, String checker, CheckStatus checkStatus, String checkMessage,
                         LocalDate regDate, LocalDate studyDate, List<String> fileIcons) {
+            this.clubId = clubId;
             this.writer = writer;
             this.checker = checker;
             this.checkStatus = checkStatus;
@@ -43,6 +45,7 @@ public class ClubResponseDTO {
         // entity -> DTO
         public static ClubList toListDTO(Club club, String writer, String checker, List<String> fileIcons){
             return new ClubList(
+                    club.getId(),
                     writer,
                     checker,
                     club.getCheckStatus(),
@@ -58,6 +61,7 @@ public class ClubResponseDTO {
     @NoArgsConstructor
     public static class ClubDetail{
 
+        private Long clubId;
         private String writer;
         private String checker;  // 승인자
         private String participants;  // 참여자
@@ -68,8 +72,9 @@ public class ClubResponseDTO {
         private LocalDate studyDate;  // 활동일;
         private List<String> fileNames;
 
-        public ClubDetail(String writer, String checker, String participants, String content, CheckStatus checkStatus, String checkMessage,
+        public ClubDetail(Long clubId, String writer, String checker, String participants, String content, CheckStatus checkStatus, String checkMessage,
                                LocalDate regDate, LocalDate studyDate, List<String> fileNames) {
+            this.clubId = clubId;
             this.writer = writer;
             this.checker = checker;
             this.participants = participants;
@@ -84,6 +89,7 @@ public class ClubResponseDTO {
         // entity -> DTO
         public static ClubDetail toDetailDTO(Club club, String writer, String checker, List<String> fileNames){
             return new ClubDetail(
+                    club.getId(),
                     writer,
                     checker,
                     club.getParticipants(),
