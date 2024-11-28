@@ -1,11 +1,11 @@
 package com.syi.project.attendance.service;
 
-import static com.syi.project.attendance.dto.response.AttendanceResponseDTO.fromEntity;
-
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendDetailDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
 import com.syi.project.attendance.repository.AttendanceRepository;
 import com.syi.project.auth.entity.Member;
@@ -14,8 +14,10 @@ import com.syi.project.common.enums.AttendanceStatus;
 import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.repository.CourseRepository;
 import com.syi.project.enroll.repository.EnrollRepository;
+import com.syi.project.period.dto.PeriodResponseDTO;
 import com.syi.project.period.eneity.Period;
 import com.syi.project.period.repository.PeriodRepository;
+import com.syi.project.schedule.dto.ScheduleResponseDTO;
 import com.syi.project.schedule.repository.ScheduleRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
@@ -99,7 +101,7 @@ public class AttendanceService {
     log.debug("단일 출석 조회 요청된 정보: {}", dto);
 
     log.info("요청된 정보로 출석 조회");
-    List<Attendance> results = attendanceRepository.findAllAttendance(dto);
+    /*List<Attendance> results = attendanceRepository.findAllAttendance(dto);
 
     if (results.isEmpty()) {
       log.warn("경고 : PeriodID {} 와 MemberID {} 로 조회한 결과가 없습니다.", dto.getPeriodId(),
@@ -110,28 +112,35 @@ public class AttendanceService {
     log.info("{} 개의 시간표 조회 중", results.size());
 
     // 조회한 결과 dto로 변환
-    return fromEntity(results.get(0));
+    return fromEntity(results.get(0));*/
+    return null;
 
   }
 
   //  관리자
   /* 출석 수정 */
   @Transactional
-  public void updateAttendance(Long attendanceId, AttendanceRequestDTO dto) {
-    /* memberId와 attendanceId */
+  public AttendanceResponseDTO updateAttendance(Long attendanceId, String status) {
+    /* attendanceId status */
     log.info("{}에 대한 출석 상태를 수정합니다.", attendanceId);
-    log.debug("출석 상태 수정 요청된 정보: {}", dto.getStatus());
+    log.debug("출석 상태 수정 요청된 정보: {}", status);
 
     Attendance attendance = attendanceRepository.findById(attendanceId)
         .orElseThrow(() -> {
           log.error("에러: 출석 ID {} 에 대한 출석을 찾을 수 없습니다.", attendanceId);
           return new NoSuchElementException("Attendance not found with id " + attendanceId);
         });
-    AttendanceStatus newStatus = AttendanceStatus.fromENStatus(dto.getStatus()); // 문자열을 Enum으로 변환
+    log.info("출석 ID {}을 찾았습니다.", attendanceId);
+    AttendanceStatus newStatus = AttendanceStatus.fromENStatus(status); // 한글을 Enum으로 변환
     attendance.updateStatus(newStatus);
-    attendanceRepository.save(attendance);
+    Attendance saved = attendanceRepository.save(attendance);
+    AttendanceResponseDTO savedStatus = AttendanceResponseDTO.builder()
+            .attendanceId(saved.getId())
+                .status(saved.getStatus().toKorean())
+                    .build();
 
-    log.info("{}에 대한 출석 상태를 성공적으로 수정했습니다.", attendanceId);
+    log.info("{}에 대한 출석 상태를 성공적으로 수정했습니다.", savedStatus);
+    return savedStatus;
   }
 
   //  관리자
@@ -195,7 +204,8 @@ public class AttendanceService {
     log.info("성공적으로 {}에 대한 출석 상태를 결석으로 수정했습니다.", dto.getAttendanceIds());
   }
 
-  private void processStudentAttendance(LocalDate yesterday, Long courseId, Member student,
+  @Transactional
+  protected void processStudentAttendance(LocalDate yesterday, Long courseId, Member student,
       List<Long> periodIds) {
     // 특정 학생의 해당 날짜 출석 정보 조회
     List<Attendance> attendanceList = attendanceRepository.findAttendanceByDateAndMemberId(
@@ -220,7 +230,8 @@ public class AttendanceService {
     }
   }
 
-  private void enrollAbsentAttendance(LocalDate yesterday, Long courseId, Member student,
+  @Transactional
+  protected void enrollAbsentAttendance(LocalDate yesterday, Long courseId, Member student,
       Long periodId) {
     /* 교시당 출석은 하나만 존재하므로 periodId로 검증 */
     log.info("결석 처리 하는 메소드 진입 (enrollAbsentAttendance)");
@@ -283,7 +294,8 @@ public class AttendanceService {
     Attendance savedAttendance = attendanceRepository.save(attendance);
     log.info("출석 등록을 완료합니다.");
 
-    return fromEntity(savedAttendance);
+    //return fromEntity(savedAttendance);
+    return null;
 
   }
 
@@ -412,9 +424,52 @@ public class AttendanceService {
 
   //  관리자, 수강생
   /* 출석 상세 조회 */
-  public List<AttendanceResponseDTO> findAttendanceById(AttendanceRequestDTO dto) {
-    /* 교시번호와 수강생번호 */
+  public AttendDetailDTO findAttendanceByIds(CustomUserDetails userDetails, Long courseId,
+      Long studentId, LocalDate date, Pageable pageable) {
+    /* 교육과정Id, 날짜, 수강생번호 */
     /* 수강생 정보, 시간표 정보, 출석 목록 정보 */
+
+    log.info("출석 상세 조회 요청");
+    String role = extractRole(userDetails);
+    if (role.equals("ADMIN")) {
+      log.info("요청한 사람의 Role:{}", role);
+    } else if (role.equals("STUDENT")) {
+      log.info("요청한 사람의 Role:{}", role);
+    }
+
+    log.info("출석 상세 조회를 시도합니다.");
+    log.debug("출석 상세 조회 요청된 정보: courseId={}, studentId={}, date={}", courseId, studentId, date);
+
+    // 출석 상태 목록
+    Page<AttendanceStatusListDTO> results = attendanceRepository.findAttendanceDetailByIds(courseId,
+        studentId, date, pageable);
+
+    /*if (results.isEmpty()) {
+      log.warn("경고 : 교시ID: {}, 수강생ID: {}, 출석날짜(date): {}에 출석이 비어있습니다.", courseId,studentId,date);
+      throw new NoSuchElementException("출석이 비어있습니다.");
+    }*/
+
+    log.info("조회된 출석 데이터 {}", results.getContent());
+
+    // 수강생 정보에 출력될 데이터 (수강생명, 과정명, 날짜, 담당자명)
+    MemberInfoInDetail tuple = attendanceRepository.findMemberInfoByAttendance(courseId, studentId,
+        date);
+
+    // 교시 리스트 조회
+    ScheduleResponseDTO periodsByCourseId = scheduleRepository.findScheduleWithPeriodsByCourseId(
+        courseId);
+    List<PeriodResponseDTO> periodList = periodsByCourseId.getPeriods();
+
+    return AttendDetailDTO.builder()
+        .memberInfo(tuple)
+        .periodList(periodList)
+        .attendances(results)
+        .build();
+  }
+
+  /*public List<AttendanceResponseDTO> findAttendanceById(AttendanceRequestDTO dto) {
+   *//* 교시번호와 수강생번호 *//*
+   *//* 수강생 정보, 시간표 정보, 출석 목록 정보 *//*
 
     log.info("출석 상세 조회를 시도합니다.");
     log.debug("출석 상세 조회 요청된 정보: {}", dto);
@@ -439,7 +494,7 @@ public class AttendanceService {
     log.info("{} 개의 출석 조회 완료", responseDTOList.size());
 
     return responseDTOList;
-  }
+  }*/
 
   public String extractRole(@AuthenticationPrincipal CustomUserDetails userDetails) {
     return userDetails.getAuthorities().stream()
@@ -453,10 +508,13 @@ public class AttendanceService {
 
   }
 
-  public AdminAttendDetailDTO getAttendanceDetail(CustomUserDetails userDetails, Long courseId, AttendanceRequestDTO dto) {
-return null;
+  /*@Transactional
+  public AttendDetailDTO getAttendanceDetail(CustomUserDetails userDetails, Long courseId,
+      Long studentId, LocalDate date) {
 
-  }
+    return null;
+
+  }*/
 }
 
 

@@ -1,10 +1,9 @@
 package com.syi.project.attendance.controller;
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceTotalResponseDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
@@ -12,16 +11,17 @@ import com.syi.project.course.service.CourseService;
 import com.syi.project.schedule.dto.ScheduleResponseDTO;
 import com.syi.project.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -80,25 +81,29 @@ public class AttendanceController {
   //  출석 상세 조회_수강생
   @GetMapping("{id}")
   public ResponseEntity<AttendanceTotalResponseDTO> getAttendanceById(
-      @Parameter(description = "상세 조회할 출석 ID", required = true) @PathVariable Long id,
-      @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO) {
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long courseId,
+      @PathVariable Long studentId,
+      @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
     log.info("출석 상세 조회 요청");
-    log.info("상세 조회 요청된 attendanceRequestDTO: {}", attendanceRequestDTO);
-
-    /* 출석 목록 조회 */
-    List<AttendanceResponseDTO> attendanceInfo = attendanceService.findAttendanceById(
-        attendanceRequestDTO);
-    log.info("출석 상세 조회 완료 {}", attendanceInfo.size());
-
-    /* 시간표 정보 조회 */
-    ScheduleResponseDTO scheduleInfo = scheduleService.getScheduleById(
-        attendanceRequestDTO.getCourseId());
-
-    AttendanceTotalResponseDTO responseDTO = AttendanceTotalResponseDTO.builder()
-        .attendanceInfo(attendanceInfo)
-        .scheduleInfo(scheduleInfo)
-        .build();
-    return ResponseEntity.ok(responseDTO);
+    //log.info("상세 조회 요청된 attendanceRequestDTO: {}", attendanceRequestDTO);
+//
+//    /* 출석 목록 조회 */
+//    List<AttendanceResponseDTO> attendanceInfo = attendanceService.findAttendanceByIds(
+//        userDetails, courseId,
+//        studentId, date);
+//    log.info("출석 상세 조회 완료 {}", attendanceInfo.size());
+//
+//    /* 시간표 정보 조회 */
+//    ScheduleResponseDTO scheduleInfo = scheduleService.getScheduleById(
+//        attendanceRequestDTO.getCourseId());
+//
+//    AttendanceTotalResponseDTO responseDTO = AttendanceTotalResponseDTO.builder()
+//        .attendanceInfo(attendanceInfo)
+//        .scheduleInfo(scheduleInfo)
+//        .build();
+//    return ResponseEntity.ok(responseDTO);
+    return null;
   }
 
 
