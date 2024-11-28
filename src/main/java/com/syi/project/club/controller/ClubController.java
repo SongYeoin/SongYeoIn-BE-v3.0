@@ -1,6 +1,9 @@
 package com.syi.project.club.controller;
 
+import com.syi.project.auth.dto.AuthUserDTO;
+import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.service.CustomUserDetails;
+import com.syi.project.auth.service.MemberService;
 import com.syi.project.club.dto.ClubRequestDTO;
 import com.syi.project.club.dto.ClubResponseDTO;
 import com.syi.project.club.entity.Club;
@@ -11,6 +14,7 @@ import com.syi.project.common.entity.Criteria;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
+import com.syi.project.course.dto.CourseResponseDTO;
 import com.syi.project.course.service.CourseService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -39,6 +43,8 @@ public class ClubController {
     private ClubService clubService;
     @Autowired
     private JwtProvider jwtProvider;
+    @Autowired
+    private MemberService memberService;
 
     public ClubController(ClubService clubService) {
         this.clubService = clubService;
@@ -48,24 +54,56 @@ public class ClubController {
     private CourseService courseService;
 
 
-    // 등록
-    @PostMapping
-    public ResponseEntity<ClubResponseDTO.ClubList> createClub(@Valid @RequestBody ClubRequestDTO.ClubCreate dto,
-                                                               @RequestParam Long courseId,
-                                                               @RequestHeader("Authorization") String token) {
+    @GetMapping
+    public ResponseEntity<CourseResponseDTO.CourseDetailDTO> getCourseById(@AuthenticationPrincipal CustomUserDetails customUserDetails){
+        Long id = customUserDetails.getId();
 
-        Long writerId = jwtProvider.getMemberPrimaryKeyId(token).orElse(null);
+        CourseResponseDTO.CourseDetailDTO courseDetail = courseService.getCourseById(id);
+        log.info("get course with ID: {} successfully", courseDetail.getCourse().getId());
+        //Long courseId = courseDetail.getCourse().getId();
+        return ResponseEntity.ok(courseDetail);
+
+    }
+    // 등록
+    @GetMapping("/{courseId}/register")
+    public ResponseEntity<MemberDTO> getCurrentUser(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
+        MemberDTO userResponse = memberService.getMemberDetail(userDetails.getId());
+        return ResponseEntity.ok(userResponse);
+    }
+
+    @PostMapping("/{courseId}")
+    public ResponseEntity<ClubResponseDTO.ClubList> createClub(@Valid @RequestBody ClubRequestDTO.ClubCreate dto,
+                                                               @PathVariable Long courseId,
+                                                               @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+        try{
+
+        Long writerId = customUserDetails.getId();
+            if (writerId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            }
         LocalDate regDate = LocalDate.now();
         CheckStatus checkStatus = CheckStatus.W;
 
-        ClubResponseDTO.ClubList response = clubService.createClub(dto, writerId, courseId, regDate, checkStatus);
+            log.info("Creating club with courseId: {}, writerId: {}, regDate: {}", courseId, writerId, regDate);
+
+
+            ClubResponseDTO.ClubList response = clubService.createClub(dto, writerId, courseId, regDate, checkStatus);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        }catch (Exception e) {
+            log.error("Error creating club", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
 
     // 페이징 처리된 club 목록 조회 (비동기 처리)
-    @GetMapping
-    public ResponseEntity<Map<String, Object>> getClubListByCourseId(@RequestParam(value = "courseId", required = false) Long courseId,
+    @GetMapping("/{courseId}/list")
+    public ResponseEntity<Map<String, Object>> getClubListByCourseId(@PathVariable(value = "courseId", required = false) Long courseId,
                                                      @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
                                                      @RequestParam(value = "type", required = false) String type,
                                                      @RequestParam(value = "keyword", required = false) String keyword) {
