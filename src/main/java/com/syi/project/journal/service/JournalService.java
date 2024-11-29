@@ -1,4 +1,4 @@
-package com.syi.project.journal;
+package com.syi.project.journal.service;
 
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;

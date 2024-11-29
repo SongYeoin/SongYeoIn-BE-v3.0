@@ -5,7 +5,6 @@ import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.common.entity.Criteria;
 import com.syi.project.common.enums.Role;
 import com.syi.project.course.entity.Course;
-import com.syi.project.journal.JournalService;
 import com.syi.project.journal.dto.JournalResponseDTO;
 import com.syi.project.journal.entity.Journal;
 import com.syi.project.journal.repository.JournalRepository;

@@ -3,7 +3,7 @@ package com.syi.project.journal.controller.admin;
 import com.syi.project.common.dto.PageInfoDTO;
 import com.syi.project.common.entity.Criteria;
 import com.syi.project.journal.dto.JournalResponseDTO;
-import com.syi.project.journal.JournalService;
+import com.syi.project.journal.service.JournalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
