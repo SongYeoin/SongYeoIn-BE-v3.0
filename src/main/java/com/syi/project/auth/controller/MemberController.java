@@ -17,9 +17,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -99,6 +102,42 @@ public class MemberController {
     return new ResponseEntity<>(responseDTO, HttpStatus.OK);
   }
 
+  @PostMapping("/logout")
+  @Operation(summary = "로그아웃", description = "로그아웃 기능입니다. Access Token을 블랙리스트에 추가합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+      @ApiResponse(responseCode = "401", description = "권한 없음"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
+  public ResponseEntity<String> logout(HttpServletRequest request) {
+    String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+    String refreshHeader = request.getHeader("Refresh-Token");
+
+    // 헤더가 비어 있는 경우
+    if (authHeader == null || refreshHeader == null) {
+      log.warn("로그아웃 요청 실패 - 헤더 정보 부족");
+      return ResponseEntity.badRequest().body("로그아웃 실패: Authorization 헤더와 Refresh-Token 헤더가 필요합니다.");
+    }
+
+    try {
+      log.info("로그아웃 요청 - Authorization 헤더 일부: {}, Refresh-Token 헤더 일부: {}",
+          authHeader != null ? authHeader.substring(0, 10) + "..." : "null",
+          refreshHeader != null ? refreshHeader.substring(0, 10) + "..." : "null");
+
+      memberService.logout(request);
+      log.info("로그아웃 성공");
+      return ResponseEntity.ok("로그아웃이 완료되었습니다.");
+    } catch (IllegalArgumentException e) {
+      log.error("로그아웃 실패 - 잘못된 요청: {}", e.getMessage());
+      return ResponseEntity.badRequest().body("로그아웃 실패: " + e.getMessage());
+    } catch (Exception e) {
+      log.error("로그아웃 실패 - 서버 오류: {}", e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("로그아웃 실패: 서버 오류");
+    }
+  }
+
+
   @PatchMapping("/update")
   @Operation(summary = "회원정보 수정", description = "비밀번호와 이메일을 수정한 후 변경된 정보를 반환합니다.")
   @ApiResponses({
@@ -127,6 +166,18 @@ public class MemberController {
     Long memberId = userDetails.getId();
     memberService.deleteMember(memberId);
     return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/refresh")
+  @Operation(summary = "Access Token 갱신", description = "유효한 Refresh Token을 사용하여 새로운 Access Token을 발급받습니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "토큰 갱신 성공"),
+      @ApiResponse(responseCode = "400", description = "유효하지 않은 Refresh Token")
+  })
+  public ResponseEntity<String> refresh(@RequestHeader("Refresh-Token") String refreshToken) {
+    log.info("Access Token 갱신 요청");
+    String newAccessToken = memberService.refreshToken(refreshToken);
+    return ResponseEntity.ok(newAccessToken);
   }
 
 }
