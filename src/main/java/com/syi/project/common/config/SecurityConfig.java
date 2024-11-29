@@ -1,5 +1,6 @@
 package com.syi.project.common.config;
 
+import com.syi.project.auth.repository.JwtBlacklistRepository;
 import com.syi.project.auth.service.CustomUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +25,12 @@ public class SecurityConfig {
 
   private final CustomUserDetailsService customUserDetailsService;
   private final JwtProvider jwtProvider;
+  private final JwtBlacklistRepository jwtBlacklistRepository;
 
   // JWT 인증 필터 Bean 설정
   @Bean
   public JwtAuthenticationFilter jwtAuthenticationFilter() {
-    return new JwtAuthenticationFilter(jwtProvider, customUserDetailsService);
+    return new JwtAuthenticationFilter(jwtProvider, customUserDetailsService, jwtBlacklistRepository);
   }
 
   // PasswordEncoder Bean 설정
