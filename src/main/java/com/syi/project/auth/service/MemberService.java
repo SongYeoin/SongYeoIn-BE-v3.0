@@ -150,6 +150,7 @@ public class MemberService {
     }
 
     // Refresh Token 처리
+    log.info("refreshToken: {}", refreshToken);
     if (refreshToken != null && jwtProvider.validateRefreshToken(refreshToken)) {
       String tokenId = jwtProvider.getJti(refreshToken);
       LocalDateTime expiryDate = jwtProvider.getExpirationDate(refreshToken);
