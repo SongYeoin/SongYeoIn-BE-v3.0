@@ -1,5 +1,6 @@
 package com.syi.project.enroll.controller;
 
+import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.enroll.dto.EnrollRequestDTO;
 import com.syi.project.enroll.dto.EnrollResponseDTO;
 import com.syi.project.enroll.service.EnrollService;
@@ -10,6 +11,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,13 +53,26 @@ public class EnrollController {
     return ResponseEntity.ok().build();
   }
 
-  @Operation(summary = "내 수강 이력 조회", description = "특정 회원의 활성화된 수강 이력을 조회합니다.")
+  @Operation(summary = "특정 회원의 수강 이력 조회", description = "특정 회원의 수강 이력을 조회합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "수강 이력 조회 성공"),
       @ApiResponse(responseCode = "500", description = "서버 오류")
   })
   @GetMapping
   public ResponseEntity<List<EnrollResponseDTO>> getMyEnrollments(@RequestParam Long memberId) {
+    return ResponseEntity.ok(enrollService.findEnrollmentsByMemberId(memberId));
+  }
+
+  @Operation(summary = "내 수강 이력 조회", description = "로그인한 사용자의 수강 이력을 조회합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "수강 이력 조회 성공"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
+  @GetMapping("/my")
+  public ResponseEntity<List<EnrollResponseDTO>> getMyEnrollments(
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    Long memberId = userDetails.getId();
+    log.info("내 수강 이력 조회 요청 - memberId: {}", memberId);
     return ResponseEntity.ok(enrollService.findEnrollmentsByMemberId(memberId));
   }
 
