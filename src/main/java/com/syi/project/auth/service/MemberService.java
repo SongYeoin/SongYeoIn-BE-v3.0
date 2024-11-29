@@ -7,19 +7,25 @@ import com.syi.project.auth.dto.MemberLoginResponseDTO;
 import com.syi.project.auth.dto.MemberSignUpRequestDTO;
 import com.syi.project.auth.dto.MemberSignUpResponseDTO;
 import com.syi.project.auth.dto.MemberUpdateRequestDTO;
+import com.syi.project.auth.entity.JwtBlacklist;
 import com.syi.project.auth.entity.Member;
+import com.syi.project.auth.repository.JwtBlacklistRepository;
 import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.common.config.JwtProvider;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +37,7 @@ public class MemberService {
   private final MemberRepository memberRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtProvider jwtProvider;
+  private final JwtBlacklistRepository jwtBlacklistRepository;
 
   // 아이디 중복 검사
   public DuplicateCheckDTO checkUsernameDuplicate(String username) {
@@ -119,11 +126,48 @@ public class MemberService {
       throw new InvalidRequestException(ErrorCode.ACCESS_DENIED);
     }
 
-    String accessToken = jwtProvider.createAccessToken(member.getId(), member.getRole().name());
+    String accessToken = jwtProvider.createAccessToken(member.getId(), member.getName(), member.getRole().name());
     String refreshToken = jwtProvider.createRefreshToken(member.getId());
 
     log.info("로그인 성공 - 사용자 Username: {}", requestDTO.getUsername());
     return new MemberLoginResponseDTO(accessToken, refreshToken);
+  }
+
+  // 로그아웃
+  @Transactional
+  public void logout(HttpServletRequest request) {
+    String accessToken = extractToken(request.getHeader(HttpHeaders.AUTHORIZATION));
+    String refreshToken = extractToken(request.getHeader("Refresh-Token"));
+
+    // Access Token 처리
+    if (accessToken != null && jwtProvider.validateAccessToken(accessToken)) {
+      String tokenId = jwtProvider.getJti(accessToken);
+      LocalDateTime expiryDate = jwtProvider.getExpirationDate(accessToken);
+      jwtBlacklistRepository.save(new JwtBlacklist(tokenId, expiryDate, "ACCESS"));
+      log.info("Access Token 블랙리스트 등록 - Token ID: {}, Expiry: {}", tokenId, expiryDate);
+    } else {
+      log.warn("유효하지 않은 Access Token - 로그아웃 처리 건너뜀");
+    }
+
+    // Refresh Token 처리
+    if (refreshToken != null && jwtProvider.validateRefreshToken(refreshToken)) {
+      String tokenId = jwtProvider.getJti(refreshToken);
+      LocalDateTime expiryDate = jwtProvider.getExpirationDate(refreshToken);
+      jwtBlacklistRepository.save(new JwtBlacklist(tokenId, expiryDate, "REFRESH"));
+      log.info("Refresh Token 블랙리스트 등록 - Token ID: {}, Expiry: {}", tokenId, expiryDate);
+    } else {
+      log.warn("유효하지 않은 Refresh Token - 로그아웃 처리 건너뜀");
+    }
+
+    // SecurityContext 초기화
+    SecurityContextHolder.clearContext();
+  }
+
+  private String extractToken(String bearerToken) {
+    if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+      return bearerToken.substring(7);
+    }
+    return null;
   }
 
   // 회원목록
@@ -234,7 +278,7 @@ public class MemberService {
     Member member = memberRepository.findById(id)
         .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
 
-    String newAccessToken = jwtProvider.createAccessToken(member.getId(), member.getRole().name());
+    String newAccessToken = jwtProvider.createAccessToken(member.getId(), member.getName(), member.getRole().name());
     log.info("새로운 Access Token 발급 완료 - 사용자 ID: {}", id);
     return newAccessToken;
   }
