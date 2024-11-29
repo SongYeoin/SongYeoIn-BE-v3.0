@@ -6,8 +6,10 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,22 +47,25 @@ public class JwtProvider {
    * @param role 사용자 역할
    * @return 생성된 Access Token 문자열
    */
-  public String createAccessToken(Long id, String role) {
+  public String createAccessToken(Long id, String name, String role) {
     Date now = new Date();
     Date validity = new Date(now.getTime() + accessTokenValidity);
+    String tokenId = UUID.randomUUID().toString();
 
     log.info("Access Token 생성 시작 - 사용자 ID: {}, 역할: {}, 만료 시간: {}", id, role, validity);
 
     // JWT Access Token 생성
     String token = Jwts.builder()
-        .setSubject(String.valueOf(id))         // 주체 설정
-        .claim("role", role)                 // 역할 정보 추가
-        .setIssuedAt(now)                       // 발급 시간 설정
+        .setId(tokenId) // jti 값 추가
+        .setSubject(String.valueOf(id))          // 주체 설정
+        .claim("name", name)                  // 사용자 이름
+        .claim("role", role)                  // 사용자 역할
+        .setIssuedAt(now)                        // 발급 시간 설정
         .setExpiration(validity)                // 만료 시간 설정
         .signWith(key, SignatureAlgorithm.HS256)  // 서명 알고리즘 및 키 설정
         .compact();                               // 최종 토큰 문자열 생성
 
-    log.info("Access Token 생성 완료 - 사용자 ID: {}, 만료 시간: {}", id, validity);
+    log.info("Access Token 생성 완료 - 사용자 ID: {}, 이름: {}, 만료 시간: {}", id, name, validity);
     log.debug("Access Token - 일부 정보: {}", token.substring(0, 10) + "...");
     return token;
   }
@@ -74,11 +79,13 @@ public class JwtProvider {
   public String createRefreshToken(Long id) {
     Date now = new Date();
     Date validity = new Date(now.getTime() + refreshTokenValidity);
+    String tokenId = UUID.randomUUID().toString();
 
     log.info("Refresh Token 생성 시작 - 사용자 ID(기본키): {}, 만료 시간: {}", id, validity);
 
     // JWT Refresh Token 생성
     String token = Jwts.builder()
+        .setId(tokenId) // jti 값 추가
         .setSubject(String.valueOf(id))         // 주체 설정
         .setIssuedAt(now)                       // 발급 시간 설정
         .setExpiration(validity)                // 만료 시간 설정
@@ -117,6 +124,23 @@ public class JwtProvider {
       }
     } catch (Exception e) {
       log.error("토큰에서 사용자 ID 추출 실패 - 원인: {}", e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * 토큰에서 이름(name) 추출
+   *
+   * @param token JWT 토큰
+   * @return Optional 로 감싼 사용자 이름 (추출 실패 시 Optional.empty)
+   */
+  public Optional<String> getName(String token) {
+    try {
+      String name = getClaims(token).map(claims -> claims.get("name", String.class)).orElse(null);
+      log.info("토큰에서 이름 추출 성공 - 이름: {}", name);
+      return Optional.ofNullable(name);
+    } catch (Exception e) {
+      log.error("토큰에서 이름 추출 실패 - 원인: {}", e.getMessage());
       return Optional.empty();
     }
   }
@@ -207,4 +231,30 @@ public class JwtProvider {
     }
     return Optional.empty();
   }
+
+  /**
+   * JWT에서 jti (토큰 ID) 추출
+   *
+   * @param token JWT 토큰
+   * @return jti 값
+   */
+  public String getJti(String token) {
+    return getClaims(token)
+        .map(Claims::getId)
+        .orElse(null);
+  }
+
+  /**
+   * JWT 만료 시간 반환 (LocalDateTime)
+   *
+   * @param token JWT 토큰
+   * @return 만료 시간 (LocalDateTime)
+   */
+  public LocalDateTime getExpirationDate(String token) {
+    return getClaims(token)
+        .map(Claims::getExpiration)
+        .map(exp -> exp.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime())
+        .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 토큰입니다."));
+  }
+
 }

@@ -19,7 +19,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
 
   /**
-   * 사용자 ID를 통해 사용자 정보를 조회하고 UserDetails 로 반환
+   * 사용자 username 을 통해 사용자 정보를 조회하고 UserDetails 로 반환
    *
    * @param username 로그인 아이디(username)
    * @return UserDetails 타입의 사용자 정보 객체
@@ -36,7 +36,7 @@ public class CustomUserDetailsService implements UserDetailsService {
           return new UsernameNotFoundException("사용자를 찾을 수 없거나 삭제된 계정입니다: " + username);
         });
 
-    log.info("사용자 정보 조회 성공 - 사용자 아이디(username): {}", member.getUsername());
+    log.info("사용자 정보 조회 성공 - 사용자 아이디(username): {}, 이름: {}", member.getUsername(), member.getName());
 
     // 엔티티를 DTO로 변환하여 반환
     AuthUserDTO authUser = AuthUserDTO.fromEntity(member);
@@ -59,7 +59,7 @@ public class CustomUserDetailsService implements UserDetailsService {
           return new UsernameNotFoundException("사용자를 찾을 수 없거나 삭제된 계정입니다: " + id);
         });
 
-    log.info("사용자 정보 조회 성공 - 사용자 ID: {}", member.getId());
+    log.info("사용자 정보 조회 성공 - 사용자 ID: {}, 이름: {}", member.getId(), member.getName());
 
     // 엔티티를 DTO로 변환하여 반환
     AuthUserDTO authUser = AuthUserDTO.fromEntity(member);

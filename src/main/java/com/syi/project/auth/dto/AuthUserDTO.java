@@ -17,22 +17,27 @@ public class AuthUserDTO {
   @Schema(description = "사용자 아이디", example = "user1234")
   private final String username;
 
+  @Schema(description = "사용자 이름", example = "홍길동")
+  private final String name;
+
   @Schema(description = "사용자 역할", example = "STUDENT")
   private final Role role;
 
-  public AuthUserDTO(Long id, String username, Role role) {
+  public AuthUserDTO(Long id, String username, String name, Role role) {
     this.id = id;
     this.username = username;
+    this.name = name;
     this.role = role;
   }
 
   // Member 엔티티를 AuthUserDTO 로 변환하는 정적 메서드
   public static AuthUserDTO fromEntity(Member member) {
-    log.debug("Member 엔티티를 AuthUserDTO 로 변환 - ID(기본키): {}, username: {}, Role: {}",
-        member.getId(), member.getUsername(), member.getRole());
+    log.debug("Member 엔티티를 AuthUserDTO로 변환 - ID(기본키): {}, username: {}, name: {}, Role: {}",
+        member.getId(), member.getUsername(), member.getName(), member.getRole());
     return new AuthUserDTO(
         member.getId(),
         member.getUsername(),
+        member.getName(),
         member.getRole()
     );
   }
