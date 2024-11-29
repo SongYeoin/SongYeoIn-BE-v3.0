@@ -56,13 +56,13 @@ public class SecurityConfig {
         .authorizeHttpRequests(authorize -> authorize
             // 인증 없이 접근 가능한 경로 설정
             .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
-                "/webjars/**", "/", "/admin/member/**", "/admin/course/**", "/admin/schedule/**", "/admin/attendance/**","/member/**", "/club/**", "/admin/club/**", "/admin/notice/**", "/refresh","/api/**", "/journals/**", "/admin/journals/**").permitAll()
+                "/webjars/**", "/", "/admin/member/**", "/admin/course/**", "/admin/schedule/**", "/admin/attendance/**","/member/**", "/club/**", "/admin/club/**", "/admin/notice/**", "/notice/**", "/refresh","/api/**", "/journals/**", "/admin/journals/**").permitAll()
             // 해당 경로는 인증 필요
-//            .requestMatchers("/jwt/test").authenticated()
+            .requestMatchers("/jwt/test").authenticated()
             // 관리자 전용 엔드포인트 접근 설정 예시
-//            .requestMatchers("/admin/**").hasRole("ADMIN")
+            .requestMatchers("/admin/**").hasRole("ADMIN")
             // 나머지 모든 요청은 인증을 오구
-//            .anyRequest().authenticated()
+            .anyRequest().authenticated()
         )
         .exceptionHandling(exceptions -> exceptions
             .authenticationEntryPoint((request, response, authException) -> response.sendError(
