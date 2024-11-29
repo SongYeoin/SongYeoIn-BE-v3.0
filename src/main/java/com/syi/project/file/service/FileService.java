@@ -19,6 +19,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+/**
+ * 파일 관련 비즈니스 로직을 처리하는 서비스
+ * - S3 저장소와 연동하여 실제 파일 업로드/다운로드/삭제 처리
+ * - 파일 메타데이터 관리
+ * - 다중 파일 처리 시 트랜잭션 관리
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

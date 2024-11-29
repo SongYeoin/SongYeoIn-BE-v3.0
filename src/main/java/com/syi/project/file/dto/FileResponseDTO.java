@@ -7,6 +7,7 @@ import lombok.Getter;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 
+// 파일 업로드/조회 결과를 클라이언트에 전달
 @Getter
 public class FileResponseDTO {
   private Long id;

@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
+// 다중 파일 수정 요청을 처리
+// 단일 파일 수정은 FileUpdateDTO를 사용하지 않고 직접 MultipartFile을 받아서 처리함
 @Getter
 @Setter  // ModelAttribute 바인딩을 위해 Setter 필요
 @NoArgsConstructor  // ModelAttribute 바인딩을 위해 필요

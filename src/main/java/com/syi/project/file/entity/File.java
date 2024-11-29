@@ -12,6 +12,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+// 파일 정보를 저장하는 엔티티
 @Entity
 @Table(name = "files",
     indexes = {

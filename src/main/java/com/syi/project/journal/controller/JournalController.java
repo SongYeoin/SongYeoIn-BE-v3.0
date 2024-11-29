@@ -6,25 +6,19 @@ import com.syi.project.journal.service.JournalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/journals")
+@RequestMapping("/journals")
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Journal", description = "교육일지 API")
+@Tag(name = "수강생 교육일지 API", description = "수강생용 교육일지 API")
 public class JournalController {
 
   private final JournalService journalService;
@@ -38,10 +32,7 @@ public class JournalController {
     return ResponseEntity.ok(journalService.createJournal(memberId, requestDTO));
   }
 
-  @Operation(
-      summary = "교육일지 목록 조회",
-      description = "수강생은 자신이 작성한 일지만, 관리자는 해당 강좌의 모든 일지를 조회할 수 있습니다."
-  )
+  @Operation(summary = "교육일지 목록 조회", description = "수강생 본인이 작성한 교육일지 목록을 조회합니다.")
   @GetMapping("/course/{courseId}")
   public ResponseEntity<List<JournalResponseDTO>> getJournalsList(
       @PathVariable Long courseId,
@@ -50,10 +41,7 @@ public class JournalController {
     return ResponseEntity.ok(journalService.getJournalsByCourse(courseId, memberId));
   }
 
-  @Operation(
-      summary = "교육일지 상세 조회",
-      description = "수강생은 자신이 작성한 일지만, 관리자는 모든 일지를 상세 조회할 수 있습니다."
-  )
+  @Operation(summary = "교육일지 상세 조회", description = "수강생 본인이 작성한 교육일지를 상세 조회합니다.")
   @GetMapping("/{journalId}")
   public ResponseEntity<JournalResponseDTO> getJournalDetail(
       @PathVariable Long journalId,
@@ -72,7 +60,7 @@ public class JournalController {
     return ResponseEntity.ok(journalService.updateJournal(memberId, journalId, requestDTO));
   }
 
-  @Operation(summary = "교육일지 삭제", description = "교육일지를 삭제합니다. (파일 업로드 포함)")
+  @Operation(summary = "교육일지 삭제", description = "교육일지를 삭제합니다.")
   @DeleteMapping("/{journalId}")
   public ResponseEntity<Void> deleteJournal(
       Long memberId,
