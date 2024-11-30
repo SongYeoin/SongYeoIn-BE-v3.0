@@ -1,5 +1,6 @@
 package com.syi.project.common.entity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,9 +41,11 @@ public class Criteria {
                 + "]";
     }
 
-    // Pageable 객체 생성
+    // Pageable 객체 생성 (pageNum이 음수가 되지않도록 코드 수정)
+    // Pageable 관련 메서드만 swagger에서 숨김
+    @Schema(hidden = true)
     public Pageable getPageable() {
-        return PageRequest.of(pageNum - 1, amount, Sort.by(Sort.Direction.DESC, "regDate"));
+        return PageRequest.of(Math.max(0, pageNum - 1), amount, Sort.by(Sort.Direction.DESC, "regDate"));
     }
 
     public void setKeywordFromTypeAndKeyword(String type, String keyword) {

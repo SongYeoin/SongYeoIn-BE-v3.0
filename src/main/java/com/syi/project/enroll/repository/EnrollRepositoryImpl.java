@@ -100,4 +100,18 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
             .and(enroll.deletedBy.isNull()))
         .fetch();
   }
+
+  @Override
+  public boolean existsByMemberIdAndCourseId(Long memberId, Long courseId) {
+    Integer fetchOne = queryFactory
+        .selectOne()
+        .from(enroll)
+        .where(
+            enroll.memberId.eq(memberId)
+                .and(enroll.courseId.eq(courseId))
+                .and(enroll.deletedBy.isNull())
+        )
+        .fetchFirst();  // limit 1
+    return fetchOne != null;
+  }
 }

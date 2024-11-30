@@ -23,4 +23,8 @@ public class JournalFile extends BaseTimeEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "file_id")
   private File file;
+
+  public void updateFile(File file) {
+    this.file = file;
+  }
 }

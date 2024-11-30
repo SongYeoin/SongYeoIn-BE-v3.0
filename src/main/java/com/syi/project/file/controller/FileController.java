@@ -111,12 +111,7 @@ public class FileController {
         .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
     FileDownloadDTO downloadDTO = fileService.downloadFile(fileId, member);
-
-    return ResponseEntity.ok()
-        .contentType(MediaType.parseMediaType(downloadDTO.getContentType()))
-        .header(HttpHeaders.CONTENT_DISPOSITION,
-            "attachment; filename=\"" + downloadDTO.getOriginalName() + "\"")
-        .body(downloadDTO.getResource());
+    return fileService.getDownloadResponseEntity(downloadDTO);
   }
 
   @Operation(summary = "파일 삭제")

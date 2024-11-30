@@ -21,4 +21,7 @@ public interface EnrollRepositoryCustom {
   void deleteEnrollmentByCourseId(Long adminId, Long courseId);
 
   List<Long> findStudentIdByCourseId(Long courseId);
+
+  boolean existsByMemberIdAndCourseId(Long memberId, Long courseId);
+
 }

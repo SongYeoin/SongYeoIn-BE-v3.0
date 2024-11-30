@@ -7,12 +7,17 @@ import com.syi.project.file.dto.FileUpdateDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.enums.FileStatus;
 import com.syi.project.file.repository.FileRepository;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -181,6 +186,17 @@ public class FileService {
       log.error("파일 다운로드 실패: {}", e.getMessage());
       throw new RuntimeException("파일 다운로드에 실패했습니다.", e);
     }
+  }
+
+  public ResponseEntity<Resource> getDownloadResponseEntity(FileDownloadDTO downloadDTO) {
+    String encodedFileName = URLEncoder.encode(downloadDTO.getOriginalName(), StandardCharsets.UTF_8)
+        .replaceAll("\\+", "%20");
+
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType(downloadDTO.getContentType()))
+        .header(HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename*=UTF-8''" + encodedFileName)
+        .body(downloadDTO.getResource());
   }
 
   // 파일 URL에서 S3 객체 키를 추출하는 헬퍼 메서드

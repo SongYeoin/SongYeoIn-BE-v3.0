@@ -7,6 +7,7 @@ import com.syi.project.journal.entity.Journal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 import java.time.LocalDate;
 import java.util.List;
@@ -49,6 +50,73 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
     return switch (type) {
       case "W" -> journal.member.name.contains(keyword);
       case "I" -> journal.member.id.eq(Long.parseLong(keyword));
+      default -> null;
+    };
+  }
+
+  @Override
+  public Page<Journal> searchJournalsForStudent(
+      Long memberId, Long courseId, LocalDate startDate, LocalDate endDate, Pageable pageable) {
+    List<Journal> journals = queryFactory
+        .selectFrom(journal)
+        .where(
+            journal.member.id.eq(memberId),
+            journal.course.id.eq(courseId),
+            searchByDateRange(startDate, endDate)
+        )
+        .offset(pageable.getOffset())
+        .limit(pageable.getPageSize())
+        .orderBy(journal.createdAt.desc())
+        .fetch();
+
+    return PageableExecutionUtils.getPage(journals, pageable, () ->
+        queryFactory
+            .select(journal.count())
+            .from(journal)
+            .where(
+                journal.member.id.eq(memberId),
+                journal.course.id.eq(courseId),
+                searchByDateRange(startDate, endDate)
+            )
+            .fetchOne()
+    );
+  }
+
+  @Override
+  public Page<Journal> searchJournalsForAdmin(
+      Long courseId, String searchType, String searchKeyword,
+      LocalDate startDate, LocalDate endDate, Pageable pageable) {
+    List<Journal> journals = queryFactory
+        .selectFrom(journal)
+        .where(
+            journal.course.id.eq(courseId),
+            searchByMemberInfo(searchType, searchKeyword),
+            searchByDateRange(startDate, endDate)
+        )
+        .offset(pageable.getOffset())
+        .limit(pageable.getPageSize())
+        .orderBy(journal.createdAt.desc())
+        .fetch();
+
+    return PageableExecutionUtils.getPage(journals, pageable, () ->
+        queryFactory
+            .select(journal.count())
+            .from(journal)
+            .where(
+                journal.course.id.eq(courseId),
+                searchByMemberInfo(searchType, searchKeyword),
+                searchByDateRange(startDate, endDate)
+            )
+            .fetchOne()
+    );
+  }
+
+  private BooleanExpression searchByMemberInfo(String searchType, String keyword) {
+    if (searchType == null || keyword == null) return null;
+
+    return switch (searchType) {
+      case "name" -> journal.member.name.contains(keyword);
+      case "username" -> journal.member.username.contains(keyword);
       default -> null;
     };
   }

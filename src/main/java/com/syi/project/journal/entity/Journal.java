@@ -1,30 +1,30 @@
 package com.syi.project.journal.entity;
 
 import com.syi.project.auth.entity.Member;
+import com.syi.project.common.entity.BaseTimeEntity;
+import com.syi.project.common.enums.Role;
 import com.syi.project.course.entity.Course;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Journal {
+public class Journal extends BaseTimeEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "member_id")
+  @JoinColumn(name = "member_id", nullable = false)
   private Member member;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "course_id")
+  @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 
   @Column(nullable = false)
@@ -33,15 +33,9 @@ public class Journal {
   @Column(nullable = false, columnDefinition = "TEXT")
   private String content;
 
-  // List<JournalFile> 대신 단일 JournalFile로 변경
   @OneToOne(mappedBy = "journal", cascade = CascadeType.ALL, orphanRemoval = true)
+  @NotNull(message = "교육일지에는 파일 첨부가 필수입니다")
   private JournalFile journalFile;
-
-  @CreatedDate
-  private LocalDateTime createdAt;
-
-  @LastModifiedDate
-  private LocalDateTime updatedAt;
 
   @Builder
   public Journal(Member member, Course course, String title, String content) {
@@ -51,12 +45,22 @@ public class Journal {
     this.content = content;
   }
 
+  public boolean isOwner(Long memberId) {
+    return this.member.getId().equals(memberId);
+  }
+
+  public boolean canAccess(Member member) {
+    return member.getRole() == Role.ADMIN || isOwner(member.getId());
+  }
+
+  // 파일 설정 메서드 추가
+  public void setFile(JournalFile journalFile) {
+    this.journalFile = journalFile;
+  }
+
+  // 내용 업데이트 메서드 추가
   public void update(String title, String content) {
     this.title = title;
     this.content = content;
-  }
-
-  public void setFile(JournalFile journalFile) {
-    this.journalFile = journalFile;
   }
 }

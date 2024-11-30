@@ -56,7 +56,13 @@ public class JournalController {
 
     criteria.setAmount(20); // 페이지 사이즈 20으로 고정
 
-    Page<JournalResponseDTO> page = journalService.searchJournals(criteria, memberId, startDate, endDate);
+    Page<JournalResponseDTO> page = journalService.getStudentJournals(
+        memberId,
+        courseId,
+        startDate,
+        endDate,
+        criteria
+    );
 
     Map<String, Object> response = new HashMap<>();
     response.put("data", page.getContent());
