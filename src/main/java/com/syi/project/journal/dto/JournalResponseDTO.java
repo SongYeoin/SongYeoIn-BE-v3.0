@@ -4,6 +4,7 @@ import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.journal.entity.Journal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import lombok.Getter;
 
 @Getter
@@ -13,7 +14,7 @@ public class JournalResponseDTO {
   private String courseName;
   private String title;
   private String content;
-  private FileResponseDTO file;  // List에서 단일로 변경
+  private FileResponseDTO file;
   private LocalDateTime createdAt;
 
   private JournalResponseDTO(Long id, String memberName, String courseName,
@@ -28,6 +29,7 @@ public class JournalResponseDTO {
     this.createdAt = createdAt;
   }
 
+  // from 메서드 유지 (기존 코드와의 일관성)
   public static JournalResponseDTO from(Journal journal, S3Uploader s3Uploader) {
     return new JournalResponseDTO(
         journal.getId(),
@@ -35,10 +37,15 @@ public class JournalResponseDTO {
         journal.getCourse().getName(),
         journal.getTitle(),
         journal.getContent(),
-        journal.getJournalFile() != null
-            ? FileResponseDTO.from(journal.getJournalFile().getFile(), s3Uploader)
-            : null,
+        Optional.ofNullable(journal.getJournalFile())
+            .map(file -> FileResponseDTO.from(file.getFile(), s3Uploader))
+            .orElse(null),
         journal.getCreatedAt()
     );
+  }
+
+  // of 메서드 추가 (대체 팩토리 메서드)
+  public static JournalResponseDTO of(Journal journal, S3Uploader s3Uploader) {
+    return from(journal, s3Uploader);
   }
 }

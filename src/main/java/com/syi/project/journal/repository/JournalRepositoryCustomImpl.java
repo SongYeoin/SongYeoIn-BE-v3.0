@@ -1,12 +1,12 @@
 package com.syi.project.journal.repository;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.common.entity.Criteria;
 import com.syi.project.journal.entity.Journal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 import java.time.LocalDate;
@@ -17,15 +17,36 @@ import static com.syi.project.journal.entity.QJournal.journal;
 public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
   private final JPAQueryFactory queryFactory;
 
+  // 기본 쿼리 로직을 공통 메서드로 추출
+  private JPAQuery<Journal> getBaseQuery() {
+    return queryFactory
+        .selectFrom(journal)
+        .leftJoin(journal.member).fetchJoin()
+        .leftJoin(journal.course).fetchJoin();
+  }
+
+  // 검색 조건을 통합한 메서드
+  private BooleanExpression[] createSearchConditions(
+      Long memberId,
+      Long courseId,
+      String searchType,
+      String searchKeyword,
+      LocalDate startDate,
+      LocalDate endDate
+  ) {
+    return new BooleanExpression[] {
+        memberId != null ? journal.member.id.eq(memberId) : null,
+        courseId != null ? journal.course.id.eq(courseId) : null,
+        searchByMemberInfo(searchType, searchKeyword),
+        searchByDateRange(startDate, endDate)
+    };
+  }
+
   @Override
   public Page<Journal> findAllWithConditions(Criteria criteria, Long memberId, LocalDate startDate, LocalDate endDate) {
-    List<Journal> journals = queryFactory
-        .selectFrom(journal)
-        .where(
-            searchByType(criteria.getType(), criteria.getKeyword()),
-            searchByDateRange(startDate, endDate),
-            searchByMemberId(memberId)
-        )
+    // 공통 쿼리 생성
+    List<Journal> journals = getBaseQuery()
+        .where(createSearchConditions(memberId, null, criteria.getType(), criteria.getKeyword(), startDate, endDate))
         .offset(criteria.getPageable().getOffset())
         .limit(criteria.getPageable().getPageSize())
         .orderBy(journal.createdAt.desc())
@@ -35,35 +56,18 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
         queryFactory
             .select(journal.count())
             .from(journal)
-            .where(
-                searchByType(criteria.getType(), criteria.getKeyword()),
-                searchByDateRange(startDate, endDate),
-                searchByMemberId(memberId)
-            )
+            .where(createSearchConditions(memberId, null, criteria.getType(), criteria.getKeyword(), startDate, endDate))
             .fetchOne()
     );
   }
 
-  private BooleanExpression searchByType(String type, String keyword) {
-    if (type == null || keyword == null) return null;
-
-    return switch (type) {
-      case "W" -> journal.member.name.contains(keyword);
-      case "I" -> journal.member.id.eq(Long.parseLong(keyword));
-      default -> null;
-    };
-  }
-
   @Override
   public Page<Journal> searchJournalsForStudent(
-      Long memberId, Long courseId, LocalDate startDate, LocalDate endDate, Pageable pageable) {
-    List<Journal> journals = queryFactory
-        .selectFrom(journal)
-        .where(
-            journal.member.id.eq(memberId),
-            journal.course.id.eq(courseId),
-            searchByDateRange(startDate, endDate)
-        )
+      Long memberId, Long courseId, LocalDate startDate, LocalDate endDate, Pageable pageable
+  ) {
+    // 공통 쿼리 생성
+    List<Journal> journals = getBaseQuery()
+        .where(createSearchConditions(memberId, courseId, null, null, startDate, endDate))
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .orderBy(journal.createdAt.desc())
@@ -73,11 +77,7 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
         queryFactory
             .select(journal.count())
             .from(journal)
-            .where(
-                journal.member.id.eq(memberId),
-                journal.course.id.eq(courseId),
-                searchByDateRange(startDate, endDate)
-            )
+            .where(createSearchConditions(memberId, courseId, null, null, startDate, endDate))
             .fetchOne()
     );
   }
@@ -85,14 +85,11 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
   @Override
   public Page<Journal> searchJournalsForAdmin(
       Long courseId, String searchType, String searchKeyword,
-      LocalDate startDate, LocalDate endDate, Pageable pageable) {
-    List<Journal> journals = queryFactory
-        .selectFrom(journal)
-        .where(
-            journal.course.id.eq(courseId),
-            searchByMemberInfo(searchType, searchKeyword),
-            searchByDateRange(startDate, endDate)
-        )
+      LocalDate startDate, LocalDate endDate, Pageable pageable
+  ) {
+    // 공통 쿼리 생성
+    List<Journal> journals = getBaseQuery()
+        .where(createSearchConditions(null, courseId, searchType, searchKeyword, startDate, endDate))
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .orderBy(journal.createdAt.desc())
@@ -102,11 +99,7 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
         queryFactory
             .select(journal.count())
             .from(journal)
-            .where(
-                journal.course.id.eq(courseId),
-                searchByMemberInfo(searchType, searchKeyword),
-                searchByDateRange(startDate, endDate)
-            )
+            .where(createSearchConditions(null, courseId, searchType, searchKeyword, startDate, endDate))
             .fetchOne()
     );
   }
@@ -132,9 +125,5 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
       return journal.createdAt.loe(endDate.atTime(23, 59, 59));
     }
     return null;
-  }
-
-  private BooleanExpression searchByMemberId(Long memberId) {
-    return memberId != null ? journal.member.id.eq(memberId) : null;
   }
 }

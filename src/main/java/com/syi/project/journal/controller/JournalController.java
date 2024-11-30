@@ -54,8 +54,6 @@ public class JournalController {
     log.info("교육일지 목록 조회 요청 - courseId: {}, memberId: {}, criteria: {}",
         courseId, memberId, criteria);
 
-    criteria.setAmount(20); // 페이지 사이즈 20으로 고정
-
     Page<JournalResponseDTO> page = journalService.getStudentJournals(
         memberId,
         courseId,

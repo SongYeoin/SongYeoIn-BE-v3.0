@@ -56,8 +56,6 @@ public class AdminJournalController {
     log.info("[관리자] 교육일지 목록 조회 요청 - courseId: {}, searchType: {}, keyword: {}, criteria: {}",
         courseId, searchType, searchKeyword, criteria);
 
-    criteria.setAmount(20); // 페이지 사이즈 20으로 고정
-
     Page<JournalResponseDTO> page = journalService.getAdminJournals(
         courseId,
         searchType,
