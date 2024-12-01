@@ -8,6 +8,7 @@ import com.syi.project.common.enums.Role;
 import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.course.entity.Course;
 import com.syi.project.course.repository.CourseRepository;
+import com.syi.project.course.service.CourseService;
 import com.syi.project.enroll.repository.EnrollRepository;
 import com.syi.project.file.dto.FileDownloadDTO;
 import com.syi.project.file.service.FileService;
@@ -43,6 +44,7 @@ public class JournalService {
   private final MemberRepository memberRepository;
   private final CourseRepository courseRepository;
   private final FileService fileService;
+  private final CourseService courseService;
   private final S3Uploader s3Uploader;
   private final EnrollRepository enrollRepository;
 
@@ -187,7 +189,7 @@ public class JournalService {
 
   // 수정: 검증 로직 개선
   @Transactional
-  public JournalResponseDTO createJournal(Long memberId, JournalRequestDTO requestDTO) {
+  public JournalResponseDTO createJournal(Long memberId, JournalRequestDTO.Create requestDTO) {
     log.debug("교육일지 등록 처리 시작 - memberId: {}, courseId: {}", memberId, requestDTO.getCourseId());
 
     Member member = validateAndGetMember(memberId);
@@ -227,14 +229,18 @@ public class JournalService {
 
   // 수정: 검증 및 파일 처리 로직 개선
   @Transactional
-  public JournalResponseDTO updateJournal(Long memberId, Long journalId, JournalRequestDTO requestDTO) {
+  public JournalResponseDTO updateJournal(Long memberId, Long journalId, JournalRequestDTO.Update requestDTO) {
     log.debug("교육일지 수정 시작 - journalId: {}, memberId: {}", journalId, memberId);
 
     Member member = validateAndGetMember(memberId);
     Journal journal = validateAndGetJournalWithMember(journalId, memberId);
-    validateAndProcessFile(requestDTO.getFile(), "수정");
 
-    updateJournalFile(journal, requestDTO.getFile(), member);
+    // 새 파일이 있는 경우에만 파일 처리
+    if (requestDTO.getFile() != null && !requestDTO.getFile().isEmpty()) {
+      validateAndProcessFile(requestDTO.getFile(), "수정");
+      updateJournalFile(journal, requestDTO.getFile(), member);
+    }
+
     journal.update(requestDTO.getTitle(), requestDTO.getContent());
 
     log.info("교육일지 수정 완료 - journalId: {}", journalId);
@@ -290,13 +296,14 @@ public class JournalService {
   }
 
   // 기존 메서드 유지
-  public List<JournalCourseResponseDTO> getActiveCourses() {
-    log.debug("활성화된 교육과정 목록 조회 시작");
+  public List<JournalCourseResponseDTO> getActiveCourses(Long adminId) {
+    log.debug("관리자의 활성화된 교육과정 목록 조회 시작 - adminId: {}", adminId);
 
-    return courseRepository.findByDeletedByIsNull().stream()
-        .filter(course -> course.getStatus() == CourseStatus.Y)
-        .sorted(Comparator.comparing(Course::getStartDate).reversed())
-        .map(JournalCourseResponseDTO::of)
+    return courseService.getAllCoursesByAdminId(adminId).stream()
+        .map(courseListDTO -> JournalCourseResponseDTO.builder()
+            .id(courseListDTO.getCourseId())
+            .name(courseListDTO.getCourseName())
+            .build())
         .collect(Collectors.toList());
   }
 

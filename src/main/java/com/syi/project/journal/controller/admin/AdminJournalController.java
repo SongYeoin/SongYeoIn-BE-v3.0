@@ -1,5 +1,6 @@
 package com.syi.project.journal.controller.admin;
 
+import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.common.dto.PageInfoDTO;
 import com.syi.project.common.entity.Criteria;
 import com.syi.project.common.enums.CourseStatus;
@@ -87,17 +88,20 @@ public class AdminJournalController {
   @GetMapping("/{journalId}")
   public ResponseEntity<JournalResponseDTO> getJournalDetail(
       @PathVariable Long journalId,
-      Long memberId) {
-    log.info("[관리자] 교육일지 상세 조회 요청 - journalId: {}, memberId: {}", journalId, memberId);
-    return ResponseEntity.ok(journalService.getJournal(journalId, memberId));
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    log.info("[관리자] 교육일지 상세 조회 요청 - journalId: {}", journalId);
+    return ResponseEntity.ok(journalService.getJournal(journalId, userDetails.getId()));
   }
 
   // 추가된 메서드: 교육과정 목록 조회
   @Operation(summary = "[관리자] 교육과정 목록 조회", description = "관리자가 활성화된 교육과정 목록을 조회합니다.")
   @GetMapping("/courses")
-  public ResponseEntity<List<JournalCourseResponseDTO>> getActiveCourses() {
-    log.info("[관리자] 교육과정 목록 조회 요청");
-    return ResponseEntity.ok(journalService.getActiveCourses());
+  public ResponseEntity<List<JournalCourseResponseDTO>> getActiveCourses(
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    log.info("[관리자] 교육과정 목록 조회 요청 - adminId: {}", userDetails.getId());
+    return ResponseEntity.ok(journalService.getActiveCourses(userDetails.getId()));
   }
 
   // 추가된 메서드: 교육일지 파일 다운로드
@@ -106,10 +110,9 @@ public class AdminJournalController {
   @GetMapping("/{journalId}/download")
   public ResponseEntity<Resource> downloadJournalFile(
       @PathVariable Long journalId,
-      //@AuthenticationPrincipal Long memberId
-      @RequestParam Long memberId
+      @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     log.info("[관리자] 교육일지 파일 다운로드 요청 - journalId: {}", journalId);
-    return journalService.downloadJournalFile(journalId, memberId);
+    return journalService.downloadJournalFile(journalId, userDetails.getId());
   }
 }

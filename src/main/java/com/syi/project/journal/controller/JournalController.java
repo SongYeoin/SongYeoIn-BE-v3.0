@@ -1,5 +1,6 @@
 package com.syi.project.journal.controller;
 
+import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.common.dto.PageInfoDTO;
 import com.syi.project.common.entity.Criteria;
 import com.syi.project.journal.dto.JournalRequestDTO;
@@ -20,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping("/journals")
@@ -34,8 +36,9 @@ public class JournalController {
   @Operation(summary = "교육일지 등록", description = "교육일지를 등록합니다. (파일 업로드 포함)")
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<JournalResponseDTO> createJournal(
-      Long memberId,
-      @Valid @ModelAttribute JournalRequestDTO requestDTO) {
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @Valid @ModelAttribute JournalRequestDTO.Create requestDTO) {
+    Long memberId = userDetails.getId();
     log.info("교육일지 등록 요청 - courseId: {}", requestDTO.getCourseId());
     return ResponseEntity.ok(journalService.createJournal(memberId, requestDTO));
   }
@@ -44,13 +47,14 @@ public class JournalController {
   @GetMapping("/course/{courseId}")
   public ResponseEntity<Map<String, Object>> getJournalsList(
       @PathVariable Long courseId,
-      @Positive(message = "올바른 회원 ID를 입력해주세요") Long memberId,
       @Valid @ModelAttribute Criteria criteria,
       @RequestParam(required = false)
       @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
       @RequestParam(required = false)
-      @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate
+      @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
+      @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
+    Long memberId = userDetails.getId();
     log.info("교육일지 목록 조회 요청 - courseId: {}, memberId: {}, criteria: {}",
         courseId, memberId, criteria);
 
@@ -84,7 +88,9 @@ public class JournalController {
   @GetMapping("/{journalId}")
   public ResponseEntity<JournalResponseDTO> getJournalDetail(
       @PathVariable Long journalId,
-      Long memberId) {
+      @AuthenticationPrincipal CustomUserDetails userDetails // @AuthenticationPrincipal로 사용자 정보 주입
+  ){
+    Long memberId = userDetails.getId(); // userDetails에서 memberId 추출
     log.info("교육일지 상세 조회 요청 - journalId: {}, memberId: {}", journalId, memberId);
     return ResponseEntity.ok(journalService.getJournal(journalId, memberId));
   }
@@ -92,9 +98,10 @@ public class JournalController {
   @Operation(summary = "교육일지 수정", description = "교육일지를 수정합니다. (파일 업로드 포함)")
   @PutMapping(value = "/{journalId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<JournalResponseDTO> updateJournal(
-      Long memberId,
+      @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long journalId,
-      @Valid @ModelAttribute JournalRequestDTO requestDTO) {
+      @Valid @ModelAttribute JournalRequestDTO.Update requestDTO) {
+    Long memberId = userDetails.getId();
     log.info("교육일지 수정 요청 - journalId: {}, memberId: {}", journalId, memberId);
     return ResponseEntity.ok(journalService.updateJournal(memberId, journalId, requestDTO));
   }
@@ -102,8 +109,9 @@ public class JournalController {
   @Operation(summary = "교육일지 삭제", description = "교육일지를 삭제합니다.")
   @DeleteMapping("/{journalId}")
   public ResponseEntity<Void> deleteJournal(
-      Long memberId,
+      @AuthenticationPrincipal CustomUserDetails userDetails, // @AuthenticationPrincipal로 사용자 정보 주입
       @PathVariable Long journalId) {
+    Long memberId = userDetails.getId(); // userDetails에서 memberId 추출
     log.info("교육일지 삭제 요청 - journalId: {}, memberId: {}", journalId, memberId);
     journalService.deleteJournal(memberId, journalId);
     return ResponseEntity.noContent().build();
