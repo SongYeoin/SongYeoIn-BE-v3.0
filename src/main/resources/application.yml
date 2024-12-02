@@ -2,7 +2,7 @@ application:
   name: SongyeoinBackendApplication
 
 server:
-  port: 8080
+  port: ${PORT:8080}
   error:
     include-message: always
   servlet:
@@ -15,7 +15,7 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
