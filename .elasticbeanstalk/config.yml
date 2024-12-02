@@ -1,0 +1,21 @@
+branch-defaults:
+  dev:
+    environment: Songyeoin-env
+environment-defaults:
+  Songyeoin-env:
+    branch: dev
+    repository: SongYeoIn-BE-v3.0
+global:
+  application_name: songyeoin
+  default_ec2_keyname: sshKey
+  default_platform: Corretto 17 running on 64bit Amazon Linux 2023
+  default_region: ap-northeast-2
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: null
+  sc: git
+  workspace_type: Application
+deploy:
+  artifact: build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar

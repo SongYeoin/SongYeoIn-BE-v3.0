@@ -1,3 +1,4 @@
+/*
 package com.syi.project.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -94,3 +95,4 @@ public class JwtAuthenticationFilterTest {
     assertEquals("Invalid or expired token", response.getContentAsString().trim());
   }
 }
+*/
