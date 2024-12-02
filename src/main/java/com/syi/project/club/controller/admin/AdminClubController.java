@@ -13,6 +13,8 @@ import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
+import com.syi.project.course.dto.CourseDTO;
+import com.syi.project.course.dto.CourseResponseDTO;
 import com.syi.project.course.service.CourseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -45,10 +48,19 @@ public class AdminClubController {
         this.clubService = clubService;
     }
 
+    @GetMapping
+    public ResponseEntity<List<CourseDTO>> getAvailableCourses(){
+        log.info("교육 과정 조회 요청");
+        List<CourseDTO> availableCourses = courseService.getAvailableCourses();
+        log.info("성공적으로 {} 개의 교육 과정을 조회했습니다.", availableCourses.size());
+
+        return ResponseEntity.ok(availableCourses);
+
+    }
 
     // 페이징 처리된 club 목록 조회 (비동기 처리)
-    @GetMapping
-    public ResponseEntity<Map<String, Object>> getClubListByCourseId(@RequestParam(value = "courseId", required = false) Long courseId,
+    @GetMapping("/{courseId}/list")
+    public ResponseEntity<Map<String, Object>> getClubListByCourseId(@PathVariable(value = "courseId", required = false) Long courseId,
                                                                      @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
                                                                      @RequestParam(value = "type", required = false) String type,
                                                                      @RequestParam(value = "keyword", required = false) String keyword) {
@@ -99,7 +111,7 @@ public class AdminClubController {
 //    }
 
     //상세
-    @GetMapping("/{clubId}")
+    @GetMapping("/{clubId}/detail")
     public ResponseEntity<ClubResponseDTO.ClubDetail> getClubDetail(@PathVariable("clubId") Long clubId) {
         ClubResponseDTO.ClubDetail club = clubService.getClubDetail(clubId);
         return ResponseEntity.ok(club);
