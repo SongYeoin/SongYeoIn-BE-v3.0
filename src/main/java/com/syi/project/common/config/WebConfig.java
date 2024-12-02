@@ -10,7 +10,9 @@ public class WebConfig implements WebMvcConfigurer {
   @Override
   public void addCorsMappings(CorsRegistry registry) {
     registry.addMapping("/**") // 모든 경로에 대해 CORS를 허용
-        .allowedOrigins("https://d3b6eekx5tpsjk.cloudfront.net") //React 앱이 실행되는 주소를 허용
+        .allowedOrigins(
+            "https://d3b6eekx5tpsjk.cloudfront.net",
+            "http://localhost:3000") //React 앱이 실행되는 주소를 허용
         .allowedMethods("GET", "POST","PATCH", "PUT", "DELETE", "OPTIONS") // 허용할 HTTP 메서드를 지정
         .allowedHeaders("*") // 모든 헤더 허용
         .exposedHeaders("Authorization", "Refresh-Token") // 클라이언트에서 접근 가능한 헤더
