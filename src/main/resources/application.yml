@@ -9,6 +9,8 @@ server:
     encoding:
       charset: UTF-8
       enabled: true
+  tomcat:
+    normalize-requests: true  # 중복 슬레시 자동 정리
 
 spring:
   config:
@@ -73,3 +75,6 @@ cloud:
       multipart:
         max-file-size: 10MB        # 파일 하나의 최대 크기
         max-request-size: 10MB     # 요청당 최대 크기
+
+frontend:
+  url: ${FRONTEND_URL}  #  FRONTEND_URL 값 사용
