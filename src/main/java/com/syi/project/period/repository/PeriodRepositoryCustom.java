@@ -1,8 +1,8 @@
 package com.syi.project.period.repository;
 
 import com.syi.project.period.eneity.Period;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 public interface PeriodRepositoryCustom {
 
@@ -11,4 +11,7 @@ public interface PeriodRepositoryCustom {
   List<Period> getScheduleByDayOfWeek(String dayOfWeekString);
 
   List<Period> findByCourseId(Long courseId);
+
+  List<String> findPeriodsByDayOfWeek(Long courseId, String dayOfWeek);
+  List<String> findPeriodsInRange(Long courseId, LocalDate start, LocalDate end);
 }

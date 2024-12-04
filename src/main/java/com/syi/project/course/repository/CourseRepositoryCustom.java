@@ -12,4 +12,6 @@ public interface CourseRepositoryCustom {
   Page<Course> findCoursesById(Long memberId, String type, String word, Pageable pageable);
 
   List<CourseListDTO> findCoursesByAdminId(Long adminId);
+
+  List<CourseListDTO> findCoursesByStudentId(Long id);
 }

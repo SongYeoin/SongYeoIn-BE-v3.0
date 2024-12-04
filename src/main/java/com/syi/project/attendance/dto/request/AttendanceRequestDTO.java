@@ -31,13 +31,50 @@ public class AttendanceRequestDTO {
 
     private String status; // Optional field for filtering by attendance status (PRESENT, LATE, ABSENT)
 
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private Long studentId;
+
 
     @Builder
-    public AllAttendancesRequestDTO(LocalDate date, String studentName, String status) {
+    public AllAttendancesRequestDTO(LocalDate date, String studentName, String status, LocalDate startDate, LocalDate endDate,Long studentId) {
       this.date = date;
       this.studentName = studentName;
       this.status = status;
+      this.startDate = startDate;
+      this.endDate = endDate;
+      this.studentId = studentId;
 
+    }
+
+    // AttendanceStatus 변환 메서드
+    public AttendanceStatus getAttendanceStatus() {
+      if (status == null) {
+        return null;
+      }
+      return AttendanceStatus.fromENStatus(status); // 한글 -> Enum 변환
+    }
+  }
+
+  @Getter
+  @ToString
+  public static class StudentAllAttendRequestDTO{
+    @NotNull(message = "시작날짜는 필수입니다.")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
+
+    @NotNull(message = "끝 날짜는 필수입니다.")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endDate;
+
+    private String status; // Optional field for filtering by attendance status (PRESENT, LATE, ABSENT)
+
+
+    @Builder
+    public StudentAllAttendRequestDTO(LocalDate startDate, LocalDate endDate, String status) {
+      this.startDate = startDate;
+      this.endDate = endDate;
+      this.status = status;
     }
 
     // AttendanceStatus 변환 메서드

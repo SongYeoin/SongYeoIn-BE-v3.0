@@ -46,7 +46,7 @@ public class AttendanceResponseDTO {
     private String studentName;
     private String courseName;
     //private List<CourseListDTO> courseList;
-    private Page<AdminAttendListResponseDTO> attends;
+    private Page<AttendListResponseDTO> attends;
 
 
 
@@ -60,7 +60,7 @@ public class AttendanceResponseDTO {
 
   @Getter
   @ToString
-  public static class AdminAttendListResponseDTO {
+  public static class AttendListResponseDTO {
 
     private Long studentId;
     private String studentName;
@@ -68,24 +68,34 @@ public class AttendanceResponseDTO {
     private LocalDate date;
     //private List<AttendanceDTO> attendanceList;
     // 교시별 출석 상태 (교시 ID를 키로 사용)
-    private Map<String, String> periods;
+    private List<String> periods;
+    private Map<String, String> students;
 
-    /*@Builder
-    public AdminAttendListResponseDTO(Long studentId, String studentName, String courseName, LocalDate date,
-        List<AttendanceDTO> attendanceList) {
-      this.studentId = studentId;
-      this.studentName = studentName;
-      this.courseName = courseName;
-      this.date = date;
-      this.attendanceList = attendanceList;
-    }*/
     @Builder
-    public AdminAttendListResponseDTO(Long studentId, String studentName, String courseName,
-        LocalDate date, Map<String, String> periods) {
+    public AttendListResponseDTO(Long studentId, String studentName, String courseName,
+        LocalDate date, List<String> periods,Map<String, String> students) {
       this.studentId = studentId;
       this.studentName = studentName;
       this.courseName = courseName;
       this.date = date;
+      this.periods = periods;
+      this.students = students;
+    }
+  }
+  @Getter
+  @ToString
+  public static class StudentAttendListResponseDTO {
+
+    private LocalDate date;
+    // 교시별 출석 상태
+    private Map<String, String> students;
+    private List<String> periods;
+
+    @Builder
+    public StudentAttendListResponseDTO(
+        LocalDate date, Map<String, String> students, List<String> periods) {
+      this.date = date;
+      this.students = students;
       this.periods = periods;
     }
   }

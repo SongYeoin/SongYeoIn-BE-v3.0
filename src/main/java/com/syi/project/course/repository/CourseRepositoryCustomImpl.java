@@ -1,12 +1,11 @@
 package com.syi.project.course.repository;
 
 import static com.syi.project.course.entity.QCourse.course;
+import static com.syi.project.enroll.entity.QEnroll.enroll;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.entity.Course;
 import java.util.Collections;
@@ -83,6 +82,19 @@ public class CourseRepositoryCustomImpl implements
         .where(course.adminId.eq(adminId)
             .and(course.deletedBy.isNull()))
         .orderBy(course.id.asc())
+        .fetch();
+  }
+
+  @Override
+  public List<CourseListDTO> findCoursesByStudentId(Long studentId) {
+    return queryFactory.select(Projections.constructor(
+            CourseListDTO.class,
+            course.id.as("courseId"),     // DTO 필드 이름과 매핑
+            course.name.as("courseName") // DTO 필드 이름과 매핑
+        ))
+        .from(course)
+        .join(enroll).on(course.id.eq(enroll.courseId))
+        .where(enroll.memberId.eq(studentId))
         .fetch();
   }
 }
