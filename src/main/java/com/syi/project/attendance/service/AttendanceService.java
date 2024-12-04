@@ -26,6 +26,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.TextStyle;
 import java.util.List;
@@ -160,6 +161,7 @@ public class AttendanceService {
     log.info("출석 ID {}을 찾았습니다.", attendanceId);
     AttendanceStatus newStatus = AttendanceStatus.fromENStatus(status); // 한글을 Enum으로 변환
     attendance.updateStatus(newStatus);
+    attendance.updateModifiedDate(LocalDateTime.now());
     Attendance saved = attendanceRepository.save(attendance);
     AttendanceResponseDTO savedStatus = AttendanceResponseDTO.builder()
             .attendanceId(saved.getId())

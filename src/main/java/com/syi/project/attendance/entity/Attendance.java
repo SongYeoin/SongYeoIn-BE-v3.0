@@ -82,6 +82,6 @@ public class Attendance {
   public void updateStatus(AttendanceStatus status){
     this.status = status;
   }
-
+  public void updateModifiedDate(LocalDateTime modifiedDate){this.modifiedDate = modifiedDate;}
 
 }
