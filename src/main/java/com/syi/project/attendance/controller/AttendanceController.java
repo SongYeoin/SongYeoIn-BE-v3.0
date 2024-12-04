@@ -4,6 +4,7 @@ import
     com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.StudentAllAttendRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceTotalResponseDTO;
 import com.syi.project.attendance.service.AttendanceService;
@@ -12,6 +13,7 @@ import com.syi.project.auth.service.MemberService;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.service.CourseService;
+import com.syi.project.schedule.dto.ScheduleResponseDTO;
 import com.syi.project.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -91,31 +93,21 @@ public class AttendanceController {
   }
 
   //  출석 상세 조회_수강생
-  @GetMapping("{id}")
-  public ResponseEntity<AttendanceTotalResponseDTO> getAttendanceById(
+  @GetMapping("course/{courseId}/detail")
+  public ResponseEntity<AttendDetailDTO> getAttendanceById(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long courseId,
-      @PathVariable Long studentId,
-      @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
+      @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
+  Pageable pageable) {
     log.info("출석 상세 조회 요청");
-    //log.info("상세 조회 요청된 attendanceRequestDTO: {}", attendanceRequestDTO);
-//
-//    /* 출석 목록 조회 */
-//    List<AttendanceResponseDTO> attendanceInfo = attendanceService.findAttendanceByIds(
-//        userDetails, courseId,
-//        studentId, date);
-//    log.info("출석 상세 조회 완료 {}", attendanceInfo.size());
-//
-//    /* 시간표 정보 조회 */
-//    ScheduleResponseDTO scheduleInfo = scheduleService.getScheduleById(
-//        attendanceRequestDTO.getCourseId());
-//
-//    AttendanceTotalResponseDTO responseDTO = AttendanceTotalResponseDTO.builder()
-//        .attendanceInfo(attendanceInfo)
-//        .scheduleInfo(scheduleInfo)
-//        .build();
-//    return ResponseEntity.ok(responseDTO);
-    return null;
+
+   /* 출석 목록 조회 */
+    AttendDetailDTO attendance = attendanceService.findAttendanceByIds(
+       userDetails, courseId,
+        userDetails.getId(), date,pageable);
+
+    log.info("조회된 학생 출석 정보: {}", attendance);
+    return ResponseEntity.ok(attendance);
   }
 
   @GetMapping("/courses")
