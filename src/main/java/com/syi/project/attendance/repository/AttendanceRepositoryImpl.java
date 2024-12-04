@@ -9,8 +9,10 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
+import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
@@ -146,14 +148,30 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
   }
 
   @Override
-  public Page<AdminAttendListResponseDTO> findPagedAdminAttendListByCourseId(Long courseId,
-      AttendanceRequestDTO.AllAttendancesRequestDTO dto, Pageable pageable) {
+  public Page<AttendListResponseDTO> findPagedAdminAttendListByCourseId(Long courseId,
+      AllAttendancesRequestDTO dto,List<String> periodNames, Pageable pageable) {
     log.info("queryDSL 실행 요청");
     log.debug("courseId: {}, date: {}",courseId,dto.getDate());
-    log.debug("필터링 요청 데이터: studentName={}, status={} ",dto.getStudentName(), dto.getAttendanceStatus());
+    log.debug("필터링 요청 데이터: studentName={}, status={}, startDate={}, endDate={}",
+        dto.getStudentName(), dto.getAttendanceStatus(), dto.getStartDate(), dto.getEndDate());
 
-    BooleanBuilder predicate = new BooleanBuilder(attendance.courseId.eq(courseId).and(attendance.date.eq(dto.getDate())));
+    BooleanBuilder predicate = new BooleanBuilder(attendance.courseId.eq(courseId));
 
+    if (dto.getDate() != null) {
+      predicate.and(attendance.date.eq(dto.getDate()));   // 관리자
+    } else {  //수강생
+      if (dto.getStartDate() != null) {
+        predicate.and(attendance.date.goe(dto.getStartDate()));
+      }
+      if (dto.getEndDate() != null) {
+        predicate.and(attendance.date.loe(dto.getEndDate()));
+      }
+      if(dto.getStudentId() != null) {
+        predicate.and(attendance.memberId.eq(dto.getStudentId()));
+      }
+    }
+
+    // 필터링-관리자
     if(!TextUtils.isBlank(dto.getStudentName())){
       predicate.and(member.name.eq(dto.getStudentName()));
     }
@@ -174,50 +192,77 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
     log.info("courseId {}에 해당하는 교시들 조회",courseId);
     log.debug("조회된 교시들 리스트: {}",periods);
 
-    /*List<Long> periodIds = queryFactory
-        .select(period.id)
-        .from(period)
-        .where(period.courseId.eq(courseId))
-        .fetch();*/
+    List<Tuple> tuples;
+    if (dto.getDate() != null) {
+      // 2: 학생별 출석 데이터 조회
+      tuples = queryFactory
+          .select(
+              member.id,    //studentId
+              member.name,  //studentName
+              course.name,  //courseName
+              attendance.date,  //date
+              attendance.periodId,  //periodId
+              attendance.status     //status
+          )
+          .from(attendance)
+          .join(member).on(attendance.memberId.eq(member.id))
+          .join(course).on(attendance.courseId.eq(course.id))
+          .where(predicate)
+          .offset(pageable.getOffset())
+          .limit(pageable.getPageSize())
+          .fetch();
 
-    // 2: 학생별 출석 데이터 조회
-    List<Tuple> tuples = queryFactory
-        .select(
-            member.id,    //studentId
-            member.name,  //studentName
-            course.name,  //courseName
-            attendance.date,  //date
-            attendance.periodId,  //periodId
-            attendance.status     //status
-        )
-        .from(attendance)
-        .join(member).on(attendance.memberId.eq(member.id))
-        .join(course).on(attendance.courseId.eq(course.id))
-        .where(predicate)
-        .offset(pageable.getOffset())
-        .limit(pageable.getPageSize())
-        .fetch();
+      log.info("학생별 출석 데이터 조회");
 
-    log.info("학생별 출석 데이터 조회");
+      log.debug("조회된 출석 데이터: {}",tuples);
 
-    log.debug("조회된 출석 데이터: {}",tuples);
+    } else {
+      tuples = queryFactory
+          .select(
+              attendance.date,  //date
+              attendance.periodId,  //periodId
+              attendance.status     //status
+          )
+          .from(attendance)
+          .where(predicate)
+          .offset(pageable.getOffset())
+          .limit(pageable.getPageSize())
+          .fetch();
 
+      log.info("출석 데이터 조회");
 
+      log.debug("조회된 출석 데이터: {}",tuples);
+    }
 
-    Map<Long, AdminAttendListResponseDTO> attendanceMap = new HashMap<>();
+    Map<Object, AttendListResponseDTO> attendanceMap = new HashMap<>();
     for (Tuple tuple : tuples) {
-      Long studentId = tuple.get(member.id);
-      log.debug("학생ID: {}",studentId);
+      AttendListResponseDTO responseDTO;
+      if(dto.getDate() != null){
+        Long studentId = tuple.get(member.id);
+        log.debug("학생ID: {}",studentId);
 
-      AdminAttendListResponseDTO responseDTO = attendanceMap.computeIfAbsent(studentId, id -> AdminAttendListResponseDTO.builder()
-          .studentId(id)
-          .studentName(tuple.get(member.name))
-          .courseName(tuple.get(course.name))
-          .date(tuple.get(attendance.date))
-          .periods(new LinkedHashMap<>())
-          .build());
+        responseDTO = attendanceMap.computeIfAbsent(studentId, id -> AttendListResponseDTO.builder()
+            .studentId((Long) id)
+            .studentName(tuple.get(member.name))
+            .courseName(tuple.get(course.name))
+            .date(tuple.get(attendance.date))
+            .students(new LinkedHashMap<>())
+            .periods(periodNames)
+            .build());
 
-      log.debug("DTO 형태의 studentId, studentName, courseName, date 가 매핑된 데이터");
+        log.debug("DTO 형태의 studentId, studentName, courseName, date 가 매핑된 데이터");
+      }else{
+        LocalDate date = tuple.get(attendance.date); // 날짜
+        log.debug("날짜: {}",date);
+        responseDTO = attendanceMap.computeIfAbsent(date, d -> AttendListResponseDTO.builder()
+            .date((LocalDate) d) // 날짜
+            .students(new LinkedHashMap<>())
+            .periods(periodNames)
+            .build());
+
+        log.debug("DTO 형태의 studentId, date 가 매핑된 데이터");
+      }
+
       log.debug("AdminAttendListResponseDTO: {}",responseDTO);
 
       Long periodId = tuple.get(attendance.periodId);
@@ -235,12 +280,12 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
       log.info("조회한 List<Period> 의 형태에서 periodName 추출하기");
       log.debug("periodName: {}",periodName);
 
-      responseDTO.getPeriods().put(periodName,status);
+      responseDTO.getStudents().put(periodName,status);
       log.info("Map 형태로 <periodName, status> 저장");
 
     }
     log.info("Map<Long, AdminAttendListResponseDTO> 에서 AdminAttendListResponseDTO만 추출하기");
-    List<AdminAttendListResponseDTO> content = new ArrayList<>(attendanceMap.values());
+    List<AttendListResponseDTO> content = new ArrayList<>(attendanceMap.values());
     log.debug("content: {}",content);
 
     // 데이터가 없어도 예외발생 하지 않도록 처리
@@ -263,7 +308,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
   }
 
   @Override
-  public Page<AdminAttendListResponseDTO> findPagedStudentAttendListByCourseId(Long courseId,
+  public Page<AttendListResponseDTO> findPagedStudentAttendListByCourseId(Long courseId,
       AttendanceRequestDTO dto, Pageable pageable) {
     return null;
   }
@@ -302,5 +347,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .adminName(tuple.get(course.adminName))
         .build();
   }
+
+
 
 }

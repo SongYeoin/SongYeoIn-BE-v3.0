@@ -1,14 +1,17 @@
 package com.syi.project.attendance.controller;
 
-import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
+import
+    com.syi.project.attendance.dto.request.AttendanceRequestDTO;
+import com.syi.project.attendance.dto.request.AttendanceRequestDTO.StudentAllAttendRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceTotalResponseDTO;
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
+import com.syi.project.course.dto.CourseDTO;
+import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.service.CourseService;
-import com.syi.project.schedule.dto.ScheduleResponseDTO;
 import com.syi.project.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -21,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -61,21 +65,29 @@ public class AttendanceController {
     return ResponseEntity.ok(createdAttendance);
   }
 
-  // 출석 전체 조회_수강생
-  @GetMapping("course/{courseId}/{attendanceId}")
-  public ResponseEntity<Page<AdminAttendListResponseDTO>> getAllAttendance(
+  // 출석 전체 조회_수강생(일주일단위로)
+  @GetMapping("course/{courseId}")
+  public ResponseEntity<Page<AttendListResponseDTO>> getAllAttendance(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long courseId,
-      @PathVariable Long attendanceId,
-      @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO,
-      Pageable pageable) {
-    log.info("출석 전체 조회 요청");
-    log.info("조회 요청된 attendanceRequestDTO: {}", attendanceRequestDTO);
-    /*AttendanceResponseDTO.AdminAttendListDTO attendances = attendanceService.getAllAttendances(
-        userDetails, courseId, attendanceRequestDTO, pageable);
-    log.info("출석 조회된 정보: {}", attendances);
-    return ResponseEntity.ok(attendances);*/
-    return null;
+      @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+      @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
+      @RequestParam(required = false) String status,
+      @PageableDefault(size = 10) Pageable pageable) {
+
+    log.info("수강생 출석 전체 조회 요청");
+    log.debug("출석 조회 요청 자격: {}, PK: {}", userDetails.getAuthorities(), userDetails.getId());
+    log.info("startDate: {}, endDate: {},  status: {}", startDate, endDate, status);
+
+    StudentAllAttendRequestDTO requestDTO = new StudentAllAttendRequestDTO(
+        startDate, endDate, status);
+
+    Page<AttendListResponseDTO> attendances = attendanceService.getAllAttendancesForStudent(
+        userDetails, courseId,
+        requestDTO, pageable);
+
+    log.info("조회된 출석 정보: {} ", attendances.getContent());
+    return ResponseEntity.ok(attendances);
   }
 
   //  출석 상세 조회_수강생
@@ -104,6 +116,15 @@ public class AttendanceController {
 //        .build();
 //    return ResponseEntity.ok(responseDTO);
     return null;
+  }
+
+  @GetMapping("/courses")
+  public ResponseEntity<List<CourseListDTO>> getAllCoursesByAdminId(
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+    log.info("adminId: {} 가 맡고 있는 교육과정 조회 요청", userDetails.getId());
+    List<CourseDTO.CourseListDTO> courses = attendanceService.getAllCoursesByStudentId(userDetails);
+    log.debug("총 {} 개의 교육과정 조회 완료", courses.size());
+    return ResponseEntity.ok(courses);
   }
 
 

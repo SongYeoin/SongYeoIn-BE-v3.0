@@ -1,12 +1,15 @@
 package com.syi.project.attendance.controller.admin;
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
+import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.course.dto.CourseDTO;
+import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.service.CourseService;
 import com.syi.project.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,22 +55,25 @@ public class AdminAttendanceController {
           @ApiResponse(responseCode = "200", description = "출석을 성공적으로 조회했습니다."),
       })
   @GetMapping("/course/{courseId}") //기본적으로 날짜도 같이 옴
-  public ResponseEntity<Page<AdminAttendListResponseDTO>> getAllAttendances(
+  public ResponseEntity<Page<AttendListResponseDTO>> getAllAttendances(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long courseId,
       @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date,
       @RequestParam(required = false) String studentName,
       @RequestParam(required = false) String status,
       @PageableDefault(size = 10) Pageable pageable) {
-    /* 필터링 추가 */
 
-    log.info("출석 전체 조회 요청");
+    log.info("관리자 출석 전체 조회 요청");
     log.debug("출석 조회 요청 자격: {}, PK: {}", userDetails.getAuthorities(), userDetails.getId());
     log.info("date: {}, studentName: {}, status: {}", date, studentName, status);
 
-    AttendanceRequestDTO.AllAttendancesRequestDTO requestDTO = new AttendanceRequestDTO.AllAttendancesRequestDTO(date, studentName, status);
+    AllAttendancesRequestDTO requestDTO = AllAttendancesRequestDTO.builder()
+        .date(date)
+        .studentName(studentName)
+        .status(status)
+        .build();
 
-    Page<AdminAttendListResponseDTO> attendances = attendanceService.getAllAttendancesForAdmin(
+    Page<AttendListResponseDTO> attendances = attendanceService.getAllAttendancesForAdmin(
         userDetails, courseId,
         requestDTO, pageable);
 
@@ -82,7 +88,7 @@ public class AdminAttendanceController {
           @ApiResponse(responseCode = "200", description = "수강생 출석이 성공적으로 조회되었습니다."),
       })
   @GetMapping("/course/{courseId}/member/{studentId}")    //기본적으로 날짜도 같이 옴
-  public ResponseEntity<AttendanceResponseDTO.AttendDetailDTO> getAttendanceByMemberId(
+  public ResponseEntity<AttendDetailDTO> getAttendanceByMemberId(
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PathVariable Long courseId,
       @PathVariable Long studentId,
@@ -90,7 +96,7 @@ public class AdminAttendanceController {
       Pageable pageable) {
     log.info("수강생 ID {} 출석 조회 요청", studentId);
     log.debug("studentId: {}, courseId: {}", studentId, courseId);
-    AttendanceResponseDTO.AttendDetailDTO memberAttendance = attendanceService.findAttendanceByIds(
+    AttendDetailDTO memberAttendance = attendanceService.findAttendanceByIds(
         userDetails, courseId, studentId, date, pageable);
     log.info("조회된 학생 출석 정보: {}", memberAttendance);
     return ResponseEntity.ok(memberAttendance);
@@ -127,10 +133,10 @@ public class AdminAttendanceController {
   }
 
   @GetMapping("/courses")
-  public ResponseEntity<List<CourseDTO.CourseListDTO>> getAllCoursesByAdminId(
+  public ResponseEntity<List<CourseListDTO>> getAllCoursesByAdminId(
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     log.info("adminId: {} 가 맡고 있는 교육과정 조회 요청", userDetails.getId());
-    List<CourseDTO.CourseListDTO> courses = attendanceService.getAllCoursesByAdminId(userDetails);
+    List<CourseListDTO> courses = attendanceService.getAllCoursesByAdminId(userDetails);
     log.debug("총 {} 개의 교육과정 조회 완료", courses.size());
     return ResponseEntity.ok(courses);
   }

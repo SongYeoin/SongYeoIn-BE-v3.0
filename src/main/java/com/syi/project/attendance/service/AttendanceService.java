@@ -1,9 +1,11 @@
 package com.syi.project.attendance.service;
 
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
+import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
+import com.syi.project.attendance.dto.request.AttendanceRequestDTO.StudentAllAttendRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AdminAttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
@@ -25,7 +27,9 @@ import java.net.UnknownHostException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.TextStyle;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -54,37 +58,60 @@ public class AttendanceService {
 
   // 담당자
   /* 출석 전체 조회 */
-  public Page<AdminAttendListResponseDTO> getAllAttendancesForAdmin(CustomUserDetails userDetails,
+  public Page<AttendListResponseDTO> getAllAttendancesForAdmin(CustomUserDetails userDetails,
       Long courseId, AttendanceRequestDTO.AllAttendancesRequestDTO dto, Pageable pageable) {
     /* 담당자는 courseId, studentId, date, member_name, attendance_status */
 
-    log.info("전체 출석 조회");
+    log.info("관리자 전체 출석 조회");
+    Long adminId = userDetails.getId();
+    log.debug("관리자 Id: {}", adminId);
     log.debug("courseId: {}, date: {}", courseId, dto.getDate());
-    log.debug("필터링 조건 dto: studentName={}, status ={}",dto.getStudentName(), dto.getStatus());
+    log.debug("필터링 조건 : studentName={}, status ={}", dto.getStudentName(), dto.getStatus());
 
-    return attendanceRepository.findPagedAdminAttendListByCourseId(courseId, dto, pageable);
+    // 1교시, 2교시... 교시명 모음
+    // 해당 날짜의 요일 (한국어로)
+    String dayOfWeek = dto.getDate().getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.KOREAN)+"요일";
+    log.debug("해당하는 요일: {}",dayOfWeek);
+
+    List<String> periods = periodRepository.findPeriodsByDayOfWeek(courseId, dayOfWeek);
+    log.debug("{} 의"
+        + " 교시명 모음: {}",dayOfWeek, periods);
+
+    return attendanceRepository.findPagedAdminAttendListByCourseId(courseId, dto, periods,
+        pageable);
 
   }
 
+
   // 수강생
   // 출석 전체 조회
- public Page<AdminAttendListResponseDTO> getAllAttendancesForStudent(CustomUserDetails userDetails,
-      Long courseId, AttendanceRequestDTO dto, Pageable pageable) {
-    /* 수강생은 courseId, memberId , date(달, 일) */
-    log.info("조건별로 출석 조회를 시도합니다.");
-    log.debug("dto: memberId={}, courseId={} date={}", dto.getMemberId(), dto.getCourseId(),
-        dto.getDate());
-    log.debug("filter: name={}, status={}", dto.getStudentName(), dto.getStatus());
+  public Page<AttendListResponseDTO> getAllAttendancesForStudent(CustomUserDetails userDetails,
+      Long courseId, StudentAllAttendRequestDTO dto, Pageable pageable) {
 
-    log.info("자격 추출");
-    // Role 추출
-    String role = extractRole(userDetails);
-    log.debug("사용자 Role: {}", role);
+    log.info("수강생 전체 출석 조회");
+    log.debug("courseId: {}, startDate: {}, endDate: {}", courseId, dto.getStartDate(),
+        dto.getEndDate());
+    log.debug("필터링 조건 : status ={}", dto.getStatus());
 
-    Long adminId = userDetails.getId();
-    log.debug("사용자 Id: {}", adminId);
+    Long studentId = userDetails.getId();
+    log.debug("수강생 Id: {}", studentId);
 
-    return attendanceRepository.findPagedStudentAttendListByCourseId(courseId, dto, pageable);
+    // 1교시, 2교시... 교시명 모음
+    List<String> periods = periodRepository.findPeriodsInRange(courseId,dto.getStartDate(),
+        dto.getEndDate());
+    log.debug("조회된 교시 모음: {}", periods);
+
+    log.info("dto 변환");
+    AllAttendancesRequestDTO requestDTO = AllAttendancesRequestDTO.builder()
+        .date(null)
+        .studentId(studentId)
+        .startDate(dto.getStartDate())
+        .endDate(dto.getEndDate())
+        .status(dto.getStatus())
+        .build();
+
+    return attendanceRepository.findPagedAdminAttendListByCourseId(courseId, requestDTO, periods,
+        pageable);
 
   }
 
@@ -506,6 +533,10 @@ public class AttendanceService {
   public List<CourseListDTO> getAllCoursesByAdminId(CustomUserDetails userDetails) {
     return courseRepository.findCoursesByAdminId(userDetails.getId());
 
+  }
+
+  public List<CourseListDTO> getAllCoursesByStudentId(CustomUserDetails userDetails) {
+    return courseRepository.findCoursesByStudentId(userDetails.getId());
   }
 
   /*@Transactional
