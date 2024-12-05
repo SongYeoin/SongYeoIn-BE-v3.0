@@ -1,5 +1,7 @@
 package com.syi.project.common.exception;
 
+import com.syi.project.attendance.exception.AttendanceNotYetException;
+import com.syi.project.attendance.exception.NotInRangeException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -82,5 +84,17 @@ public class GlobalExceptionHandler {
     errorResponse.put("code", errorCode.getCode());
     errorResponse.put("message", errorCode.getMessage());
     return errorResponse;
+  }
+
+  @ExceptionHandler(NotInRangeException.class)
+  public ResponseEntity<Map<String, String>> handleNotInRangeException(NotInRangeException ex) {
+    Map<String, String> errorResponse = new HashMap<>();
+    errorResponse.put("message", ex.getMessage());
+    return new ResponseEntity<>(errorResponse, ex.getStatus());
+  }
+
+  @ExceptionHandler(AttendanceNotYetException.class)
+  public ResponseEntity<String> handleAttendanceException(AttendanceNotYetException ex) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
   }
 }
