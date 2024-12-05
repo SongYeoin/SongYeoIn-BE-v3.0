@@ -4,6 +4,7 @@ import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
 import java.time.LocalDate;
@@ -28,4 +29,6 @@ public interface AttendanceRepositoryCustom {
 
   MemberInfoInDetail findMemberInfoByAttendance(Long courseId, Long studentId, LocalDate date);
 
+  List<AttendanceTableDTO> finAttendanceStatusByPeriods(Long id, Long courseId, LocalDate date,
+      String dayOfWeek);
 }
