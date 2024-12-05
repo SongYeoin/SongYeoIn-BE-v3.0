@@ -1,19 +1,17 @@
 package com.syi.project.attendance.controller;
 
-import
-    com.syi.project.attendance.dto.request.AttendanceRequestDTO;
+import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.StudentAllAttendRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
-import com.syi.project.attendance.dto.response.AttendanceTotalResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.service.CourseService;
-import com.syi.project.schedule.dto.ScheduleResponseDTO;
 import com.syi.project.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -56,15 +54,15 @@ public class AttendanceController {
       responses = {
           @ApiResponse(responseCode = "200", description = "출석을 성공적으로 등록했습니다."),
       })
-  @PostMapping("/enroll")
-  public ResponseEntity<AttendanceResponseDTO> createAttendance(
-      @RequestBody @Valid AttendanceRequestDTO attendanceRequestDTO, HttpServletRequest request) {
+  @PostMapping("/enroll/{periodId}")
+  public void createAttendance(
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      @PathVariable Long periodId, HttpServletRequest request) {
     log.info("출석 등록 요청");
-    log.info("등록 요청된 attendanceRequestDTO: {}", attendanceRequestDTO);
-    AttendanceResponseDTO createdAttendance = attendanceService.createAttendance(
-        attendanceRequestDTO, request);
-    log.info("출석 등록된 정보: {}", createdAttendance);
-    return ResponseEntity.ok(createdAttendance);
+    log.info("등록 요청된 periodId: {}", periodId);
+    attendanceService.createAttendance(userDetails,periodId, request);
+    log.info("출석 등록 완료");
+
   }
 
   // 출석 전체 조회_수강생(일주일단위로)
@@ -119,6 +117,16 @@ public class AttendanceController {
     return ResponseEntity.ok(courses);
   }
 
+  @GetMapping("/main/{courseId}")
+  public ResponseEntity<List<AttendanceTableDTO>> getAttendanceByDate(
+      @PathVariable Long courseId,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    List<AttendanceTableDTO> attendanceList = attendanceService.getAttendanceByCourseAndDate(
+        userDetails, courseId, date);
+    return ResponseEntity.ok(attendanceList);
+  }
 
 
 }

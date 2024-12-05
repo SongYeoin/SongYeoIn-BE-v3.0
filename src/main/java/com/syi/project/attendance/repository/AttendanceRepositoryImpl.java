@@ -11,9 +11,8 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
-import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
 import com.syi.project.common.enums.AttendanceStatus;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
 import org.springframework.data.domain.Page;
@@ -348,6 +348,61 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .build();
   }
 
+  @Override
+  public List<AttendanceTableDTO> finAttendanceStatusByPeriods(Long studentId, Long courseId,
+      LocalDate date, String dayOfWeek) {
+    log.debug("studentId: {}, courseId: {}, date: {}, dayOfWeek: {}", studentId, courseId, date,
+        dayOfWeek);
+
+    BooleanBuilder predicate = new BooleanBuilder(attendance.courseId.eq(courseId)
+        .and(attendance.date.eq(date))
+        .and(attendance.memberId.eq(studentId)));
+
+    // period 에서 id와 name 추출하기 위해 조회
+    List<Period> periods = queryFactory
+        .selectFrom(period)
+        .where(period.courseId.eq(courseId).and(period.dayOfWeek.eq(dayOfWeek)))
+        .orderBy(period.startTime.asc())
+        .fetch();
+
+    // Period 리스트에서 name 필드만 추출
+    List<String> periodNames = periods.stream()
+        .map(Period::getName) // Period 객체의 name 필드 추출
+        .toList();
+
+    log.debug("{} 에 해당하는 교시들 모음: {}", dayOfWeek, periods.toString());
+
+    List<Tuple> tuples = queryFactory
+        .select(
+            attendance.periodId,  //periodId
+            attendance.status     //status
+        )
+        .from(attendance)
+        .where(predicate)
+        .fetch();
+
+    log.debug("출석 결과(List<Tuple>: {}", tuples.toString());
+
+    // attendance 데이터를 Map으로 변환 (periodId -> status)
+    Map<Long, String> attendanceMap = tuples.stream()
+        .collect(Collectors.toMap(
+            tuple -> tuple.get(attendance.periodId),
+            tuple -> tuple.get(attendance.status) != null ? tuple.get(attendance.status).toKorean()
+                : null
+        ));
+
+// 결과 생성
+    List<AttendanceTableDTO> results = periods.stream()
+        .map(p -> AttendanceTableDTO.builder()
+            .periodId(p.getId())                                // 교시 ID
+            .periodName(p.getName())                            // 교시명
+            .status(attendanceMap.getOrDefault(p.getId(), null)) // 매칭되는 상태 또는 null
+            .build())
+        .toList();
+
+    return results;
+
+  }
 
 
 }

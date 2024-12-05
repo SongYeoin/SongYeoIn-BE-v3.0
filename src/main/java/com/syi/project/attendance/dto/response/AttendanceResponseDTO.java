@@ -1,7 +1,5 @@
 package com.syi.project.attendance.dto.response;
 
-import com.syi.project.attendance.entity.Attendance;
-import com.syi.project.common.enums.AttendanceStatus;
 import com.syi.project.period.dto.PeriodResponseDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -157,6 +155,35 @@ public class AttendanceResponseDTO {
       this.endTime = endTime;
       this.enrollDate = enrollDate;
       this.status = status;
+    }
+  }
+
+/*  @Getter
+  @ToString
+  public static class AttendanceMainDTO {
+
+    private List<AttendanceTableDTO> tableDTOS;
+    private List<String> periods;
+
+    @Builder
+    public AttendanceMainDTO(List<AttendanceTableDTO> tableDTOS, List<String> periods) {
+      this.tableDTOS = tableDTOS;
+      this.periods = periods;
+    }
+  }*/
+
+  @Getter
+  @ToString
+  public static class AttendanceTableDTO{
+    private String periodName;
+    private String status; // 출석, 결석, 지각 등
+    private Long periodId;
+
+    @Builder
+    public AttendanceTableDTO(String periodName, String status, Long periodId) {
+      this.periodName = periodName;
+      this.status = status;
+      this.periodId = periodId;
     }
   }
 

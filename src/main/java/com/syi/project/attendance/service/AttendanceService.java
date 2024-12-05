@@ -7,8 +7,11 @@ import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
+import com.syi.project.attendance.exception.AttendanceNotYetException;
+import com.syi.project.attendance.exception.NotInRangeException;
 import com.syi.project.attendance.repository.AttendanceRepository;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.service.CustomUserDetails;
@@ -39,6 +42,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
@@ -291,40 +295,50 @@ public class AttendanceService {
   //  수강생
   /* 출석 등록 */
   @Transactional
-  public AttendanceResponseDTO createAttendance(AttendanceRequestDTO dto,
+  public void createAttendance(CustomUserDetails userDetails, Long periodId,
       HttpServletRequest request) {
     log.info("출석 등록을 시도합니다.");
-    log.debug("출석 등록 요청된 정보: {}", dto);
+    log.debug("출석 등록 요청된 periodId: {}", periodId);
 
     // 해당 교시가 현재 출석 가능 시간인지 확인
-    log.info("교시 ID {} 를 조회합니다.", dto.getPeriodId());
-    Optional<Period> period = periodRepository.findById(dto.getPeriodId());
-
-    Attendance attendance = dto.toEntity();
-    log.debug("출석 엔티티 변환 완료: {}", attendance);
-
-    AttendanceStatus status;
-    if (period.isPresent()) {
-      status = checkIfWithinTimeWindow(period.get());
-      attendance.updateStatus(status);
-      log.info("출석 상태 필드 변경 status: {}", attendance.getStatus());
-      log.debug("attendance: {}", attendance);
-
-//      사용자의 IP 주소 확인
-      String userIp = getClientIp(request); // 클라이언트 IP 가져오기
-      log.info("사용자의 IP 주소: {}", userIp);
-
-      if (!isWithinNetwork(userIp)) {
-        log.error("User IP 가 허용된 범주 안에 있지 않습니다: {}",userIp);
-        return AttendanceResponseDTO.withMessage("학원 네트워크에서만 출석이 가능합니다.");  //redirect로 변경
-      }
+    log.info("교시 ID {} 를 조회합니다.", periodId);
+    Optional<Period> periodOptional = periodRepository.findById(periodId);
+    if (periodOptional.isEmpty()) {
+      throw new NoSuchElementException("해당 교시를 찾을 수 없습니다.");
     }
 
-    Attendance savedAttendance = attendanceRepository.save(attendance);
-    log.info("출석 등록을 완료합니다.");
+    AttendanceStatus status;
+    log.debug("조회된 교시 정보: {}", periodOptional.get());
+    Period period = periodOptional.get();
 
-    //return fromEntity(savedAttendance);
-    return null;
+    // period에서 courseId, userDetails에서 수강생 id
+    log.debug("출석에 저장될 courseId: {}", period.getCourseId());
+    log.debug("출석에 저장될 memberId: {}", userDetails.getId());
+
+    // 사용자의 IP 주소 확인
+    String userIp = getClientIp(request); // 클라이언트 IP 가져오기
+    log.info("사용자의 IP 주소: {}", userIp);
+
+    if (!isWithinNetwork(userIp)) {
+      log.error("User IP 가 허용된 범주 안에 있지 않습니다: {}", userIp);
+      throw new NotInRangeException("학원 네트워크에서만 출석이 가능합니다.", HttpStatus.FORBIDDEN);
+    }
+
+    status = checkIfWithinTimeWindow(period);
+    log.debug("출석에 저장될 status: {}", status);
+
+    Attendance attendance = AttendanceRequestDTO.builder()
+        .periodId(periodId)
+        .courseId(period.getCourseId())
+        .memberId(userDetails.getId())
+        .build().toEntity();
+    log.debug("DTO 형태에서 attendance 엔티티 형태로 변환: {} ", attendance);
+
+    attendance.updateStatus(status);
+    log.info("status 업데이트");
+
+    attendanceRepository.save(attendance);
+    log.info("출석 등록을 완료합니다.");
 
   }
 
@@ -333,6 +347,7 @@ public class AttendanceService {
     // 192.168.1.0/24 네트워크 범위를 사용하는 경우
     String[] allowedNetworks = {
         "127.0.0.1/32", // 로컬, 추가 네트워크 범위가 있을 경우 추가 가능
+        "172.30.1.0/24",  //내집
         "192.168.0.0/24" // 학원 네트워크
     };
 
@@ -355,6 +370,7 @@ public class AttendanceService {
     // 만약 클라이언트 IP가 어느 네트워크 범위에도 포함되지 않으면 false 반환
     return false;
   }
+
   private boolean isInRange(InetAddress target, InetAddress network, int prefixLength) {
     byte[] targetBytes = target.getAddress();
     byte[] networkBytes = network.getAddress();
@@ -425,29 +441,40 @@ public class AttendanceService {
   private AttendanceStatus checkIfWithinTimeWindow(Period period) {
 // 현재 시간
     LocalTime now = LocalTime.now();
+    log.debug("현재 시간: {}", now);
 
 //  교시 시작 시간
     LocalTime periodStartTime = period.getStartTime();
+    log.debug("교시 시작 시간: {}", periodStartTime);
 
 //    교시 종료 시간
     LocalTime periodEndTime = period.getEndTime();
+    log.debug("교시 종료 시간: {}", periodEndTime);
 
-    LocalTime start = periodStartTime.minusMinutes(5);
-    LocalTime end = periodEndTime.plusMinutes(10);
+    LocalTime allowedStart = periodStartTime.minusMinutes(5);
+    log.debug("허용되는 시작 시간: {}", allowedStart);
+    LocalTime allowedEnd = periodEndTime.plusMinutes(10);
+    log.debug("허용되는 끝 시간: {}", allowedEnd);
+
+    // 교시 시작 5분 전보다 더 이른 경우 예외 처리
+    if (now.isBefore(allowedStart)) {
+      throw new AttendanceNotYetException("교시 시작 5분 전보다 더 전에는 출석이 불가능합니다.");
+    }
 
     // 교시 시작 5분 전 ~ 교시 시작 10분 후 => 출석 가능
-    if (now.isAfter(start) && now.isBefore(end)) {
+    if (now.isAfter(allowedStart) && now.isBefore(periodStartTime.plusMinutes(10))) {
+      log.debug("출석 상태: PRESENT");
       return AttendanceStatus.PRESENT;
-
-      // 교시 시작 10분 후 ~ 종료 전 => 지각
-    } else if (now.isAfter(end) && now.isBefore(periodEndTime)) {
-      return AttendanceStatus.LATE;
-
-      // 교시 종료 후 => 결석
-    } else {
-      return AttendanceStatus.ABSENT;
-
     }
+    // 교시 시작 10분 후 ~ 교시 종료 전 => 지각
+    if (now.isAfter(periodStartTime.plusMinutes(10)) && now.isBefore(periodEndTime)) {
+      log.debug("출석 상태: LATE");
+      return AttendanceStatus.LATE;
+    }
+
+    // 교시 종료 후 => 결석
+    log.debug("출석 상태: ABSENT");
+    return AttendanceStatus.ABSENT;
 
   }
 
@@ -539,6 +566,23 @@ public class AttendanceService {
 
   public List<CourseListDTO> getAllCoursesByStudentId(CustomUserDetails userDetails) {
     return courseRepository.findCoursesByStudentId(userDetails.getId());
+  }
+
+  public List<AttendanceTableDTO> getAttendanceByCourseAndDate(CustomUserDetails userDetails,
+      Long courseId, LocalDate date) {
+    log.info("main에 출석상태와 교시를 가져가기");
+    log.debug("학생 ID: {}, 교육과정 ID: {}, 날짜: {}", userDetails.getId(), courseId, date);
+
+    // 해당 날짜의 요일 (한국어로)
+    String dayOfWeek = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.KOREAN) + "요일";
+    log.debug("달력에서 선택한 요일: {}", dayOfWeek);
+
+    List<AttendanceTableDTO> attendanceMainDTOS = attendanceRepository.finAttendanceStatusByPeriods(
+        userDetails.getId(), courseId, date, dayOfWeek);
+
+    log.debug(attendanceMainDTOS.toString());
+
+    return attendanceMainDTOS;
   }
 
   /*@Transactional
