@@ -58,12 +58,12 @@ public class PeriodRequestDTO {
     this.deletedBy = deletedBy;
   }
 
-  public Period toEntity(Long courseId, Long scheduleId) {
+  public Period toEntity(Long courseId, Long scheduleId,String dayOfWeek) {
     return new Period(
         null,
         courseId,
         scheduleId,
-        this.dayOfWeek,
+        dayOfWeek,
         this.name,
         this.startTime,
         this.endTime,
