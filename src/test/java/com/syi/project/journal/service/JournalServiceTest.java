@@ -1,4 +1,4 @@
-//package com.syi.project.journal.service;
+package com.syi.project.journal.service;
 //
 //import com.syi.project.auth.entity.Member;
 //import com.syi.project.auth.repository.MemberRepository;
@@ -254,3 +254,232 @@
 //    );
 //  }
 //}
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.syi.project.auth.entity.Member;
+import com.syi.project.auth.repository.MemberRepository;
+import com.syi.project.common.entity.Criteria;
+import com.syi.project.common.enums.CourseStatus;
+import com.syi.project.common.enums.Role;
+import com.syi.project.course.entity.Course;
+import com.syi.project.course.repository.CourseRepository;
+import com.syi.project.enroll.entity.Enroll;
+import com.syi.project.enroll.repository.EnrollRepository;
+import com.syi.project.file.entity.File;
+import com.syi.project.file.service.FileService;
+import com.syi.project.journal.dto.JournalRequestDTO;
+import com.syi.project.journal.dto.JournalResponseDTO;
+import com.syi.project.journal.entity.Journal;
+import com.syi.project.journal.entity.JournalFile;
+import com.syi.project.journal.repository.JournalRepository;
+import com.syi.project.journal.service.JournalService;
+import java.time.LocalDate;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+@SpringBootTest
+@Transactional
+class JournalServiceTest {
+  @Autowired
+  private JournalService journalService;
+  @Autowired
+  private JournalRepository journalRepository;
+  @Autowired
+  private MemberRepository memberRepository;
+  @Autowired
+  private CourseRepository courseRepository;
+  @Autowired
+  private EnrollRepository enrollRepository;
+  @Autowired
+  private FileService fileService;
+
+  private Member testMember;
+  private Course testCourse;
+  private MockMultipartFile testFile;
+
+  @BeforeEach
+  void setUp() {
+    // 테스트 수강생 생성
+    testMember = new Member(
+        "test_student",      // username
+        "password123",       // password
+        "테스트 수강생",        // name
+        "2000-01-01",       // birthday
+        "test@test.com",    // email
+        Role.STUDENT        // role
+    );
+    testMember = memberRepository.save(testMember);
+
+    // 테스트 과정 생성
+    testCourse = new Course(
+        "테스트 과정",          // name
+        "테스트 과정 설명",      // description
+        "테스트 관리자",        // adminName
+        "테스트 강사",         // teacherName
+        LocalDate.of(2024, 1, 1),  // startDate
+        LocalDate.of(2024, 12, 31), // endDate
+        "301",               // roomName
+        LocalDate.now(),     // enrollDate
+        LocalDate.now(),     // modifiedDate
+        CourseStatus.Y,      // status
+        null,               // deletedBy
+        1L                  // adminId
+    );
+    testCourse = courseRepository.save(testCourse);
+
+    // 테스트 파일 생성
+    testFile = new MockMultipartFile(
+        "file",
+        "test.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "테스트 파일 내용".getBytes()
+    );
+
+    // 수강 신청 생성
+    Enroll enroll = new Enroll(testCourse.getId(), testMember.getId());
+    enrollRepository.save(enroll);
+  }
+
+  @Test
+  @DisplayName("교육일지 생성 - 정상 케이스")
+  void createJournal_Success() {
+    // given
+    LocalDate validEducationDate = LocalDate.of(2024, 3, 15);
+    JournalRequestDTO.Create requestDTO = JournalRequestDTO.Create.builder()
+        .courseId(testCourse.getId())
+        .title("테스트 교육일지")
+        .content("테스트 내용")
+        .educationDate(validEducationDate)
+        .file(testFile)
+        .build();
+
+    // when
+    JournalResponseDTO responseDTO = journalService.createJournal(testMember.getId(), requestDTO);
+
+    // then
+    assertNotNull(responseDTO);
+    assertEquals("테스트 교육일지", responseDTO.getTitle());
+    assertEquals(validEducationDate, responseDTO.getEducationDate());
+  }
+
+  @Test
+  @DisplayName("교육일지 생성 실패 - 과정 기간 외 날짜")
+  void createJournal_InvalidDate() {
+    // given
+    LocalDate invalidDate = LocalDate.of(2023, 12, 31); // 과정 시작일 이전
+    JournalRequestDTO.Create requestDTO = JournalRequestDTO.Create.builder()
+        .courseId(testCourse.getId())
+        .title("테스트 교육일지")
+        .content("테스트 내용")
+        .educationDate(invalidDate)
+        .file(testFile)
+        .build();
+
+    // when & then
+    assertThrows(IllegalArgumentException.class, () ->
+        journalService.createJournal(testMember.getId(), requestDTO));
+  }
+
+  @Test
+  @DisplayName("교육일지 검색 - 교육일자 기준")
+  void searchJournals_ByEducationDate() {
+    // given
+    LocalDate searchStartDate = LocalDate.of(2024, 3, 1);
+    LocalDate searchEndDate = LocalDate.of(2024, 3, 31);
+
+    // 테스트용 교육일지 3개 생성 (3월 데이터)
+    createTestJournal(LocalDate.of(2024, 3, 10));
+    createTestJournal(LocalDate.of(2024, 3, 15));
+    createTestJournal(LocalDate.of(2024, 3, 20));
+    // 범위 밖 데이터 1개 생성
+    createTestJournal(LocalDate.of(2024, 4, 1));
+
+    // when
+    Page<JournalResponseDTO> results = journalService.getStudentJournals(
+        testMember.getId(),
+        testCourse.getId(),
+        searchStartDate,
+        searchEndDate,
+        new Criteria()
+    );
+
+    // then
+    assertEquals(3, results.getTotalElements());
+  }
+
+  @Test
+  @DisplayName("교육일지 수정 - 교육일자 수정")
+  void updateJournal_EducationDate() {
+    // given
+    Journal journal = createTestJournal(LocalDate.of(2024, 3, 1));
+    LocalDate newEducationDate = LocalDate.of(2024, 3, 15);
+
+    JournalRequestDTO.Update requestDTO = JournalRequestDTO.Update.builder()
+        .title("수정된 제목")
+        .content("수정된 내용")
+        .educationDate(newEducationDate)
+        .build();
+
+    // when
+    JournalResponseDTO updatedJournal = journalService.updateJournal(
+        testMember.getId(),
+        journal.getId(),
+        requestDTO
+    );
+
+    // then
+    assertEquals(newEducationDate, updatedJournal.getEducationDate());
+  }
+
+  @Test
+  @DisplayName("교육일지 수정 실패 - 중복된 교육일자")
+  void updateJournal_DuplicateDate() {
+    // given
+    createTestJournal(LocalDate.of(2024, 3, 1)); // 첫 번째 교육일지
+    Journal secondJournal = createTestJournal(LocalDate.of(2024, 3, 2)); // 두 번째 교육일지
+
+    JournalRequestDTO.Update requestDTO = JournalRequestDTO.Update.builder()
+        .title("수정된 제목")
+        .content("수정된 내용")
+        .educationDate(LocalDate.of(2024, 3, 1)) // 첫 번째 교육일지와 같은 날짜로 수정 시도
+        .build();
+
+    // when & then
+    assertThrows(IllegalArgumentException.class, () ->
+        journalService.updateJournal(testMember.getId(), secondJournal.getId(), requestDTO));
+  }
+
+  private Journal createTestJournal(LocalDate educationDate) {
+    // 테스트 파일 생성
+    MultipartFile testFile = new MockMultipartFile(
+        "file",
+        "test.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "테스트 파일 내용".getBytes()
+    );
+
+    Journal journal = Journal.builder()
+        .member(testMember)
+        .course(testCourse)
+        .title("테스트 교육일지")
+        .content("테스트 내용")
+        .educationDate(educationDate)
+        .build();
+
+    File savedFile = fileService.uploadFile(testFile, "journals", testMember);
+    journal.setFile(JournalFile.builder()
+        .journal(journal)
+        .file(savedFile)
+        .build());
+
+    return journalRepository.save(journal);
+  }
+}

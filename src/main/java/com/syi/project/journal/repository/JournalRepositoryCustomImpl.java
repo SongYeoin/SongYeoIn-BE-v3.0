@@ -116,13 +116,13 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
 
   private BooleanExpression searchByDateRange(LocalDate startDate, LocalDate endDate) {
     if (startDate != null && endDate != null) {
-      return journal.createdAt.between(startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
+      return journal.educationDate.between(startDate, endDate);
     }
     if (startDate != null) {
-      return journal.createdAt.goe(startDate.atStartOfDay());
+      return journal.educationDate.goe(startDate);
     }
     if (endDate != null) {
-      return journal.createdAt.loe(endDate.atTime(23, 59, 59));
+      return journal.educationDate.loe(endDate);
     }
     return null;
   }

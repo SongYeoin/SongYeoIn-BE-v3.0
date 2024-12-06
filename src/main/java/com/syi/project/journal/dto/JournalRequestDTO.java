@@ -2,6 +2,7 @@ package com.syi.project.journal.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,13 +21,17 @@ public class JournalRequestDTO {
     private String content;
     @NotNull(message = "교육일지 파일을 선택해주세요")
     private MultipartFile file;
+    @NotNull(message = "교육일자는 필수입니다")
+    private LocalDate educationDate;
 
     @Builder
-    public Create(Long courseId, String title, String content, MultipartFile file) {
+    public Create(Long courseId, String title, String content,
+        MultipartFile file, LocalDate educationDate) {
       this.courseId = courseId;
       this.title = title;
       this.content = content;
       this.file = file;
+      this.educationDate = educationDate;
     }
   }
 
@@ -37,12 +42,16 @@ public class JournalRequestDTO {
     private String title;
     private String content;
     private MultipartFile file;
+    @NotNull(message = "교육일자는 필수입니다")
+    private LocalDate educationDate;
 
     @Builder
-    public Update(String title, String content, MultipartFile file) {
+    public Update(String title, String content,
+        MultipartFile file, LocalDate educationDate) {
       this.title = title;
       this.content = content;
       this.file = file;
+      this.educationDate = educationDate;
     }
   }
 }
