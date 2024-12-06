@@ -30,8 +30,10 @@ public class GlobalExceptionHandler {
 
 
   @ExceptionHandler(NoSuchElementException.class)
-  public ResponseEntity<String> handleNoSuchElementException(NoSuchElementException ex) {
-    return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);  // 404 상태 코드와 메시지 반환
+  public ResponseEntity<Map<String, String>> handleNoSuchElementException(NoSuchElementException ex) {
+    Map<String, String> errorResponse = new HashMap<>();
+    errorResponse.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
   }
 
   // InvalidRequestException 예외 처리
@@ -90,11 +92,13 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Map<String, String>> handleNotInRangeException(NotInRangeException ex) {
     Map<String, String> errorResponse = new HashMap<>();
     errorResponse.put("message", ex.getMessage());
-    return new ResponseEntity<>(errorResponse, ex.getStatus());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
   }
 
   @ExceptionHandler(AttendanceNotYetException.class)
-  public ResponseEntity<String> handleAttendanceException(AttendanceNotYetException ex) {
-    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+  public ResponseEntity<Map<String, String>> handleAttendanceException(AttendanceNotYetException ex) {
+    Map<String, String> errorResponse = new HashMap<>();
+    errorResponse.put("message", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
   }
 }
