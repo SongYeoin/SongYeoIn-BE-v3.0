@@ -200,11 +200,14 @@ public class JournalService {
     Course course = courseRepository.findById(requestDTO.getCourseId())
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 강좌입니다."));
 
+    validateEducationDate(requestDTO.getEducationDate(), course, member);  // 여기에 추가
+
     Journal journal = Journal.builder()
         .member(member)
         .course(course)
         .title(requestDTO.getTitle())
         .content(requestDTO.getContent())
+        .educationDate(requestDTO.getEducationDate())  // 교육일자 추가
         .build();
 
     updateJournalFile(journal, requestDTO.getFile(), member);
@@ -235,13 +238,21 @@ public class JournalService {
     Member member = validateAndGetMember(memberId);
     Journal journal = validateAndGetJournalWithMember(journalId, memberId);
 
+    if (!journal.getEducationDate().equals(requestDTO.getEducationDate())) {
+      validateEducationDate(requestDTO.getEducationDate(), journal.getCourse(), member);
+    }
+
     // 새 파일이 있는 경우에만 파일 처리
     if (requestDTO.getFile() != null && !requestDTO.getFile().isEmpty()) {
       validateAndProcessFile(requestDTO.getFile(), "수정");
       updateJournalFile(journal, requestDTO.getFile(), member);
     }
 
-    journal.update(requestDTO.getTitle(), requestDTO.getContent());
+    journal.update(
+        requestDTO.getTitle(),
+        requestDTO.getContent(),
+        requestDTO.getEducationDate()  // 교육일자 추가
+    );
 
     log.info("교육일지 수정 완료 - journalId: {}", journalId);
     return JournalResponseDTO.from(journal, s3Uploader);
@@ -320,5 +331,31 @@ public class JournalService {
 
     FileDownloadDTO downloadDTO = fileService.downloadFile(journal.getJournalFile().getFile().getId(), member);
     return fileService.getDownloadResponseEntity(downloadDTO);
+  }
+
+  private void validateEducationDate(LocalDate educationDate, Course course, Member member) {
+    // 미래 날짜 검증
+    if (educationDate.isAfter(LocalDate.now())) {
+      log.error("미래 날짜 입력 시도 - memberId: {}, educationDate: {}", member.getId(), educationDate);
+      throw new IllegalArgumentException("교육일자는 미래 날짜일 수 없습니다.");
+    }
+
+    // 과정 기간 내 날짜인지 검증
+    if (educationDate.isBefore(course.getStartDate()) || educationDate.isAfter(course.getEndDate())) {
+      log.error("과정 기간을 벗어난 교육일자 - memberId: {}, educationDate: {}, courseId: {}",
+          member.getId(), educationDate, course.getId());
+      throw new IllegalArgumentException(
+          String.format("교육일자는 과정 기간(%s ~ %s) 내여야 합니다.",
+              course.getStartDate(), course.getEndDate()));
+    }
+
+    // 동일 과정 내 동일 날짜 중복 작성 검증
+    boolean exists = journalRepository.existsByMemberIdAndCourseIdAndEducationDate(
+        member.getId(), course.getId(), educationDate);
+    if (exists) {
+      log.error("동일 날짜 교육일지 중복 작성 시도 - memberId: {}, educationDate: {}, courseId: {}",
+          member.getId(), educationDate, course.getId());
+      throw new IllegalArgumentException("해당 날짜에 이미 작성된 교육일지가 있습니다.");
+    }
   }
 }

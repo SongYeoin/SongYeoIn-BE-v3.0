@@ -6,6 +6,7 @@ import com.syi.project.common.enums.Role;
 import com.syi.project.course.entity.Course;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,12 +38,16 @@ public class Journal extends BaseTimeEntity {
   @NotNull(message = "교육일지에는 파일 첨부가 필수입니다")
   private JournalFile journalFile;
 
+  @Column(nullable = false)
+  private LocalDate educationDate;  // 실제 교육 진행 날짜
+
   @Builder
-  public Journal(Member member, Course course, String title, String content) {
+  public Journal(Member member, Course course, String title, String content, LocalDate educationDate) {
     this.member = member;
     this.course = course;
     this.title = title;
     this.content = content;
+    this.educationDate = educationDate;
   }
 
   public boolean isOwner(Long memberId) {
@@ -59,8 +64,14 @@ public class Journal extends BaseTimeEntity {
   }
 
   // 내용 업데이트 메서드 추가
-  public void update(String title, String content) {
+  public void update(String title, String content, LocalDate educationDate) {
     this.title = title;
     this.content = content;
+    this.educationDate = educationDate;
+  }
+
+  public boolean isValidEducationDate(LocalDate educationDate) {
+    return !educationDate.isBefore(this.course.getStartDate()) &&
+        !educationDate.isAfter(this.course.getEndDate());
   }
 }
