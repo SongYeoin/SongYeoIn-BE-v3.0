@@ -113,10 +113,14 @@ public class CourseDTO {
   @Schema(description = "수강생 수", example = "15")
   private Integer counts;
 
+  @Schema(description = "시간표 id", example = "1")
+  private Long scheduleId;
+
+
   @Builder
   public CourseDTO(Long id, String name, String description, String adminName, String teacherName,
       LocalDate startDate, LocalDate endDate, String roomName, LocalDate enrollDate,
-      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long adminId,Long weeks, Integer counts) {
+      LocalDate modifiedDate, CourseStatus status, Long deletedBy, Long adminId,Long weeks, Integer counts,Long scheduleId) {
     this.id = id;
     this.name = name;
     this.description = description;
@@ -132,6 +136,7 @@ public class CourseDTO {
     this.adminId = adminId;
     this.weeks = weeks;
     this.counts = counts;
+    this.scheduleId = scheduleId;
   }
 
   public Course toEntity() {
@@ -171,6 +176,7 @@ public class CourseDTO {
         .adminId(course.getAdminId())
         .weeks(weeks)
         .counts(studentCounts)
+        .scheduleId(course.getScheduleId())
         .build();
   }
 

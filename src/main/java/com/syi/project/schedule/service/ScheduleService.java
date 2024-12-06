@@ -2,6 +2,8 @@ package com.syi.project.schedule.service;
 
 import static com.syi.project.schedule.dto.ScheduleResponseDTO.fromEntity;
 
+import com.syi.project.course.entity.Course;
+import com.syi.project.period.DayOfWeekMapper;
 import com.syi.project.period.dto.PeriodRequestDTO;
 import com.syi.project.period.eneity.Period;
 import com.syi.project.period.repository.PeriodRepository;
@@ -35,8 +37,6 @@ public class ScheduleService {
   @Transactional
   public ScheduleResponseDTO createSchedule(ScheduleRequestDTO scheduleDTO) {
     /* ScheduleId, courseId, List<Period> */
-
-    /*해당 반이 존재하는지도 확인하기*/
 
     log.info("Create Schedule with data : {}", scheduleDTO);
 
@@ -74,12 +74,21 @@ public class ScheduleService {
     // 2. Period 생성 및 저장
     /*해당 교시가 이미 등록되어있는지 확인하는 과정 필요*/
     Long finalScheduleId = scheduleId;  // effectively final 로컬 변수로 할당
-    List<Period> periods = scheduleDTO.getPeriods().stream()
-        .map(periodDTO -> periodDTO.toEntity(scheduleDTO.getCourseId(), finalScheduleId))
-        .toList();
+    List<Period> periods = null;
+    if (scheduleDTO.getPeriods() != null) {
+      periods = scheduleDTO.getPeriods().stream()
+          .flatMap(periodDTO -> {
+            // 요일 변환
+            List<String> days = DayOfWeekMapper.mapToDays(periodDTO.getDayOfWeek());
+            // 변환된 요일로 Period 엔티티 생성
+            return days.stream()
+                .map(day -> periodDTO.toEntity(scheduleDTO.getCourseId(), finalScheduleId, day));
+          })
+          .toList();
+      periods = periodRepository.saveAll(periods);
+      log.info("성공적으로 교시가 저장되었습니다. 저장된 데이터: {}", periods);
+    }
 
-    periods = periodRepository.saveAll(periods);
-    log.info("성공적으로 교시가 저장되었습니다. 저장된 데이터: {}", periods);
 
     return fromEntity(schedule, periods);
 
@@ -101,13 +110,13 @@ public class ScheduleService {
 
   /* 시간표 수정 */
   @Transactional
-  public ScheduleUpdateResponseDTO updateSchedule(Long courseId,ScheduleUpdateRequestDTO request) {
-    log.info("ID {} 번 시간표 수정", request.getScheduleId());
+  public ScheduleUpdateResponseDTO updateSchedule(Course course, ScheduleUpdateRequestDTO request) {
+    log.info("ID {} 번 시간표 수정", course.getScheduleId());
     log.debug("수정될 교시 정보: {}", request.getUpdatedPeriods());
     log.debug("새로 추가할 교시 정보: {}", request.getNewPeriods());
     log.debug("삭제될 교시 ID 리스트: {}", request.getDeletedPeriodIds());
 
-    Long scheduleId = request.getScheduleId();
+    Long scheduleId = course.getScheduleId();
 
     // 1. ID로 Schedule, Period 조회, 없으면 예외 발생
     Schedule schedule = scheduleRepository.findById(scheduleId)
@@ -169,8 +178,9 @@ public class ScheduleService {
     ScheduleResponseDTO createdSchedule = null;
     List<PeriodRequestDTO> newPeriods = request.getNewPeriods();
     if (newPeriods != null && !newPeriods.isEmpty()) {
+
       createdSchedule = createSchedule(
-          new ScheduleRequestDTO(scheduleId, null, null, null,courseId, newPeriods));
+          new ScheduleRequestDTO(scheduleId, null, null, null, course.getId(), newPeriods));
     } else {
       log.info("새로 추가할 교시 정보가 없습니다.");
     }
