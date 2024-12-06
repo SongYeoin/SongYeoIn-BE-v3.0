@@ -16,8 +16,10 @@ import com.syi.project.course.repository.CourseRepository;
 import com.syi.project.enroll.repository.EnrollRepository;
 import com.syi.project.enroll.service.EnrollService;
 import com.syi.project.period.repository.PeriodRepository;
+import com.syi.project.schedule.dto.ScheduleRequestDTO;
 import com.syi.project.schedule.dto.ScheduleResponseDTO;
 import com.syi.project.schedule.dto.ScheduleResponseDTO.ScheduleUpdateResponseDTO;
+import com.syi.project.schedule.entity.Schedule;
 import com.syi.project.schedule.repository.ScheduleRepository;
 import com.syi.project.schedule.service.ScheduleService;
 import java.util.List;
@@ -179,6 +181,13 @@ public class CourseService {
       throw e;
     }
 
+    // schedule 생성
+    ScheduleResponseDTO scheduleDTO = scheduleService.createSchedule(new ScheduleRequestDTO(null,null,null,null,
+        savedCourse.getId(),null ));
+    savedCourse.updateScheduleId(scheduleDTO.getId());
+    log.info("저장된 교육과정에 scheduleId 등록 완료 scheduleId={}",scheduleDTO.getId());
+
+
     /* 3. 조회한 과정을 다시 dto 형식으로 바꿔서 return  */
     log.info("Course registered successfully with ID: {}", savedCourse.getId());
     return fromEntity(savedCourse, null);
@@ -212,11 +221,9 @@ public class CourseService {
     // 4. 업데이트된 엔티티를 DTO로 변환하여 반환
     CourseDTO updatedCourseDTO = fromEntity(updatedCourse, null);
 
-    ScheduleUpdateResponseDTO updatedScheduleDTO = null;
-    // 교시 업데이트
-    if (coursePatchDTO.getSchedule().getScheduleId() != null) {
-      updatedScheduleDTO = scheduleService.updateSchedule(courseId, coursePatchDTO.getSchedule());
-    }
+    ScheduleUpdateResponseDTO updatedScheduleDTO  = scheduleService.updateSchedule(updatedCourse,
+        coursePatchDTO.getSchedule());
+
 
     return CoursePatchResponseDTO.builder()
         .course(updatedCourseDTO)

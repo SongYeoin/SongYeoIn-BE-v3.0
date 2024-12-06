@@ -73,9 +73,12 @@ public class ScheduleResponseDTO {
 
   public static ScheduleResponseDTO fromEntity(Schedule schedule, List<Period> periodList) {
 
-    List<PeriodResponseDTO> periodDTOs = periodList.stream()
-        .map(PeriodResponseDTO::fromEntity)
-        .toList();
+    List<PeriodResponseDTO> periodDTOs = null;
+    if (periodList != null) {
+      periodDTOs = periodList.stream()
+          .map(PeriodResponseDTO::fromEntity)
+          .toList();
+    }
 
     return ScheduleResponseDTO.builder()
         .id(schedule.getId())
