@@ -49,7 +49,7 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
         .where(createSearchConditions(memberId, null, criteria.getType(), criteria.getKeyword(), startDate, endDate))
         .offset(criteria.getPageable().getOffset())
         .limit(criteria.getPageable().getPageSize())
-        .orderBy(journal.createdAt.desc())
+        .orderBy(journal.educationDate.desc())
         .fetch();
 
     return PageableExecutionUtils.getPage(journals, criteria.getPageable(), () ->
@@ -70,7 +70,7 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
         .where(createSearchConditions(memberId, courseId, null, null, startDate, endDate))
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
-        .orderBy(journal.createdAt.desc())
+        .orderBy(journal.educationDate.desc())
         .fetch();
 
     return PageableExecutionUtils.getPage(journals, pageable, () ->
@@ -92,7 +92,7 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
         .where(createSearchConditions(null, courseId, searchType, searchKeyword, startDate, endDate))
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
-        .orderBy(journal.createdAt.desc())
+        .orderBy(journal.educationDate.desc())
         .fetch();
 
     return PageableExecutionUtils.getPage(journals, pageable, () ->
