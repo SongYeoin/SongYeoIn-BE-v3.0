@@ -31,6 +31,7 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
             course.id,
             course.name,
             course.adminName,
+            course.teacherName,  // 추가
             course.enrollDate,
             course.endDate
         ))
