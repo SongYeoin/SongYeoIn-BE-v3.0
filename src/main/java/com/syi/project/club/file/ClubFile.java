@@ -36,5 +36,11 @@ public class ClubFile {
     public void updateFile(File file) {
         this.file = file;
     }
+    public void updateClub(Club club) {
+        this.club = club;
+        if(club != null){
+            club.setFile(this);
+        }
+    }
 
 }
