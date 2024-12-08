@@ -11,10 +11,16 @@ server:
       enabled: true
   tomcat:
     normalize-requests: true  # 중복 슬레시 자동 정리
+  ssl:
+    enabled: false  #https 적용하면서 막아놓기
+
 
 spring:
   config:
     import: optional:file:.env[.properties]
+  web:
+    resources:
+      add-mappings: false
 
   datasource:
     url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul
