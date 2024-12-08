@@ -1,11 +1,8 @@
 package com.syi.project.club.entity;
 
 import com.syi.project.club.dto.ClubRequestDTO;
-import com.syi.project.club.dto.ClubResponseDTO;
 import com.syi.project.club.file.ClubFile;
 import com.syi.project.common.enums.CheckStatus;
-import com.syi.project.file.entity.File;
-import com.syi.project.file.repository.FileRepository;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
@@ -13,11 +10,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+
+import static com.syi.project.file.entity.QFile.file;
 
 @Entity
 @Getter
@@ -57,7 +54,8 @@ public class Club{
     @Column(nullable = false)
     private Long courseId;  //프로그램정보
 
-    private Long clubFileId; // 파일 ID 목록
+    @OneToOne(mappedBy = "club", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ClubFile clubFile; // 단일파일
 
     @Builder
     public Club(Long courseId, Long writerId, String participants, String content,
@@ -79,9 +77,9 @@ public class Club{
                 this.participants, this.content, this.studyDate);
     }
 
-    public ClubRequestDTO.ClubUpdate toUpdateDTO() {
+    public ClubRequestDTO.ClubUpdate toUpdateDTO(MultipartFile file) {
         return new ClubRequestDTO.ClubUpdate(
-                this.participants, this.content, this.studyDate);
+                this.participants, this.content, this.studyDate, file);
     }
 
     public ClubRequestDTO.ClubApproval toApprovalDTO() {
@@ -90,28 +88,28 @@ public class Club{
     }
 
     // ClubFile과의 연관 관계 없이 처리하는 메서드
-    public ClubFile associateFile(Long fileId) {
-        return ClubFile.builder()
-                .clubId(this.id)
-                .fileId(fileId)
-                .build();
-    }
+//    public ClubFile associateFile(Long fileId) {
+//        return ClubFile.builder()
+//                .clubId(this.id)
+//                .fileId(fileId)
+//                .build();
+//    }
 
     // Club에서 파일 URL을 가져오는 메서드 (연관 관계 없이 접근)
-    public List<String> getFileUrls(List<ClubFile> clubFiles, FileRepository fileRepository) {
-        List<String> fileUrls = new ArrayList<>();
-        for (ClubFile clubFile : clubFiles) {
-            // ClubFile을 통해 fileId를 사용하여 File 엔티티를 조회
-            Long fileId = clubFile.getFileId();
-            File file = fileRepository.findById(fileId).orElse(null);  // fileId로 File을 조회
-            if (file != null && file.getPath() != null && !file.getPath().isEmpty()) {
-                fileUrls.add("clip_icon"); // 파일 위치가 있으면 클립 아이콘 표시
-            } else {
-                fileUrls.add(""); // 파일 위치가 없으면 공백
-            }
-        }
-        return fileUrls;
-    }
+//    public List<String> getFileUrls(List<ClubFile> clubFiles, FileRepository fileRepository) {
+//        List<String> fileUrls = new ArrayList<>();
+//        for (ClubFile clubFile : clubFiles) {
+//            // ClubFile을 통해 fileId를 사용하여 File 엔티티를 조회
+//            Long fileId = clubFile.getFileId();
+//            File file = fileRepository.findById(fileId).orElse(null);  // fileId로 File을 조회
+//            if (file != null && file.getPath() != null && !file.getPath().isEmpty()) {
+//                fileUrls.add("clip_icon"); // 파일 위치가 있으면 클립 아이콘 표시
+//            } else {
+//                fileUrls.add(""); // 파일 위치가 없으면 공백
+//            }
+//        }
+//        return fileUrls;
+//    }
 
     public void updateDetails(String participants, String content, LocalDate studyDate, LocalDate regDate) {
         this.participants = participants;
@@ -120,8 +118,16 @@ public class Club{
         this.regDate = regDate;
     }
 
-    public void updateFileId(Long clubFileId) {
-        this.clubFileId = clubFileId;
+    // 파일 설정 메서드
+    public void setFile(ClubFile clubFile) {
+        this.clubFile = clubFile;
+    }
+
+    // 파일 URL 가져오기
+    public String getFileUrl() {
+        return this.clubFile != null && this.clubFile.getFile() != null
+                ? this.clubFile.getFile().getPath()
+                : null;
     }
 
     public void updateApprove(Long adminId, CheckStatus checkStatus, String checkMessage) {
