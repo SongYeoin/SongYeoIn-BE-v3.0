@@ -195,6 +195,9 @@ public class ClubController {
 
         Long loggedInUserId = customUserDetails.getId();
 
+        log.info("수신된 클럽 업데이트 요청: clubId={}, 데이터={}", clubId, clubRequest);
+        log.info("수신된 파일 정보: {}", file != null ? file.getOriginalFilename() : "없음");
+
         // 파일 처리
         String uploadedFilePath = null;
         if (file != null) {
@@ -206,6 +209,7 @@ public class ClubController {
         }
 
         ClubResponseDTO.ClubList clubResponse = clubService.updateClub(clubId, clubRequest, file, loggedInUserId);
+        log.info("클럽 업데이트 성공: clubId={}", clubResponse.getClubId());
         return ResponseEntity.ok(clubResponse);
     }
 
