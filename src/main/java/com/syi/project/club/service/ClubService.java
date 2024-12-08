@@ -2,6 +2,7 @@ package com.syi.project.club.service;
 
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
+import com.syi.project.club.controller.ClubController;
 import com.syi.project.club.dto.ClubRequestDTO;
 import com.syi.project.club.dto.ClubResponseDTO;
 import com.syi.project.club.entity.Club;
@@ -17,6 +18,8 @@ import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.repository.FileRepository;
 import com.syi.project.file.service.FileService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +49,8 @@ public class ClubService {
     private FileService fileService;
     @Autowired
     private S3Uploader s3Uploader;
+
+    private static final Logger log = LoggerFactory.getLogger(ClubController.class);
 
     //등록
     @Transactional
@@ -169,6 +174,7 @@ public class ClubService {
     }
 
     //수정
+    @Transactional
     public ClubResponseDTO.ClubList updateClub(Long clubId, ClubRequestDTO.ClubUpdate clubUpdate,
                                                MultipartFile file, Long loggedInUserId) {
         // 클럽 조회
@@ -221,26 +227,36 @@ public class ClubService {
 
                     // 새 파일 업로드
                     File uploadedFile = fileService.uploadFile(file, dirName, member);
+                    log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
                     clubFile.updateFile(uploadedFile);
 
                     // 파일 DTO 생성
                     fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
+
+                    // Club 객체에 ClubFile을 반영
+                    club.setFile(clubFile); // 중요: ClubFile을 Club에 반영
                 } else {
                     // 기존 파일이 없는 경우 새 파일 업로드
                     File uploadedFile = fileService.uploadFile(file, dirName, member);
+                    log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
                     ClubFile newClubFile = new ClubFile(club, uploadedFile);
                     clubFileRepository.save(newClubFile);
 
                     // 파일 DTO 생성
                     fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
+
+                    // Club 객체에 ClubFile을 반영
+                    club.setFile(newClubFile); // 중요: ClubFile을 Club에 반영
                 }
             }
         } else {
             throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_PENDING);
         }
 
+        log.info("클럽 저장 전: club={}", club);
         // 클럽 저장
         Club updatedClub = clubRepository.save(club);
+        log.info("클럽 저장 후: updatedClub={}", updatedClub);
 
         String writer = getMemberName(club.getWriterId());
 
