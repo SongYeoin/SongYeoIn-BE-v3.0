@@ -128,14 +128,14 @@ public class AdminClubController {
     @PutMapping("/{clubId}")
     public ResponseEntity<ClubResponseDTO.ClubList> updateClub(
             @PathVariable Long clubId,
-            @RequestPart(value = "club", required = false) ClubRequestDTO.ClubApproval clubRequest,
-            @AuthenticationPrincipal AuthUserDTO authUserDTO){
+            @RequestBody ClubRequestDTO.ClubApproval clubRequest,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails){
 
-        if(!authUserDTO.getRole().equals(Role.ADMIN)){
+        if(!customUserDetails.getRole().equals(Role.ADMIN)){
             throw new InvalidRequestException(ErrorCode.ACCESS_DENIED);
         }
 
-        Long adminId = authUserDTO.getId();
+        Long adminId = customUserDetails.getId();
         ClubResponseDTO.ClubList clubResponse = clubService.approveClub(clubId, clubRequest, adminId);
         return ResponseEntity.ok(clubResponse);
     }
@@ -144,11 +144,13 @@ public class AdminClubController {
     @DeleteMapping("/{clubId}")
     public ResponseEntity<Map<String, String>> deleteClub(
             @PathVariable("clubId") Long clubId,
-            @AuthenticationPrincipal AuthUserDTO authUserDTO,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestParam(value = "courseId", required = false) Long courseId) {
 
+        // 로그인한 사용자의 ID 가져오기
+        Long loggedInUserId = customUserDetails.getId();
 
-        if (!authUserDTO.getRole().equals(Role.ADMIN)) {
+        if (!customUserDetails.getRole().equals(Role.ADMIN)) {
             throw new IllegalArgumentException("Only administrators can delete the club.");
         }
 
@@ -158,11 +160,11 @@ public class AdminClubController {
             throw new IllegalArgumentException("Only clubs with pending approval can be deleted.");
         }
 
-        clubService.deleteAsAdmin(clubId, authUserDTO.getId());
+        clubService.deleteAsAdmin(clubId, loggedInUserId);
 
         Map<String, String> response = new HashMap<>();
         response.put("message", "Club deleted successfully");
-        response.put("redirectUrl", courseId != null ? "/club/list?courseId=" + courseId : null);
+        response.put("redirectUrl", courseId != null ? "/admin/club/list?courseId=" + courseId : null);
 
         return ResponseEntity.ok(response);
     }

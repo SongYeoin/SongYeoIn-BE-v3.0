@@ -3,6 +3,8 @@ package com.syi.project.auth.service;
 import com.syi.project.auth.dto.AuthUserDTO;
 import java.util.Collection;
 import java.util.List;
+
+import com.syi.project.common.enums.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
@@ -32,6 +34,10 @@ public class CustomUserDetails implements UserDetails {
 
   public String getName() {
     return authUser.getName();
+  }
+
+  public Role getRole() {
+    return authUser.getRole();
   }
 
   @Override

@@ -5,6 +5,7 @@ import com.syi.project.club.file.ClubFile;
 import com.syi.project.common.dto.PageInfoDTO;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.file.dto.FileDownloadDTO;
+import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.repository.FileRepository;
 import lombok.AllArgsConstructor;
@@ -28,10 +29,10 @@ public class ClubResponseDTO {
         private String checkMessage;  // 승인 메시지
         private LocalDate regDate;  // 작성일
         private LocalDate studyDate;  // 활동일
-        private List<String> fileIcons; // 파일 상태 (아이콘 여부 또는 URL)
+        private FileResponseDTO file; // 파일 상태 (아이콘 여부 또는 URL)
 
         public ClubList(Long clubId, String writer, String checker, CheckStatus checkStatus, String checkMessage,
-                        LocalDate regDate, LocalDate studyDate, List<String> fileIcons) {
+                        LocalDate regDate, LocalDate studyDate, FileResponseDTO file) {
             this.clubId = clubId;
             this.writer = writer;
             this.checker = checker;
@@ -39,11 +40,11 @@ public class ClubResponseDTO {
             this.checkMessage = checkMessage;
             this.regDate = regDate;
             this.studyDate = studyDate;
-            this.fileIcons = fileIcons;
+            this.file = file;
         }
 
         // entity -> DTO
-        public static ClubList toListDTO(Club club, String writer, String checker, List<String> fileIcons){
+        public static ClubList toListDTO(Club club, String writer, String checker, FileResponseDTO file){
             return new ClubList(
                     club.getId(),
                     writer,
@@ -52,7 +53,7 @@ public class ClubResponseDTO {
                     club.getCheckMessage(),
                     club.getRegDate(),
                     club.getStudyDate(),
-                    fileIcons
+                    file
             );
         }
     }

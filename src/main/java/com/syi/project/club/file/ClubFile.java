@@ -25,4 +25,8 @@ public class ClubFile {
         this.fileId = fileId;
     }
 
+    public void updateFileId(Long fileId) {
+        this.fileId = fileId;
+    }
+
 }
