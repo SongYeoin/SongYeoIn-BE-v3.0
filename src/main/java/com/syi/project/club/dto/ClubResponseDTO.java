@@ -1,21 +1,12 @@
 package com.syi.project.club.dto;
 
 import com.syi.project.club.entity.Club;
-import com.syi.project.club.file.ClubFile;
-import com.syi.project.common.dto.PageInfoDTO;
 import com.syi.project.common.enums.CheckStatus;
-import com.syi.project.file.dto.FileDownloadDTO;
 import com.syi.project.file.dto.FileResponseDTO;
-import com.syi.project.file.entity.File;
-import com.syi.project.file.repository.FileRepository;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 public class ClubResponseDTO {
 
@@ -29,7 +20,7 @@ public class ClubResponseDTO {
         private String checkMessage;  // 승인 메시지
         private LocalDate regDate;  // 작성일
         private LocalDate studyDate;  // 활동일
-        private FileResponseDTO file; // 파일 상태 (아이콘 여부 또는 URL)
+        private FileResponseDTO file; // 단일파일
 
         public ClubList(Long clubId, String writer, String checker, CheckStatus checkStatus, String checkMessage,
                         LocalDate regDate, LocalDate studyDate, FileResponseDTO file) {
@@ -71,10 +62,10 @@ public class ClubResponseDTO {
         private String checkMessage;  // 승인 메시지
         private LocalDate regDate;  // 작성일
         private LocalDate studyDate;  // 활동일;
-        private List<String> fileNames;
+        private FileResponseDTO file; // 단일파일
 
         public ClubDetail(Long clubId, String writer, String checker, String participants, String content, CheckStatus checkStatus, String checkMessage,
-                               LocalDate regDate, LocalDate studyDate, List<String> fileNames) {
+                               LocalDate regDate, LocalDate studyDate, FileResponseDTO file) {
             this.clubId = clubId;
             this.writer = writer;
             this.checker = checker;
@@ -84,11 +75,11 @@ public class ClubResponseDTO {
             this.checkMessage = checkMessage;
             this.regDate = regDate;
             this.studyDate = studyDate;
-            this.fileNames = fileNames;
+            this.file = file;
         }
 
         // entity -> DTO
-        public static ClubDetail toDetailDTO(Club club, String writer, String checker, List<String> fileNames){
+        public static ClubDetail toDetailDTO(Club club, String writer, String checker, FileResponseDTO file){
             return new ClubDetail(
                     club.getId(),
                     writer,
@@ -99,7 +90,7 @@ public class ClubResponseDTO {
                     club.getCheckMessage(),
                     club.getRegDate(),
                     club.getStudyDate(),
-                    fileNames
+                    file
             );
         }
     }

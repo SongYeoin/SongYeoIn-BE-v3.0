@@ -12,6 +12,8 @@ import com.syi.project.common.entity.Criteria;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
+import com.syi.project.common.utils.S3Uploader;
+import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.repository.FileRepository;
 import com.syi.project.file.service.FileService;
@@ -42,25 +44,17 @@ public class ClubService {
     private MemberRepository memberRepository;
     @Autowired
     private FileService fileService;
+    @Autowired
+    private S3Uploader s3Uploader;
 
     //등록
     @Transactional
     public ClubResponseDTO.ClubList createClub(ClubRequestDTO.ClubCreate clubDTO, Long writerId,
                                                Long courseId, LocalDate regDate, CheckStatus checkStatus) {
-//        Club club = Club.builder()
-//                .courseId(courseId)  // 프로그램
-//                .writerId(writerId)  // 작성자명
-//                .checkStatus(checkStatus)
-//                .studyDate(clubDTO.getStudyDate())
-//                .regDate(regDate)
-//                .participants(clubDTO.getParticipants())
-//                .content(clubDTO.getContent())
-//                .build();
-//        clubRepository.save(club);
         Club club = clubDTO.toEntity(writerId, courseId, regDate, checkStatus);
         club = clubRepository.save(club);
 
-        return ClubResponseDTO.ClubList.toListDTO(club, getMemberName(writerId), null, Collections.emptyList());
+        return ClubResponseDTO.ClubList.toListDTO(club, getMemberName(writerId), null, null);
     }
 
     private String getMemberName(Long memberId) {
@@ -74,8 +68,8 @@ public class ClubService {
         Pageable pageable = cri.getPageable();
         return clubRepository.findClubListByCourseId(cri, courseId, pageable).map(this::toClubListDTO);
 
-         //System.out.println("service: " + clubRepository.findClubListByCourseId(cri, courseId, pageable));
-         //페이징과 조건에 맞는 동아리 목록 조회
+        //System.out.println("service: " + clubRepository.findClubListByCourseId(cri, courseId, pageable));
+        //페이징과 조건에 맞는 동아리 목록 조회
 //         return clubRepository.findClubListByCourseId(cri, courseId, pageable)
 //                 .map(club -> {
 //                     // 파일 상태 처리
@@ -101,17 +95,26 @@ public class ClubService {
 
     //페이징DTO변환
     private ClubResponseDTO.ClubList toClubListDTO(Club club) {
-        List<ClubFile> clubFiles = clubFileRepository.findByClubId(club.getId());
-        List<String> fileIcons = clubFiles.stream()
-                .map(clubFile -> {
-                    File file = fileRepository.findById(clubFile.getFileId()).orElse(null);
-                    return (file != null && file.getPath() != null && !file.getPath().isEmpty()) ? "clip_icon" : "";
-                }).collect(Collectors.toList());
+        ClubFile clubFile = clubFileRepository.findByClubId(club.getId()).stream().findFirst().orElse(null);
+        FileResponseDTO savedFile = null;
+
+        if (clubFile != null) {
+            File file = clubFile.getFile();
+            if(file != null){
+                savedFile = FileResponseDTO.from(file, s3Uploader);
+            }
+        }
+
+//        List<String> fileIcons = clubFiles.stream()
+//                .map(clubFile -> {
+//                    File file = fileRepository.findById(clubFile.getFileId()).orElse(null);
+//                    return (file != null && file.getPath() != null && !file.getPath().isEmpty()) ? "clip_icon" : "";
+//                }).collect(Collectors.toList());
 
         String writer = getMemberName(club.getWriterId());
         String checker = club.getCheckerId() != null ? getMemberName(club.getCheckerId()) : null;
 
-        return ClubResponseDTO.ClubList.toListDTO(club, writer, checker, fileIcons);
+        return ClubResponseDTO.ClubList.toListDTO(club, writer, checker, savedFile);
     }
 
     //상세
@@ -121,14 +124,25 @@ public class ClubService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 클럽을 찾을 수 없습니다. ID: " + clubId));
 
         // 파일 정보 조회
-        List<ClubFile> clubFiles = clubFileRepository.findByClubId(clubId);
-        List<String> fileNames = new ArrayList<>();
-        for (ClubFile clubFile : clubFiles) {
-            File file = fileRepository.findById(clubFile.getFileId()).orElse(null);
-            if (file != null && file.getOriginalName() != null && !file.getOriginalName().isEmpty()) {
-                fileNames.add(file.getOriginalName()); // 파일 이름 추가
-            } else {
-                fileNames.add(""); // 파일 정보가 없으면 공란
+//        List<ClubFile> clubFiles = clubFileRepository.findByClubId(clubId);
+//        List<String> fileNames = new ArrayList<>();
+//        for (ClubFile clubFile : clubFiles) {
+//            File file = fileRepository.findById(clubFile.getFileId()).orElse(null);
+//            if (file != null && file.getOriginalName() != null && !file.getOriginalName().isEmpty()) {
+//                fileNames.add(file.getOriginalName()); // 파일 이름 추가
+//            } else {
+//                fileNames.add(""); // 파일 정보가 없으면 공란
+//            }
+//        }
+
+        // 클럽 파일 조회 (하나의 파일만 존재)
+        ClubFile clubFile = clubFileRepository.findByClubId(clubId).stream().findFirst().orElse(null);
+        FileResponseDTO savedFile = null;
+
+        if (clubFile != null) {
+            File file = clubFile.getFile();
+            if (file != null) {
+                savedFile = FileResponseDTO.from(file, s3Uploader);
             }
         }
 
@@ -137,7 +151,7 @@ public class ClubService {
         String checker = club.getCheckerId() != null ? getMemberName(club.getCheckerId()) : null;
 
         // Club -> ClubResponseDTO.ClubDetail 변환
-        return ClubResponseDTO.ClubDetail.toDetailDTO(club, writer, checker, fileNames);
+        return ClubResponseDTO.ClubDetail.toDetailDTO(club, writer, checker, savedFile);
     }
 
     // 클럽 정보 조회
@@ -164,8 +178,15 @@ public class ClubService {
         // 작성자와 로그인 사용자가 동일한지 확인
         verifyWriter(club.getWriterId(), loggedInUserId);
 
+        FileResponseDTO fileDto = null;
+
         // 승인 상태에 따른 수정 처리
         if (club.getCheckStatus() == CheckStatus.W) {
+            // 대기 상태일 때는 파일 수정 불가
+//            if (file != null) {
+//                throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_FILE_IN_WAITING);
+//            }
+//
             // 대기 상태: 활동날, 내용, 참여자 수정 가능
             if (clubUpdate != null) {
                 club.updateDetails(
@@ -177,9 +198,9 @@ public class ClubService {
             }
         } else if (club.getCheckStatus() == CheckStatus.Y) {
             // 승인 상태: 파일만 수정 가능
-            if (clubUpdate != null) {
-                throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_APPROVED);
-            }
+//            if (clubUpdate != null) {
+//                throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_APPROVED);
+//            }
 
             Member member = memberRepository.findById(loggedInUserId)
                     .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
@@ -187,13 +208,31 @@ public class ClubService {
             // 파일 처리
             if (file != null) {
                 String dirName = "club/" + clubId;
-                if (club.getFileId() != null) {
-                    // 기존 파일이 있는 경우 수정
-                    fileService.updateFile(club.getFileId(), file, dirName, member); // 간단한 Member 객체 생성
-                } else {
-                    // 새로운 파일 업로드
+
+                // 기존 파일이 있는 경우 삭제하고 새 파일로 교체
+                ClubFile clubFile = clubFileRepository.findByClubId(clubId).stream().findFirst().orElse(null);
+
+                if (clubFile != null) {
+                    // 기존 파일 삭제
+                    File existingFile = clubFile.getFile();
+                    if (existingFile != null) {
+                        fileService.deleteFile(existingFile.getId(), member); // 기존 파일 삭제
+                    }
+
+                    // 새 파일 업로드
                     File uploadedFile = fileService.uploadFile(file, dirName, member);
-                    club.updateFileId(uploadedFile.getId());
+                    clubFile.updateFile(uploadedFile);
+
+                    // 파일 DTO 생성
+                    fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
+                } else {
+                    // 기존 파일이 없는 경우 새 파일 업로드
+                    File uploadedFile = fileService.uploadFile(file, dirName, member);
+                    ClubFile newClubFile = new ClubFile(club, uploadedFile);
+                    clubFileRepository.save(newClubFile);
+
+                    // 파일 DTO 생성
+                    fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
                 }
             }
         } else {
@@ -206,9 +245,10 @@ public class ClubService {
         String writer = getMemberName(club.getWriterId());
 
         // 응답 DTO로 변환
-        return ClubResponseDTO.ClubList.toListDTO(updatedClub, writer, null, Collections.emptyList());
+        return ClubResponseDTO.ClubList.toListDTO(updatedClub, writer, null, fileDto);
     }
 
+    //관리자 수정
     public ClubResponseDTO.ClubList approveClub(Long clubId, ClubRequestDTO.ClubApproval clubApproval,
                                                 Long adminId) {
         // 클럽 조회
@@ -221,7 +261,7 @@ public class ClubService {
         String writer = getMemberName(club.getWriterId());
         String adminName = getMemberName(adminId);
 
-        return ClubResponseDTO.ClubList.toListDTO(updatedClub, writer, adminName, Collections.emptyList());
+        return ClubResponseDTO.ClubList.toListDTO(updatedClub, writer, adminName, null);
     }
 
     //삭제

@@ -2,9 +2,9 @@ package com.syi.project.club.dto;
 
 import com.syi.project.club.entity.Club;
 import com.syi.project.common.enums.CheckStatus;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 
@@ -43,11 +43,13 @@ public class ClubRequestDTO {
         private String participants;
         private String content;
         private LocalDate studyDate;
+        private MultipartFile file;
 
-        public ClubUpdate(String participants, String content, LocalDate studyDate){
+        public ClubUpdate(String participants, String content, LocalDate studyDate, MultipartFile file){
             this.participants = participants;
             this.content = content;
             this.studyDate = studyDate;
+            this.file = file;
         }
 
         // DTO -> entity
