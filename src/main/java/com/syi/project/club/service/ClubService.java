@@ -234,19 +234,28 @@ public class ClubService {
                     fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
 
                     // Club 객체에 ClubFile을 반영
-                    club.setFile(clubFile); // 중요: ClubFile을 Club에 반영
+                    clubFile.updateClub(club);
+                    //club.setFile(clubFile); // 중요: ClubFile을 Club에 반영
+
+                    // ClubFile 저장
+                    //clubFileRepository.save(clubFile);  // ClubFile을 명시적으로 저장
                 } else {
                     // 기존 파일이 없는 경우 새 파일 업로드
                     File uploadedFile = fileService.uploadFile(file, dirName, member);
                     log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
-                    ClubFile newClubFile = new ClubFile(club, uploadedFile);
+                    ClubFile newClubFile = ClubFile.builder()
+                            .club(club)
+                            .file(uploadedFile)
+                            .build();
                     clubFileRepository.save(newClubFile);
 
                     // 파일 DTO 생성
                     fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
 
                     // Club 객체에 ClubFile을 반영
-                    club.setFile(newClubFile); // 중요: ClubFile을 Club에 반영
+                    newClubFile.updateClub(club);
+                    //club.setFile(newClubFile); // 중요: ClubFile을 Club에 반영
+
                 }
             }
         } else {
@@ -256,6 +265,7 @@ public class ClubService {
         log.info("클럽 저장 전: club={}", club);
         // 클럽 저장
         Club updatedClub = clubRepository.save(club);
+        //clubRepository.saveAndFlush(club); // saveAndFlush()로 영속성 컨텍스트 반영
         log.info("클럽 저장 후: updatedClub={}", updatedClub);
 
         String writer = getMemberName(club.getWriterId());
