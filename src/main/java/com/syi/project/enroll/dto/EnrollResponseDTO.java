@@ -13,7 +13,8 @@ public class EnrollResponseDTO {
   private String courseName;  // 과정명
   private String adminName;  // 담당자
   private String teacherName;  // 강사 추가
-  private LocalDate enrollDate;  // 개강일
+  private LocalDate enrollDate;  // 등록일
+  private LocalDate startDate; // 개강일
   private LocalDate endDate;  // 종강일
   private Long memberId;
   private Long deletedBy;
@@ -27,13 +28,14 @@ public class EnrollResponseDTO {
 
   @QueryProjection
   public EnrollResponseDTO(Long id, Long courseId, String courseName, String adminName, String teacherName,
-      LocalDate enrollDate, LocalDate endDate) {
+      LocalDate enrollDate, LocalDate startDate, LocalDate endDate) {
     this.id = id;
     this.courseId = courseId;
     this.courseName = courseName;
     this.adminName = adminName;
     this.teacherName = teacherName; // 강사 추가
     this.enrollDate = enrollDate;
+    this.startDate = startDate;
     this.endDate = endDate;
   }
 
