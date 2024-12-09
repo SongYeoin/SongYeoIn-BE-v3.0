@@ -5,6 +5,8 @@ import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.common.entity.Criteria;
 import com.syi.project.common.enums.CourseStatus;
 import com.syi.project.common.enums.Role;
+import com.syi.project.common.exception.ErrorCode;
+import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.course.entity.Course;
 import com.syi.project.course.repository.CourseRepository;
@@ -53,10 +55,7 @@ public class JournalService {
   // 신규: 공통 검증 메서드들
   private Member validateAndGetMember(Long memberId) {
     return memberRepository.findById(memberId)
-        .orElseThrow(() -> {
-          log.error("회원 정보를 찾을 수 없음 - memberId: {}", memberId);
-          return new IllegalArgumentException("존재하지 않는 회원입니다.");
-        });
+        .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
   }
 
   private Journal validateAndGetJournal(Long journalId) {
@@ -77,8 +76,7 @@ public class JournalService {
 
   private void validateAccess(Journal journal, Member member) {
     if (!(member.getRole() == Role.ADMIN || journal.getMember().getId().equals(member.getId()))) {
-      log.error("교육일지 접근 권한 없음 - memberId: {}, journalId: {}", member.getId(), journal.getId());
-      throw new IllegalArgumentException("해당 교육일지에 대한 접근 권한이 없습니다.");
+      throw new InvalidRequestException(ErrorCode.JOURNAL_ACCESS_DENIED);
     }
   }
 
@@ -93,21 +91,19 @@ public class JournalService {
   // 신규: 파일 관련 공통 메서드들
   private void validateAndProcessFile(MultipartFile file, String action) {
     if (file == null || file.isEmpty()) {
-      log.error("파일 미첨부");
-      throw new IllegalArgumentException("교육일지 " + action + " 시 파일 첨부는 필수입니다.");
+      throw new InvalidRequestException(ErrorCode.JOURNAL_FILE_REQUIRED);
     }
 
     String originalFilename = file.getOriginalFilename();
     if (originalFilename == null || originalFilename.isEmpty()) {
-      log.error("파일명이 비어있음");
-      throw new IllegalArgumentException("파일명이 비어있습니다.");
+      throw new InvalidRequestException(ErrorCode.FILE_UPLOAD_FAILED, "파일명이 비어있습니다.");
     }
 
     String extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
     if (!ALLOWED_EXTENSIONS.contains(extension)) {
-      log.error("허용되지 않는 파일 형식 - extension: {}", extension);
-      throw new IllegalArgumentException(
-          String.format("허용되지 않는 파일 형식입니다. 허용된 확장자: %s", String.join(", ", ALLOWED_EXTENSIONS))
+      throw new InvalidRequestException(
+          ErrorCode.FILE_EXTENSION_MISMATCH,
+          String.format("교육일지는 %s 형식만 첨부 가능합니다.", String.join(", ", ALLOWED_EXTENSIONS).toUpperCase())
       );
     }
   }
@@ -336,26 +332,23 @@ public class JournalService {
   private void validateEducationDate(LocalDate educationDate, Course course, Member member) {
     // 미래 날짜 검증
     if (educationDate.isAfter(LocalDate.now())) {
-      log.error("미래 날짜 입력 시도 - memberId: {}, educationDate: {}", member.getId(), educationDate);
-      throw new IllegalArgumentException("교육일자는 미래 날짜일 수 없습니다.");
+      throw new InvalidRequestException(ErrorCode.JOURNAL_INVALID_DATE, "교육일자는 미래 날짜일 수 없습니다.");
     }
 
     // 과정 기간 내 날짜인지 검증
     if (educationDate.isBefore(course.getStartDate()) || educationDate.isAfter(course.getEndDate())) {
-      log.error("과정 기간을 벗어난 교육일자 - memberId: {}, educationDate: {}, courseId: {}",
-          member.getId(), educationDate, course.getId());
-      throw new IllegalArgumentException(
+      throw new InvalidRequestException(
+          ErrorCode.JOURNAL_DATE_OUT_OF_RANGE,
           String.format("교육일자는 과정 기간(%s ~ %s) 내여야 합니다.",
-              course.getStartDate(), course.getEndDate()));
+              course.getStartDate(), course.getEndDate())
+      );
     }
 
     // 동일 과정 내 동일 날짜 중복 작성 검증
     boolean exists = journalRepository.existsByMemberIdAndCourseIdAndEducationDate(
         member.getId(), course.getId(), educationDate);
     if (exists) {
-      log.error("동일 날짜 교육일지 중복 작성 시도 - memberId: {}, educationDate: {}, courseId: {}",
-          member.getId(), educationDate, course.getId());
-      throw new IllegalArgumentException("해당 날짜에 이미 작성된 교육일지가 있습니다.");
+      throw new InvalidRequestException(ErrorCode.JOURNAL_DUPLICATE_DATE);
     }
   }
 }
