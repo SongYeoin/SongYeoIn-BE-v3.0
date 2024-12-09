@@ -47,8 +47,16 @@ public enum ErrorCode {
   CANNOT_MODIFY_APPROVED("CLUB_001", "승인된 상태에서는 수정할 수 없습니다.", HttpStatus.FORBIDDEN),
   CANNOT_MODIFY_PENDING("CLUB_002", "미승인된 상태에서는 수정할 수 없습니다.", HttpStatus.FORBIDDEN),
   CANNOT_DELETE_APPROVED("CLUB_003", "대기상태에서만 삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
-  INVALID_REQUEST("CLUB_004", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST);
+  INVALID_REQUEST("CLUB_004", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST),
 
+  // 교육일지 관련 에러
+  JOURNAL_NOT_FOUND("JOURNAL_001", "요청한 교육일지를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  JOURNAL_ACCESS_DENIED("JOURNAL_002", "교육일지에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
+  JOURNAL_DUPLICATE_DATE("JOURNAL_003", "해당 날짜에 이미 작성된 교육일지가 있습니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_INVALID_DATE("JOURNAL_004", "유효하지 않은 교육일자입니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_FILE_REQUIRED("JOURNAL_005", "교육일지 파일 첨부는 필수입니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_DATE_OUT_OF_RANGE("JOURNAL_006", "교육일자가 과정 기간을 벗어났습니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_INVALID_FILE_TYPE("JOURNAL_007", "교육일지는 HWP, DOCX, DOC 형식만 첨부 가능합니다.", HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final String message;
