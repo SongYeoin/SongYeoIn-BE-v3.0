@@ -31,6 +31,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
@@ -439,7 +440,7 @@ public class AttendanceService {
 
   private AttendanceStatus checkIfWithinTimeWindow(Period period) {
 // 현재 시간
-    LocalTime now = LocalTime.now();
+    LocalTime now = LocalTime.now(ZoneId.of("Asia/Seoul"));
     log.debug("현재 시간: {}", now);
 
 //  교시 시작 시간
