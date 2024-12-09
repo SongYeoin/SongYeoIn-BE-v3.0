@@ -33,6 +33,7 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
             course.adminName,
             course.teacherName,  // 추가
             course.enrollDate,
+            course.startDate,
             course.endDate
         ))
         .from(enroll)
