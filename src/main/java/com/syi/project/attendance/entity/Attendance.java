@@ -13,6 +13,7 @@ import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -70,9 +71,9 @@ public class Attendance {
       LocalDateTime modifiedDate, Long periodId, Long courseId, Long memberId, String memo) {
     this.id = id;
     this.status = status;
-    this.date = date != null ? date : LocalDate.now();
-    this.enrollDate = enrollDate != null ? enrollDate : LocalDateTime.now();
-    this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDateTime.now();
+    this.date = date != null ? date : LocalDate.now(ZoneId.of("Asia/Seoul"));
+    this.enrollDate = enrollDate != null ? enrollDate : LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+    this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDateTime.now(ZoneId.of("Asia/Seoul"));
     this.periodId = periodId;
     this.courseId = courseId;
     this.memberId = memberId;

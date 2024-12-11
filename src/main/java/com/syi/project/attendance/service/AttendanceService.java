@@ -166,7 +166,7 @@ public class AttendanceService {
     log.info("출석 ID {}을 찾았습니다.", attendanceId);
     AttendanceStatus newStatus = AttendanceStatus.fromENStatus(status); // 한글을 Enum으로 변환
     attendance.updateStatus(newStatus);
-    attendance.updateModifiedDate(LocalDateTime.now());
+    attendance.updateModifiedDate(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
     Attendance saved = attendanceRepository.save(attendance);
     AttendanceResponseDTO savedStatus = AttendanceResponseDTO.builder()
         .attendanceId(saved.getId())
@@ -185,7 +185,7 @@ public class AttendanceService {
     log.info(" 출석 상태를 결석으로 수정합니다.");
 
     // 어제 날짜
-    LocalDate yesterday = LocalDate.now().minusDays(1);
+    LocalDate yesterday = LocalDate.now(ZoneId.of("Asia/Seoul")).minusDays(1);
     log.debug("어제의 날짜: {}", yesterday);
 
     // 어제의 요일 확인
