@@ -95,7 +95,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
-                frontendUrl // @Value로 가져온 값 사용
+            "https://songyeoin.site",
+            "https://www.songyeoin.site"
         )); // 프론트엔드 주소
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
