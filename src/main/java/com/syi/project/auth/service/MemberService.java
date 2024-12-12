@@ -165,9 +165,9 @@ public class MemberService {
         SecurityContextHolder.clearContext();
     }
 
-    private String extractToken(String bearerToken) {
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+    private String extractToken(String token) {
+        if (token != null && !token.isBlank()) {
+            return token;
         }
         return null;
     }
