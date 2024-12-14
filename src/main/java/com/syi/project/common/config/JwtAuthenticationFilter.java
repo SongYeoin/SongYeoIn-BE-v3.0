@@ -137,7 +137,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
    */
   private void setUnauthorizedResponse(HttpServletResponse response, String message) {
     try {
-      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401 Unauthorized
+      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+      response.setContentType("application/json");
+      response.setCharacterEncoding("UTF-8");
       response.getWriter().write(message);
     } catch (IOException e) {
       log.error("응답 작성 중 오류 발생: {}", e.getMessage());
