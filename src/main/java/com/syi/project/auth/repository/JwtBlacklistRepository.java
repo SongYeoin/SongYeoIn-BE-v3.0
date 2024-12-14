@@ -9,8 +9,6 @@ public interface JwtBlacklistRepository extends JpaRepository<JwtBlacklist, Long
 
   Optional<JwtBlacklist> findByTokenIdAndTokenType(String tokenId, String tokenType);
 
-  boolean existsByTokenIdAndTokenType(String tokenId, String tokenType);
-
-  void deleteAllByExpirationBefore(LocalDateTime dateTime);
+  int deleteAllByExpirationBefore(LocalDateTime dateTime);
 
 }

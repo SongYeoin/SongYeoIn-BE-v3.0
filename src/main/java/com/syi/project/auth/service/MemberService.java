@@ -132,7 +132,7 @@ public class MemberService {
     }
 
     // 이전 Refresh Token 삭제
-    refreshTokenRepository.deleteByUserId(member.getId());
+    refreshTokenRepository.deleteByMemberId(member.getId());
     log.info("기존 Refresh Token 삭제 완료 - 사용자 ID: {}", member.getId());
 
     String accessToken = jwtProvider.createAccessToken(member.getId(), member.getName(),
@@ -166,10 +166,8 @@ public class MemberService {
 
     // Refresh Token 처리
     if (refreshToken != null && jwtProvider.validateRefreshToken(refreshToken)) {
-      String tokenId = jwtProvider.getJti(refreshToken);
-      LocalDateTime expiryDate = jwtProvider.getExpirationDate(refreshToken);
-      jwtBlacklistRepository.save(new JwtBlacklist(tokenId, expiryDate, "REFRESH"));
-      log.info("Refresh Token 블랙리스트 등록 - Token ID: {}, Expiry: {}", tokenId, expiryDate);
+      jwtProvider.getMemberPrimaryKeyId(refreshToken).ifPresent(refreshTokenRepository::deleteByMemberId);
+      log.info("Refresh Token 삭제 완료");
     } else {
       log.warn("유효하지 않은 Refresh Token - 로그아웃 처리 건너뜀");
     }
