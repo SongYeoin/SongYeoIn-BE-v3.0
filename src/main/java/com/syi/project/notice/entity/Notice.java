@@ -55,7 +55,7 @@ public class Notice {
   private LocalDate modifyDate;
 
   @Column(nullable = false)
-  private boolean isGlobal;
+  private boolean isPinned;
 
   @Column(nullable = false, columnDefinition = "BIGINT DEFAULT 0")
   private Long viewCount = 0L;
@@ -67,12 +67,12 @@ public class Notice {
   private Long deletedBy;
 
   @Builder
-  public Notice(String title, String content, Member member, Course course, boolean isGlobal) {
+  public Notice(String title, String content, Member member, Course course, boolean isPinned) {
     this.title = title;
     this.content = content;
     this.member = member;
     this.course = course;
-    this.isGlobal = isGlobal;
+    this.isPinned = isPinned;
   }
 
   public void addFile(NoticeFile noticeFile) {
@@ -83,10 +83,10 @@ public class Notice {
     this.viewCount++;
   }
 
-  public void update(String title, String content, boolean isGlobal) {
+  public void update(String title, String content, boolean isPinned) {
     this.title = title;
     this.content = content;
-    this.isGlobal = isGlobal;
+    this.isPinned = isPinned;
   }
 
   public void markAsDeleted(Long memberId) {
