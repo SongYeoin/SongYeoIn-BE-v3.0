@@ -22,18 +22,18 @@ public class NoticeRequestDTO {
   @Schema(description = "공지사항 내용", example = "공지사항 내용")
   private final String content;
 
-  @Schema(description = "강의 ID(null일 경우 전체 공지)", example = "1")
+  @Schema(description = "교육과정 ID", example = "1")
   private final Long courseId;
 
-  @Schema(description = "전체 공지 여부", example = "false")
-  private final boolean isGlobal;
+  @Schema(description = "상단고정 여부", example = "false")
+  private final boolean isPinned;
 
   @Builder
-  public NoticeRequestDTO(String title, String content, Long courseId, boolean isGlobal) {
+  public NoticeRequestDTO(String title, String content, Long courseId, boolean isPinned) {
     this.title = title;
     this.content = content;
     this.courseId = courseId;
-    this.isGlobal = isGlobal;
+    this.isPinned = isPinned;
   }
 
   public Notice toEntity(Member member, Course course) {
@@ -42,7 +42,7 @@ public class NoticeRequestDTO {
         .content(this.content)
         .member(member)
         .course(course)
-        .isGlobal(this.isGlobal)
+        .isPinned(this.isPinned)
         .build();
   }
 
