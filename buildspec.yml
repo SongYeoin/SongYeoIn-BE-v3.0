@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+    commands:
+      - echo "Installing dependencies..."
+      - yum install -y tar gzip
+  pre_build:
+    commands:
+      - echo "Preparing for build..."
+      - chmod +x ./gradlew
+  build:
+    commands:
+      - echo "Building the application with Gradle..."
+      - ./gradlew build
+      - echo "Renaming the built JAR file..."
+      - mv build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar application.jar
+
+artifacts:
+  files:
+    - application.jar
+    - Procfile
+  discard-paths: yes
