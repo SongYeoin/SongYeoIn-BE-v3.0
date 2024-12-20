@@ -42,7 +42,7 @@ phases:
 
       # SSH 터널링 설정
       - echo "Setting up SSH tunnel..."
-      - ssh -i /root/.ssh/id_rsa -f -N -L $DB_PORT:$DB_HOST:$DB_PORT ec2-user@$EC2_HOST
+      - aws ssm start-session --target $EC2_HOST --document-name AWS-StartPortForwardingSession --parameters '{"portNumber":["3306"],"localPortNumber":["3306"]}' & sleep 10  # 터널링 연결 대기
 
       # MySQL 연결 테스트
       #- echo "Testing MySQL connection..."
