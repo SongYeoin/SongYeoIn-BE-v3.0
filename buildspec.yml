@@ -89,13 +89,15 @@ phases:
       - echo "Checking /.ebextensions path:"
       - ls -ld /.ebextensions
       - ls -R /.ebextensions
-      - cp -r /.ebextensions build/libs/
+      - mkdir -p build/libs/.ebextensions
+      - cp /.ebextensions/nginx_config.config build/libs/.ebextensions/nginx_config.config
 
       - if [ "$(ls -A /.platform)" ]; then echo ".platform directory is not empty."; else echo "No files in .platform"; exit 1; fi
       - echo "Checking /.platform path:"
       - ls -ld /.platform
       - ls -R /.platform
-      - cp -r /.platform build/libs/
+      - mkdir -p build/libs/.platform/nginx
+      - cp /.platform/nginx/nginx.conf build/libs/.platform/nginx/nginx.conf
 
       - echo "Ensuring all required files are in build/libs:"
       - if [ ! -f build/libs/application.jar ]; then echo "application.jar missing!"; exit 1; fi
