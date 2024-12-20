@@ -13,12 +13,15 @@ phases:
       - echo "Fetching secrets from Parameter Store..."
       - aws ssm get-parameter --name "/sshKey" --with-decryption --query "Parameter.Value" --output text > /root/.ssh/id_rsa
       - chmod 600 /root/.ssh/id_rsa
+      - echo "Creating necessary directories..."
+      - mkdir -p /platform/nginx
+      - mkdir -p /ebextensions
       - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text > /platform/nginx/nginx.conf
       - chmod 600 /platform/nginx/nginx.conf
       - aws ssm get-parameter --name "/ebextensions_nginx_config" --query "Parameter.Value" --output text > /ebextensions/nginx_config.config
       - chmod 600 /ebextensions/nginx_config.config
-      - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > /Procfile
-      - chmod 600 /Procfile
+      - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > /root/Procfile
+      - chmod 600 /root/Procfile
 
   pre_build:
     commands:
