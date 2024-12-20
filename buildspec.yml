@@ -5,10 +5,6 @@ phases:
     runtime-versions:
       java: corretto17
     commands:
-      # MySQL 클라이언트 설치
-      #- echo "Installing MySQL client..."
-      #- yum install -y mysql
-
       # SessionManager 플러그인 설치
       - echo "Installing AWS Session Manager Plugin..."
       - sudo yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm
@@ -17,24 +13,19 @@ phases:
 
       # SSH 키 및 Nginx 설정 다운로드
       - echo "Fetching secrets from Parameter Store..."
-      - aws ssm get-parameter --name "/sshKey" --with-decryption --query "Parameter.Value" --output text > /root/.ssh/id_rsa
-      - chmod 600 /root/.ssh/id_rsa
 
       - echo "Creating necessary directories..."
-      - mkdir -p /.platform/nginx
-      - mkdir -p /.ebextensions
+      - mkdir -p .platform/nginx
+      - mkdir -p .ebextensions
 
-      - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text > /.platform/nginx/nginx.conf
-      - if [ -s /.platform/nginx/nginx.conf ]; then echo "nginx.conf downloaded successfully."; else echo "Failed to download nginx.conf."; exit 1; fi
-      - chmod -R 755 /.platform
+      - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text > .platform/nginx/nginx.conf
+      - if [ -s .platform/nginx/nginx.conf ]; then echo "nginx.conf downloaded successfully."; else echo "Failed to download nginx.conf."; exit 1; fi
 
-      - aws ssm get-parameter --name "/ebextensions_nginx_config" --query "Parameter.Value" --output text > /.ebextensions/nginx_config.config
-      - if [ -s /.ebextensions/nginx_config.config ]; then echo "nginx_config.config downloaded successfully."; else echo "Failed to download nginx_config.config."; exit 1; fi
-      - chmod -R 755 /.ebextensions
+      - aws ssm get-parameter --name "/ebextensions_nginx_config" --query "Parameter.Value" --output text > .ebextensions/nginx_config.config
+      - if [ -s .ebextensions/nginx_config.config ]; then echo "nginx_config.config downloaded successfully."; else echo "Failed to download nginx_config.config."; exit 1; fi
 
-      - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > /Procfile
-      - if [ -s /Procfile ]; then echo "Procfile downloaded successfully."; else echo "Failed to download Procfile."; exit 1; fi
-      - chmod 600 /Procfile
+      - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > Procfile
+      - if [ -s Procfile ]; then echo "Procfile downloaded successfully."; else echo "Failed to download Procfile."; exit 1; fi
 
   pre_build:
     commands:
@@ -57,56 +48,25 @@ phases:
       - echo "Setting up SSH tunnel..."
       - aws ssm start-session --target $EC2_HOST --document-name AWS-StartPortForwardingSession --parameters '{"portNumber":["3306"],"localPortNumber":["3306"]}' & sleep 10  # 터널링 연결 대기
 
-      # MySQL 연결 테스트
-      #- echo "Testing MySQL connection..."
-      #- mysql -h 127.0.0.1 -P $DB_PORT -u $DB_USERNAME -p$DB_PASSWORD -e "SHOW DATABASES;"
   build:
     commands:
       - echo "Building the application with Gradle..."
       - ./gradlew build -x test
       - echo "Renaming the built JAR file..."
-      - mv build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar build/libs/application.jar
-      - ls -l build/libs/application.jar  # 파일 확인
+      - mv build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar application.jar
 
   post_build:
     commands:
       - echo Build completed on `date`
-      -
+
       - echo "Checking if application.jar exists..."
-      - if [ -f build/libs/application.jar ]; then echo "application.jar found."; else echo "application.jar not found!"; exit 1; fi
-
-      - echo "Checking contents before copying:"
-      - echo "Contents of /.ebextensions:"
-      - ls -R /.ebextensions || exit 1
-      - echo "Contents of /.platform:"
-      - ls -R /.platform || exit 1
-
-
-      - if [ "$(ls -A /Procfile)" ]; then echo "Procfile directory is not empty."; else echo "No files in Procfile"; exit 1; fi
-      - cp /Procfile build/libs/
-
-      - if [ "$(ls -A /.ebextensions)" ]; then echo ".ebextensions directory is not empty."; else echo "No files in .ebextensions"; exit 1; fi
-      - echo "Checking /.ebextensions path:"
-      - ls -ld /.ebextensions
-      - ls -R /.ebextensions
-      - mkdir -p build/libs/.ebextensions
-      - cp /.ebextensions/nginx_config.config build/libs/.ebextensions/nginx_config.config
-
-      - if [ "$(ls -A /.platform)" ]; then echo ".platform directory is not empty."; else echo "No files in .platform"; exit 1; fi
-      - echo "Checking /.platform path:"
-      - ls -ld /.platform
-      - ls -R /.platform
-      - mkdir -p build/libs/.platform/nginx
-      - cp /.platform/nginx/nginx.conf build/libs/.platform/nginx/nginx.conf
-
-      - echo "Ensuring all required files are in build/libs:"
-      - if [ ! -f build/libs/application.jar ]; then echo "application.jar missing!"; exit 1; fi
-      - if [ ! -f build/libs/Procfile ]; then echo "Procfile missing!"; exit 1; fi
-      - if [ ! "$(ls -A build/libs/.ebextensions)" ]; then echo ".ebextensions is empty!"; exit 1; fi
-      - if [ ! "$(ls -A build/libs/.platform)" ]; then echo ".platform is empty!"; exit 1; fi
+      - if [ -f application.jar ]; then echo "application.jar found."; else echo "application.jar not found!"; exit 1; fi
+      - if [ ! -f Procfile ]; then echo "Procfile missing!"; exit 1; fi
+      - if [ ! -s .ebextensions/nginx_config.config ]; then echo "nginx_config.config missing!"; exit 1; fi
+      - if [ ! -s .platform/nginx/nginx.conf ]; then echo "nginx.conf missing!"; exit 1; fi
 
       - echo "Contents of build/libs after copy:"
-      - ls -R build/libs
+      - ls -R
 
 artifacts:
   files:
@@ -114,5 +74,4 @@ artifacts:
     - Procfile
     - .ebextensions/**   # Include all files under .ebextensions
     - .platform/**       # Include all files under .platform
-  base-directory: build/libs      # Set base directory to avoid path issues
   discard-paths: no                   # Preserve directory structure
