@@ -9,6 +9,13 @@ phases:
       #- echo "Installing MySQL client..."
       #- yum install -y mysql
 
+      # SessionManager 플러그인 설치
+      - echo "Installing AWS Session Manager Plugin..."
+      - curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_amd64/session-manager-plugin.rpm" -o "session-manager-plugin.rpm"
+      - yum install -y session-manager-plugin.rpm
+      - session-manager-plugin --version
+
+
       # SSH 키 및 Nginx 설정 다운로드
       - echo "Fetching secrets from Parameter Store..."
       - aws ssm get-parameter --name "/sshKey" --with-decryption --query "Parameter.Value" --output text > /root/.ssh/id_rsa
@@ -64,6 +71,13 @@ phases:
   post_build:
     commands:
       - echo Build completed on `date`
+
+      - echo "Checking contents before copying:"
+      - echo "Contents of /.ebextensions:"
+      - ls -R /.ebextensions
+      - echo "Contents of /.platform:"
+      - ls -R /.platform
+
 
       - if [ "$(ls -A /Procfile)" ]; then echo "Procfile directory is not empty."; else echo "No files in Procfile"; exit 1; fi
       - cp /Procfile build/libs/
