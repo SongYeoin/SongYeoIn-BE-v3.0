@@ -69,6 +69,10 @@ phases:
       - ls -l application.jar Procfile
       - ls -R .ebextensions
       - ls -R .platform
+      - echo "Creating deployment ZIP file..."
+      - zip -r deployment.zip application.jar Procfile .platform .ebextensions
+      - echo "Checking ZIP file contents..."
+      - unzip -l deployment.zip
 
 artifacts:
   files:
