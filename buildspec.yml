@@ -6,8 +6,8 @@ phases:
       java: corretto17
     commands:
       # MySQL 클라이언트 설치
-      - echo "Installing MySQL client..."
-      - yum install -y mysql
+      #- echo "Installing MySQL client..."
+      #- yum install -y mysql
 
       # SSH 키 및 Nginx 설정 다운로드
       - echo "Fetching secrets from Parameter Store..."
