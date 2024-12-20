@@ -5,33 +5,35 @@ phases:
     runtime-versions:
       java: corretto17
     commands:
-      # SessionManager 플러그인 설치
+      # AWS Session Manager Plugin 설치
       - echo "Installing AWS Session Manager Plugin..."
       - sudo yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm
       - session-manager-plugin --version
 
-
-      # SSH 키 및 Nginx 설정 다운로드
+      # AWS Systems Manager Parameter Store에서 설정 파일 가져오기
       - echo "Fetching secrets from Parameter Store..."
-
       - echo "Creating necessary directories..."
-      - mkdir -p .platform/nginx
-      - mkdir -p .ebextensions
+      - mkdir -p .platform/nginx      # nginx 설정 디렉토리 생성
+      - mkdir -p .ebextensions        # ebextensions 디렉토리 생성
 
+      # nginx.conf 다운로드
       - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text > .platform/nginx/nginx.conf
       - if [ -s .platform/nginx/nginx.conf ]; then echo "nginx.conf downloaded successfully."; else echo "Failed to download nginx.conf."; exit 1; fi
 
+      # nginx_config.config 다운로드
       - aws ssm get-parameter --name "/ebextensions_nginx_config" --query "Parameter.Value" --output text > .ebextensions/nginx_config.config
       - if [ -s .ebextensions/nginx_config.config ]; then echo "nginx_config.config downloaded successfully."; else echo "Failed to download nginx_config.config."; exit 1; fi
 
+      # Procfile 다운로드
       - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > Procfile
       - if [ -s Procfile ]; then echo "Procfile downloaded successfully."; else echo "Failed to download Procfile."; exit 1; fi
 
   pre_build:
     commands:
       - echo "Preparing for build..."
-      - chmod +x ./gradlew
-      # CodeBuild 환경 변수로부터 DB 정보 가져오기
+      - chmod +x ./gradlew            # Gradle 실행 권한 부여
+
+      # 환경 변수 설정
       - export DB_HOST=$DB_HOST
       - export DB_PORT=$DB_PORT
       - export DB_USERNAME=$DB_USERNAME
@@ -44,31 +46,35 @@ phases:
       - export AWS_SECRET_KEY=$AWS_SECRET_KEY
       - export JWT_SECRET=$JWT_SECRET
 
-      # SSH 터널링 설정
+      # SSH 터널링 설정 (RDS 접근용)
       - echo "Setting up SSH tunnel..."
       - aws ssm start-session --target $EC2_HOST --document-name AWS-StartPortForwardingSession --parameters '{"portNumber":["3306"],"localPortNumber":["3306"]}' & sleep 10  # 터널링 연결 대기
 
   build:
     commands:
       - echo "Building the application with Gradle..."
-      - ./gradlew build -x test
+      - ./gradlew build -x test       # 테스트 제외하고 빌드
       - echo "Renaming the built JAR file..."
-      - mv build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar application.jar
+      - mv build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar application.jar   # JAR 파일 이름 변경
 
   post_build:
     commands:
-      - echo Build completed on `date`
+      - echo "Build completed on `date`"
 
+      # 필요한 파일들이 존재하는지 확인
       - echo "Checking if application.jar exists..."
       - if [ -f application.jar ]; then echo "application.jar found."; else echo "application.jar not found!"; exit 1; fi
-      - if [ ! -f Procfile ]; then echo "Procfile missing!"; exit 1; fi
-      - if [ ! -s .ebextensions/nginx_config.config ]; then echo "nginx_config.config missing!"; exit 1; fi
-      - if [ ! -s .platform/nginx/nginx.conf ]; then echo "nginx.conf missing!"; exit 1; fi
+      - if [ -f Procfile ]; then echo "Procfile found."; else echo "Procfile missing!"; exit 1; fi
+      - if [ -s .ebextensions/nginx_config.config ]; then echo "nginx_config.config found."; else echo "nginx_config.config missing!"; exit 1; fi
+      - if [ -s .platform/nginx/nginx.conf ]; then echo "nginx.conf found."; else echo "nginx.conf missing!"; exit 1; fi
 
+      # 파일 및 디렉토리 내용 확인
       - echo "Ensuring all files are ready for deployment..."
       - ls -l application.jar Procfile
       - ls -R .ebextensions
       - ls -R .platform
+
+      # ZIP 파일 생성
       - echo "Creating deployment ZIP file..."
       - zip -r deployment.zip application.jar Procfile .platform .ebextensions
       - echo "Checking ZIP file contents..."
@@ -76,8 +82,9 @@ phases:
 
 artifacts:
   files:
-    - application.jar
-    - Procfile
-    - .ebextensions/**   # Include all files under .ebextensions
-    - .platform/**       # Include all files under .platform
-  discard-paths: no                   # Preserve directory structure
+    - deployment.zip          # 모든 파일이 포함된 ZIP
+    - application.jar         # 애플리케이션 JAR
+    - Procfile                # Elastic Beanstalk 프로세스 설정
+    - .ebextensions/**        # Elastic Beanstalk 설정 디렉토리
+    - .platform/**            # 플랫폼 특정 설정 디렉토리
+  discard-paths: no           # 파일 경로 구조 유지
