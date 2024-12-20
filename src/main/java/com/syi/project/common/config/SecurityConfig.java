@@ -87,9 +87,6 @@ public class SecurityConfig {
     }
 
 
-    @Value("${frontend.url}") // application.yml에서 설정한 값을 가져옴
-    private String frontendUrl;
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
