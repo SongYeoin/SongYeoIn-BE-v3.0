@@ -65,8 +65,10 @@ phases:
       - if [ ! -s .ebextensions/nginx_config.config ]; then echo "nginx_config.config missing!"; exit 1; fi
       - if [ ! -s .platform/nginx/nginx.conf ]; then echo "nginx.conf missing!"; exit 1; fi
 
-      - echo "Contents of build/libs after copy:"
-      - ls -R
+      - echo "Ensuring all files are ready for deployment..."
+      - ls -l application.jar Procfile
+      - ls -R .ebextensions
+      - ls -R .platform
 
 artifacts:
   files:
