@@ -42,8 +42,8 @@ phases:
       - ssh -i /root/.ssh/id_rsa -f -N -L $DB_PORT:$DB_HOST:$DB_PORT ec2-user@$EC2_HOST
 
       # MySQL 연결 테스트
-      - echo "Testing MySQL connection..."
-      - mysql -h 127.0.0.1 -P $DB_PORT -u $DB_USERNAME -p$DB_PASSWORD -e "SHOW DATABASES;"
+      #- echo "Testing MySQL connection..."
+      #- mysql -h 127.0.0.1 -P $DB_PORT -u $DB_USERNAME -p$DB_PASSWORD -e "SHOW DATABASES;"
   build:
     commands:
       - echo "Building the application with Gradle..."
