@@ -108,9 +108,9 @@ phases:
 
 artifacts:
   files:
-    - build/libs/application.jar
-    - build/libs/Procfile
-    - build/libs/.ebextensions/**   # Include all files under .ebextensions
-    - build/libs/.platform/**       # Include all files under .platform
+    - application.jar
+    - Procfile
+    - .ebextensions/**   # Include all files under .ebextensions
+    - .platform/**       # Include all files under .platform
   base-directory: build/libs      # Set base directory to avoid path issues
   discard-paths: no                   # Preserve directory structure
