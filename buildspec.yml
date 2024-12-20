@@ -26,11 +26,11 @@ phases:
 
       - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text > /.platform/nginx/nginx.conf
       - if [ -s /.platform/nginx/nginx.conf ]; then echo "nginx.conf downloaded successfully."; else echo "Failed to download nginx.conf."; exit 1; fi
-      - chmod 600 /.platform/nginx/nginx.conf
+      - chmod -R 755 /.platform
 
       - aws ssm get-parameter --name "/ebextensions_nginx_config" --query "Parameter.Value" --output text > /.ebextensions/nginx_config.config
       - if [ -s /.ebextensions/nginx_config.config ]; then echo "nginx_config.config downloaded successfully."; else echo "Failed to download nginx_config.config."; exit 1; fi
-      - chmod 600 /.ebextensions/nginx_config.config
+      - chmod -R 755 /.ebextensions
 
       - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > /Procfile
       - if [ -s /Procfile ]; then echo "Procfile downloaded successfully."; else echo "Failed to download Procfile."; exit 1; fi
@@ -65,26 +65,36 @@ phases:
       - echo "Building the application with Gradle..."
       - ./gradlew build -x test
       - echo "Renaming the built JAR file..."
-      - mv build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar application.jar
+      - mv build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar build/libs/application.jar
+      - ls -l build/libs/application.jar  # 파일 확인
 
   post_build:
     commands:
       - echo Build completed on `date`
+      -
+      - echo "Checking if application.jar exists..."
+      - if [ -f build/libs/application.jar ]; then echo "application.jar found."; else echo "application.jar not found!"; exit 1; fi
 
       - echo "Checking contents before copying:"
       - echo "Contents of /.ebextensions:"
-      - ls -R /.ebextensions
+      - ls -R /.ebextensions || exit 1
       - echo "Contents of /.platform:"
-      - ls -R /.platform
+      - ls -R /.platform || exit 1
 
 
       - if [ "$(ls -A /Procfile)" ]; then echo "Procfile directory is not empty."; else echo "No files in Procfile"; exit 1; fi
       - cp /Procfile build/libs/
 
       - if [ "$(ls -A /.ebextensions)" ]; then echo ".ebextensions directory is not empty."; else echo "No files in .ebextensions"; exit 1; fi
+      - echo "Checking /.ebextensions path:"
+      - ls -ld /.ebextensions
+      - ls -R /.ebextensions
       - cp -r /.ebextensions build/libs/
 
       - if [ "$(ls -A /.platform)" ]; then echo ".platform directory is not empty."; else echo "No files in .platform"; exit 1; fi
+      - echo "Checking /.platform path:"
+      - ls -ld /.platform
+      - ls -R /.platform
       - cp -r /.platform build/libs/
 
       - echo "Contents of build/libs after copy:"
