@@ -5,12 +5,45 @@ phases:
     runtime-versions:
       java: corretto17
     commands:
-      - echo "Installing dependencies..."
-      - yum install -y tar gzip
+      # MySQL 클라이언트 설치
+      - echo "Installing MySQL client..."
+      - yum install -y mysql
+
+      # SSH 키 및 Nginx 설정 다운로드
+      - echo "Fetching secrets from Parameter Store..."
+      - aws ssm get-parameter --name "/sshKey" --with-decryption --query "Parameter.Value" --output text > /root/.ssh/id_rsa
+      - chmod 600 /root/.ssh/id_rsa
+      - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text > /platform/nginx/nginx.conf
+      - chmod 600 /platform/nginx/nginx.conf
+      - aws ssm get-parameter --name "/ebextensions_nginx_config" --query "Parameter.Value" --output text > /ebextensions/nginx_config.config
+      - chmod 600 /ebextensions/nginx_config.config
+      - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > /Procfile
+      - chmod 600 /Procfile
+
   pre_build:
     commands:
       - echo "Preparing for build..."
       - chmod +x ./gradlew
+      # CodeBuild 환경 변수로부터 DB 정보 가져오기
+      - export DB_HOST=$DB_HOST
+      - export DB_PORT=$DB_PORT
+      - export DB_USERNAME=$DB_USERNAME
+      - export DB_PASSWORD=$DB_PASSWORD
+      - export DB_NAME=$DB_NAME
+      - export EC2_HOST=$EC2_HOST
+      - export AWS_ACCESS_KEY=$AWS_ACCESS_KEY
+      - export AWS_BUCKET=$AWS_BUCKET
+      - export AWS_REGION=$AWS_REGION
+      - export AWS_SECRET_KEY=$AWS_SECRET_KEY
+      - export JWT_SECRET=$JWT_SECRET
+
+      # SSH 터널링 설정
+      - echo "Setting up SSH tunnel..."
+      - ssh -i /root/.ssh/id_rsa -f -N -L $DB_PORT:$DB_HOST:$DB_PORT ec2-user@$EC2_HOST
+
+      # MySQL 연결 테스트
+      - echo "Testing MySQL connection..."
+      - mysql -h 127.0.0.1 -P $DB_PORT -u $DB_USERNAME -p$DB_PASSWORD -e "SHOW DATABASES;"
   build:
     commands:
       - echo "Building the application with Gradle..."
@@ -18,8 +51,16 @@ phases:
       - echo "Renaming the built JAR file..."
       - mv build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar application.jar
 
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - cp Procfile build/libs/
+      - cp -r .ebextensions build/libs/
+      - cp -r .platform build/libs/
 artifacts:
   files:
-    - application.jar
-    - Procfile
-  discard-paths: yes
+    - build/libs/application.jar
+    - build/libs/Procfile
+    - build/libs/.ebextensions/**/*   # Include all files under .ebextensions
+    - build/libs/.platform/**/*       # Include all files under .platform
+  discard-paths: no                   # Preserve directory structure

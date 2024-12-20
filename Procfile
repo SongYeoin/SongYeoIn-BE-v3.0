@@ -1,1 +1,1 @@
-web: java -jar -Dspring.profiles.active=dev build/libs/songyeoin-backend-0.0.1-SNAPSHOT.jar
+web: java -jar -Dspring.profiles.active=dev application.jar
