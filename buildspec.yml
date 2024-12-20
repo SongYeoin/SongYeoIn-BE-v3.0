@@ -97,6 +97,12 @@ phases:
       - ls -R /.platform
       - cp -r /.platform build/libs/
 
+      - echo "Ensuring all required files are in build/libs:"
+      - if [ ! -f build/libs/application.jar ]; then echo "application.jar missing!"; exit 1; fi
+      - if [ ! -f build/libs/Procfile ]; then echo "Procfile missing!"; exit 1; fi
+      - if [ ! "$(ls -A build/libs/.ebextensions)" ]; then echo ".ebextensions is empty!"; exit 1; fi
+      - if [ ! "$(ls -A build/libs/.platform)" ]; then echo ".platform is empty!"; exit 1; fi
+
       - echo "Contents of build/libs after copy:"
       - ls -R build/libs
 
@@ -104,6 +110,7 @@ artifacts:
   files:
     - build/libs/application.jar
     - build/libs/Procfile
-    - build/libs/.ebextensions/**/*   # Include all files under .ebextensions
-    - build/libs/.platform/**/*       # Include all files under .platform
+    - build/libs/.ebextensions/**   # Include all files under .ebextensions
+    - build/libs/.platform/**       # Include all files under .platform
+  base-directory: build/libs      # Set base directory to avoid path issues
   discard-paths: no                   # Preserve directory structure
