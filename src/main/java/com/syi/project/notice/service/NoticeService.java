@@ -69,17 +69,14 @@ public class NoticeService {
   @Transactional
   public NoticeResponseDTO createNotice(Long memberId, NoticeRequestDTO requestDTO,
       List<MultipartFile> files) {
-    log.info("공지사항 생성 시작 - memberId: {}, courseId: {}", memberId, requestDTO.getCourseId());
-    Member member = getMember(memberId);
+    log.info("공지사항 생성 시작 - memberId: {}, courseId: {}, isPinned: {}", memberId, requestDTO.getCourseId(), requestDTO.isPinned());
 
-    Course course = null;
-    if (!requestDTO.isGlobal() && requestDTO.getCourseId() != null) {
-      course = courseRepository.findById(requestDTO.getCourseId())
-          .orElseThrow(() -> {
-            log.error("교육과정을 찾을 수 없습니다 - courseId: {}", requestDTO.getCourseId());
-            return new InvalidRequestException(ErrorCode.COURSE_NOT_FOUND);
-          });
-    }
+    Member member = getMember(memberId);
+    Course course = courseRepository.findById(requestDTO.getCourseId())
+        .orElseThrow(() -> {
+          log.error("교육과정을 찾을 수 없습니다 - courseId: {}", requestDTO.getCourseId());
+          return new InvalidRequestException(ErrorCode.COURSE_NOT_FOUND);
+        });
 
     Notice notice = requestDTO.toEntity(member, course);
     noticeRepository.save(notice);
