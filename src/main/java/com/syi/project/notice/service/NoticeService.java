@@ -109,16 +109,10 @@ public class NoticeService {
     log.info("공지사항 목록 조회 시작 - courseId: {}, memberId: {}, titleKeyword: {}, pageable: {}",
         courseId, memberId, titleKeyword, pageable);
 
-    Page<Notice> notices = noticeRepository.findNoticesByCourseIdAndGlobal(courseId, titleKeyword,
-        pageable);
+    Page<Notice> notices = noticeRepository.findNoticesByCourseId(courseId, titleKeyword, pageable);
+    Page<NoticeResponseDTO> noticeDtos = notices.map(notice ->
+        NoticeResponseDTO.fromEntity(notice, s3Uploader));
 
-    AtomicInteger postNumberCounter = new AtomicInteger(
-        notices.getNumber() * notices.getSize() + 1);
-    Page<NoticeResponseDTO> noticeDtos = notices.map(notice -> {
-      String postNumber =
-          notice.isGlobal() ? "전체" : String.valueOf(postNumberCounter.getAndIncrement());
-      return NoticeResponseDTO.fromEntityWithPostNumber(notice, postNumber, s3Uploader);
-    });
     log.info("공지사항 목록 조회 완료 - 총 조회된 공지 수: {}", noticeDtos.getContent().size());
     return noticeDtos;
   }
