@@ -29,7 +29,7 @@ phases:
 
       # Hook 스크립트 다운로드
       - aws ssm get-parameter --name "/platform_postdeploy_hook" --query "Parameter.Value" --output text | sed 's/\\n/\n/g' > .platform/hooks/postdeploy/99_apply_nginx_config.sh
-      - if [ -s .platform.platform/hooks/postdeploy/99_apply_nginx_config.sh ]; then echo "Hook script downloaded successfully."; else echo "Failed to download hook script."; exit 1; fi
+      - if [ -s .platform/hooks/postdeploy/99_apply_nginx_config.sh ]; then echo "Hook script downloaded successfully."; else echo "Failed to download hook script."; exit 1; fi
       - chmod +x .platform/hooks/postdeploy/99_apply_nginx_config.sh
 
   pre_build:
