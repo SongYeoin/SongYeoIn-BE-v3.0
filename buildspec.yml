@@ -90,5 +90,5 @@ artifacts:
   files:
     - application.jar         # 애플리케이션 JAR
     - Procfile                # Elastic Beanstalk 프로세스 설정
-    - .platform/**            # 플랫폼 특정 설정 디렉토리
+    - .platform/**/*            # 플랫폼 특정 설정 디렉토리
   discard-paths: no           # 파일 경로 구조 유지
