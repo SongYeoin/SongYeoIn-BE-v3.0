@@ -14,21 +14,19 @@ phases:
       - echo "Fetching secrets from Parameter Store..."
       - echo "Creating necessary directories..."
       - mkdir -p .platform/nginx      # nginx 설정 디렉토리 생성
-      #- mkdir -p .ebextensions        # ebextensions 디렉토리 생성
       - mkdir -p .platform/hooks/postdeploy
 
       # nginx.conf 다운로드
-      - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text > .platform/nginx/nginx.conf
+      - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text | sed 's/\\n/\n/g' > .platform/nginx/nginx.conf
+      - echo "Checking nginx.conf content:"
+      - cat .platform/nginx/nginx.conf
       - if [ -s .platform/nginx/nginx.conf ]; then echo "nginx.conf downloaded successfully."; else echo "Failed to download nginx.conf."; exit 1; fi
-
-      # nginx_config.config 다운로드
-      #- aws ssm get-parameter --name "/ebextensions_nginx_config" --query "Parameter.Value" --output text > .ebextensions/nginx_config.config
-      #- if [ -s .ebextensions/nginx_config.config ]; then echo "nginx_config.config downloaded successfully."; else echo "Failed to download nginx_config.config."; exit 1; fi
+      - chmod 644 .platform/nginx/nginx.conf
 
       # Procfile 다운로드
       - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > Procfile
       - if [ -s Procfile ]; then echo "Procfile downloaded successfully."; else echo "Failed to download Procfile."; exit 1; fi
-        
+
       # Hook 스크립트 다운로드
       - aws ssm get-parameter --name "/platform_postdeploy_hook" --query "Parameter.Value" --output text > .platform/hooks/postdeploy/99_apply_nginx_config.sh
       - if [ -s .platform/hooks/postdeploy/99_apply_nginx_config.sh ]; then echo "Hook script downloaded successfully."; else echo "Failed to download hook script."; exit 1; fi
@@ -71,20 +69,17 @@ phases:
       - echo "Checking if application.jar exists..."
       - if [ -f application.jar ]; then echo "application.jar found."; else echo "application.jar not found!"; exit 1; fi
       - if [ -f Procfile ]; then echo "Procfile found."; else echo "Procfile missing!"; exit 1; fi
-      #- if [ -s .ebextensions/nginx_config.config ]; then echo "nginx_config.config found."; else echo "nginx_config.config missing!"; exit 1; fi
       - if [ -s .platform/nginx/nginx.conf ]; then echo "nginx.conf found."; else echo "nginx.conf missing!"; exit 1; fi
       - if [ -s .platform/hooks/postdeploy/99_apply_nginx_config.sh ]; then echo "Hook script exists."; else echo "Hook script not found!"; exit 1; fi
-
 
       # 파일 및 디렉토리 내용 확인
       - echo "Ensuring all files are ready for deployment..."
       - ls -l application.jar Procfile
-      #- ls -R .ebextensions
       - ls -R .platform
 
       # ZIP 파일 생성
       - echo "Creating deployment ZIP file..."
-      - zip -r deployment.zip application.jar Procfile .platform  # .ebextensions
+      - zip -r deployment.zip application.jar Procfile .platform
       - echo "Checking ZIP file contents..."
       - unzip -l deployment.zip
 
