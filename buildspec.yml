@@ -13,24 +13,24 @@ phases:
       # AWS Systems Manager Parameter Store에서 설정 파일 가져오기
       - echo "Fetching secrets from Parameter Store..."
       - echo "Creating necessary directories..."
-      - mkdir -p .platform/nginx      # nginx 설정 디렉토리 생성
+      - mkdir -p .platform/nginx/conf.d/elasticbeanstalk      # nginx 설정 디렉토리 생성
       - mkdir -p .platform/hooks/postdeploy
 
       # nginx.conf 다운로드
-      - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text | sed 's/\\n/\n/g' > .platform/nginx/nginx.conf
+      - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text > .platform/nginx/conf.d/elasticbeanstalk/custom.conf
       - echo "Checking nginx.conf content:"
-      - cat .platform/nginx/nginx.conf
-      - if [ -s .platform/nginx/nginx.conf ]; then echo "nginx.conf downloaded successfully."; else echo "Failed to download nginx.conf."; exit 1; fi
-      - chmod 644 .platform/nginx/nginx.conf
+      - cat .platform/nginx/conf.d/elasticbeanstalk/custom.conf
+      - if [ -s .platform/nginx/conf.d/elasticbeanstalk/custom.conf ]; then echo "nginx.conf downloaded successfully."; else echo "Failed to download nginx.conf."; exit 1; fi
+      - chmod 644 .platform/nginx/conf.d/elasticbeanstalk/custom.conf
 
       # Procfile 다운로드
       - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > Procfile
       - if [ -s Procfile ]; then echo "Procfile downloaded successfully."; else echo "Failed to download Procfile."; exit 1; fi
 
       # Hook 스크립트 다운로드
-      - aws ssm get-parameter --name "/platform_postdeploy_hook" --query "Parameter.Value" --output text > .platform/hooks/postdeploy/99_apply_nginx_config.sh
-      - if [ -s .platform/hooks/postdeploy/99_apply_nginx_config.sh ]; then echo "Hook script downloaded successfully."; else echo "Failed to download hook script."; exit 1; fi
-      - chmod +x .platform/hooks/postdeploy/99_apply_nginx_config.sh
+      - aws ssm get-parameter --name "/platform_postdeploy_hook" --query "Parameter.Value" --output text > .platform/confighooks/postdeploy/99_apply_nginx_config.sh
+      - if [ -s .platform/confighooks/postdeploy/99_apply_nginx_config.sh ]; then echo "Hook script downloaded successfully."; else echo "Failed to download hook script."; exit 1; fi
+      - chmod +x .platform/confighooks/postdeploy/99_apply_nginx_config.sh
 
   pre_build:
     commands:
@@ -69,8 +69,8 @@ phases:
       - echo "Checking if application.jar exists..."
       - if [ -f application.jar ]; then echo "application.jar found."; else echo "application.jar not found!"; exit 1; fi
       - if [ -f Procfile ]; then echo "Procfile found."; else echo "Procfile missing!"; exit 1; fi
-      - if [ -s .platform/nginx/nginx.conf ]; then echo "nginx.conf found."; else echo "nginx.conf missing!"; exit 1; fi
-      - if [ -s .platform/hooks/postdeploy/99_apply_nginx_config.sh ]; then echo "Hook script exists."; else echo "Hook script not found!"; exit 1; fi
+      - if [ -s .platform/nginx/conf.d/elasticbeanstalk/custom.conf ]; then echo "nginx.conf found."; else echo "nginx.conf missing!"; exit 1; fi
+      - if [ -s .platform/confighooks/postdeploy/99_apply_nginx_config.sh ]; then echo "Hook script exists."; else echo "Hook script not found!"; exit 1; fi
 
       # 파일 및 디렉토리 내용 확인
       - echo "Ensuring all files are ready for deployment..."
@@ -88,6 +88,5 @@ artifacts:
     - deployment.zip          # 모든 파일이 포함된 ZIP
     - application.jar         # 애플리케이션 JAR
     - Procfile                # Elastic Beanstalk 프로세스 설정
-    #- .ebextensions/**        # Elastic Beanstalk 설정 디렉토리
     - .platform/**            # 플랫폼 특정 설정 디렉토리
   discard-paths: no           # 파일 경로 구조 유지
