@@ -14,7 +14,7 @@ phases:
       - echo "Fetching secrets from Parameter Store..."
       - echo "Creating necessary directories..."
       - mkdir -p .platform/nginx/conf.d/elasticbeanstalk      # nginx 설정 디렉토리 생성
-      - mkdir -p .platform/hooks/postdeploy
+      - mkdir -p .platform/confighooks/postdeploy
 
       # nginx.conf 다운로드
       - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text > .platform/nginx/conf.d/elasticbeanstalk/custom.conf
