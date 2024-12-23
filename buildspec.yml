@@ -77,15 +77,14 @@ phases:
       - ls -l application.jar Procfile
       - ls -R .platform
 
-      # ZIP 파일 생성
-      - echo "Creating deployment ZIP file..."
-      - zip -r deployment.zip application.jar Procfile .platform
-      - echo "Checking ZIP file contents..."
-      - unzip -l deployment.zip
+      # 최종적으로 만들어짐 artifacts 구조보기
+      - echo "Checking build source directory..."
+      - echo $CODEBUILD_SRC_DIR
+      - ls -R $CODEBUILD_SRC_DIR
 
 artifacts:
   files:
     - application.jar         # 애플리케이션 JAR
     - Procfile                # Elastic Beanstalk 프로세스 설정
-    - .platform/**/*            # 플랫폼 특정 설정 디렉토리
+    - .platform/**            # 플랫폼 특정 설정 디렉토리
   discard-paths: no           # 파일 경로 구조 유지
