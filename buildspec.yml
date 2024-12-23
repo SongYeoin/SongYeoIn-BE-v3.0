@@ -13,15 +13,15 @@ phases:
       # AWS Systems Manager Parameter Store에서 설정 파일 가져오기
       - echo "Fetching secrets from Parameter Store..."
       - echo "Creating necessary directories..."
-      - mkdir -p .platform/nginx/conf.d/elasticbeanstalk      # nginx 설정 디렉토리 생성
+      - mkdir -p .platform/nginx      # nginx 설정 디렉토리 생성
       - mkdir -p .platform/hooks/postdeploy
 
       # nginx.conf 다운로드
-      - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text | sed 's/\\n/\n/g' > .platform/nginx/conf.d/elasticbeanstalk/custom.conf
+      - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text | sed 's/\\n/\n/g' > .platform/nginx/nginx.conf
       - echo "Checking nginx.conf content:"
-      - cat .platform/nginx/conf.d/elasticbeanstalk/custom.conf
-      - if [ -s .platform/nginx/conf.d/elasticbeanstalk/custom.conf ]; then echo "nginx.conf downloaded successfully."; else echo "Failed to download nginx.conf."; exit 1; fi
-      - chmod 644 .platform/nginx/conf.d/elasticbeanstalk/custom.conf
+      - cat .platform/nginx/nginx.conf
+      - if [ -s .platform/nginx/nginx.conf ]; then echo "nginx.conf downloaded successfully."; else echo "Failed to download nginx.conf."; exit 1; fi
+      - chmod 644 .platform/nginx/nginx.conf
 
       # Procfile 다운로드
       - aws ssm get-parameter --name "/Procfile" --query "Parameter.Value" --output text > Procfile
@@ -69,7 +69,7 @@ phases:
       - echo "Checking if application.jar exists..."
       - if [ -f application.jar ]; then echo "application.jar found."; else echo "application.jar not found!"; exit 1; fi
       - if [ -f Procfile ]; then echo "Procfile found."; else echo "Procfile missing!"; exit 1; fi
-      - if [ -s .platform/nginx/conf.d/elasticbeanstalk/custom.conf ]; then echo "nginx.conf found."; else echo "nginx.conf missing!"; exit 1; fi
+      - if [ -s .platform/nginx/nginx.conf ]; then echo "nginx.conf found."; else echo "nginx.conf missing!"; exit 1; fi
       - if [ -s .platform/hooks/postdeploy/99_apply_nginx_config.sh ]; then echo "Hook script exists."; else echo "Hook script not found!"; exit 1; fi
 
       # 파일 및 디렉토리 내용 확인
