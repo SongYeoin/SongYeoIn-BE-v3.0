@@ -6,6 +6,6 @@ import org.springframework.data.domain.Pageable;
 
 public interface NoticeRepositoryCustom {
 
-  Page<Notice> findNoticesByCourseIdAndGlobal(Long courseId, String titleKeyword, Pageable pageable);
+  Page<Notice> findNoticesByCourseId(Long courseId, String titleKeyword, Pageable pageable);
 
 }
