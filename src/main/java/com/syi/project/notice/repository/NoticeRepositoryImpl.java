@@ -19,15 +19,10 @@ public class NoticeRepositoryImpl implements NoticeRepositoryCustom {
   private final JPAQueryFactory queryFactory;
 
   @Override
-  public Page<Notice> findNoticesByCourseIdAndGlobal(Long courseId, String titleKeyword,
-      Pageable pageable) {
+  public Page<Notice> findNoticesByCourseId(Long courseId, String titleKeyword, Pageable pageable) {
     QNotice notice = QNotice.notice;
 
     // 조건 정의
-    BooleanExpression courseCondition = courseId != null
-        ? notice.course.id.eq(courseId)
-        : null;
-    BooleanExpression globalCondition = notice.isGlobal.isTrue();
     BooleanExpression titleCondition = titleKeyword != null && !titleKeyword.isBlank()
         ? notice.title.containsIgnoreCase(titleKeyword)
         : null;
@@ -36,16 +31,17 @@ public class NoticeRepositoryImpl implements NoticeRepositoryCustom {
     JPAQuery<Notice> query = queryFactory.selectFrom(notice)
         .where(
             notice.deletedBy.isNull(),
-            courseCondition != null ? courseCondition.or(globalCondition) : globalCondition,
+            notice.course.id.eq(courseId),
             titleCondition
         )
         .orderBy(
-            notice.isGlobal.desc(), // 전체 공지를 상단에 위치
-            notice.regDate.desc()   // 최신 공지 우선 정렬
+            notice.isPinned.desc(), // 상단고정 공지 우선
+            notice.regDate.desc()   // 최신순
         );
 
     // 페이징 처리
-    List<Notice> notices = query.offset(pageable.getOffset())
+    List<Notice> notices = query
+        .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .fetch();
 
@@ -54,7 +50,7 @@ public class NoticeRepositoryImpl implements NoticeRepositoryCustom {
         .from(notice)
         .where(
             notice.deletedBy.isNull(),
-            courseCondition != null ? courseCondition.or(globalCondition) : globalCondition,
+            notice.course.id.eq(courseId),
             titleCondition
         );
 
