@@ -150,14 +150,13 @@ public class NoticeService {
     log.info("공지사항 수정 시작 - id: {}, memberId: {}", id, memberId);
 
     Member member = getMember(memberId);
-
     Notice notice = noticeRepository.findByIdAndMemberIdAndDeletedByIsNull(id, memberId)
         .orElseThrow(() -> {
           log.error("공지사항 수정 권한이 없습니다 - id: {}, memberId: {}", id, memberId);
           return new InvalidRequestException(ErrorCode.NOTICE_UPDATE_DENIED);
         });
 
-    notice.update(requestDTO.getTitle(), requestDTO.getContent(), requestDTO.isGlobal());
+    notice.update(requestDTO.getTitle(), requestDTO.getContent(), requestDTO.isPinned());
     log.info("공지사항 기본 정보 수정 완료 - noticeId: {}", id);
 
     // 기존 파일 삭제
