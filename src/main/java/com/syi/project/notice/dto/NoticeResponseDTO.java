@@ -1,10 +1,12 @@
 package com.syi.project.notice.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.notice.entity.Notice;
 import com.syi.project.notice.entity.NoticeFile;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,6 +19,9 @@ public class NoticeResponseDTO {
 
   @Schema(description = "공지사항 ID", example = "1")
   private final Long id;
+
+  @Schema(description = "교육과정 ID", example = "1")
+  private final Long courseId;
 
   @Schema(description = "공지사항 제목", example = "공지사항 제목")
   private final String title;
@@ -31,6 +36,7 @@ public class NoticeResponseDTO {
   private final Long viewCount;
 
   @Schema(description = "상단고정 여부", example = "false")
+  @JsonProperty("isPinned")
   private final boolean isPinned;
 
   @Schema(description = "첨부 파일 목록")
@@ -43,10 +49,11 @@ public class NoticeResponseDTO {
   private final LocalDate modifyDate;
 
   @Builder
-  public NoticeResponseDTO(Long id, String title, String content,
+  public NoticeResponseDTO(Long id, Long courseId, String title, String content,
       String memberName, Long viewCount, boolean isPinned, List<FileResponseDTO> files,
       LocalDate regDate, LocalDate modifyDate) {
     this.id = id;
+    this.courseId = courseId;
     this.title = title;
     this.content = content;
     this.memberName = memberName;
@@ -60,6 +67,7 @@ public class NoticeResponseDTO {
   public static NoticeResponseDTO fromEntity(Notice notice, S3Uploader s3Uploader) {
     return NoticeResponseDTO.builder()
         .id(notice.getId())
+        .courseId(notice.getCourse().getId())
         .title(notice.getTitle())
         .content(notice.getContent())
         .memberName(notice.getMember().getName())

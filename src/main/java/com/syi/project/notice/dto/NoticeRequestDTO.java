@@ -5,6 +5,7 @@ import com.syi.project.course.entity.Course;
 import com.syi.project.notice.entity.Notice;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -22,6 +23,7 @@ public class NoticeRequestDTO {
   @Schema(description = "공지사항 내용", example = "공지사항 내용")
   private final String content;
 
+  @NotNull(message="교육과정 ID는 필수입니다.")
   @Schema(description = "교육과정 ID", example = "1")
   private final Long courseId;
 
