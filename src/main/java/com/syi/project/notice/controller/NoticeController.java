@@ -33,7 +33,7 @@ public class NoticeController {
 
   private final NoticeService noticeService;
 
-  @Operation(summary = "공지사항 목록 조회", description = "교육과정 공지사항과 전체 공지사항을 조회합니다.")
+  @Operation(summary = "공지사항 목록 조회", description = "교육과정별 공지사항을 조회합니다. 상단고정 공지사항이 우선 표시됩니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "공지사항 목록 조회 성공"),
       @ApiResponse(responseCode = "401", description = "인증 실패"),
@@ -41,7 +41,7 @@ public class NoticeController {
   })
   @GetMapping
   public ResponseEntity<Page<NoticeResponseDTO>> getNotices(
-      @Parameter(description = "교육과정 ID 필터") @RequestParam(required = false) Long courseId,
+      @Parameter(description = "교육과정 ID") @RequestParam(required = true) Long courseId,
       @Parameter(description = "제목 키워드 필터") @RequestParam(required = false) String titleKeyword,
       @AuthenticationPrincipal CustomUserDetails userDetails,
       Pageable pageable) {
