@@ -29,6 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
    * @param request HTTP 요청 객체
    * @return 필터링 제외 여부
    */
+  /*
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
     String requestURI = request.getRequestURI();
@@ -44,6 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         requestURI.startsWith("/member/register") ||
         requestURI.startsWith("/refresh"); // Refresh API 경로 제외
   }
+  */
 
   /**
    * HTTP 요청을 필터링하여 JWT 토큰을 검증하고 인증된 사용자를 SecurityContext에 설정

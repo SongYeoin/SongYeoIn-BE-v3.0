@@ -24,8 +24,9 @@ public class CustomUserDetails implements UserDetails {
    */
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    log.debug("사용자 권한 정보 반환 - 역할: {}", authUser.getRole());
-    return List.of(new SimpleGrantedAuthority(authUser.getRole().name()));
+    String roleWithPrefix = "ROLE_" + authUser.getRole().name();
+    log.info("사용자 권한 정보 반환 - 역할: {}", roleWithPrefix);
+    return List.of(new SimpleGrantedAuthority(roleWithPrefix));
   }
 
   public Long getId() {
