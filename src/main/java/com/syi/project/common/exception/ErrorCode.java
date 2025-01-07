@@ -56,13 +56,15 @@ public enum ErrorCode {
   JOURNAL_INVALID_DATE("JOURNAL_004", "유효하지 않은 교육일자입니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_FILE_REQUIRED("JOURNAL_005", "교육일지 파일 첨부는 필수입니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_DATE_OUT_OF_RANGE("JOURNAL_006", "교육일자가 과정 기간을 벗어났습니다.", HttpStatus.BAD_REQUEST),
-  JOURNAL_INVALID_FILE_TYPE("JOURNAL_007", "교육일지는 HWP, DOCX, DOC 형식만 첨부 가능합니다.",
-      HttpStatus.BAD_REQUEST),
-
+  JOURNAL_INVALID_FILE_TYPE("JOURNAL_007", "교육일지는 HWP, DOCX, DOC 형식만 첨부 가능합니다.", HttpStatus.BAD_REQUEST),
 
   // 출석 관련 에러
   ATTENDANCE_NOT_IN_RANGE("ATTENDANCE_001", "학원 네트워크에서만 출석이 가능합니다.", HttpStatus.FORBIDDEN),
-  ATTENDANCE_NOT_YET("ATTENDANCE_002", "교시 시작 5분 전보다 더 전에는 출석이 불가능합니다.", HttpStatus.FORBIDDEN);
+  ATTENDANCE_NOT_YET("ATTENDANCE_002", "교시 시작 5분 전보다 더 전에는 출석이 불가능합니다.", HttpStatus.FORBIDDEN),
+
+  // 수강신청 관련 에러 추가
+  ENROLL_NOT_FOUND("ENROLL_001", "수강 이력을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  ENROLL_ACCESS_DENIED("ENROLL_002", "수강 이력에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN);
 
   private final String code;
   private final String message;
