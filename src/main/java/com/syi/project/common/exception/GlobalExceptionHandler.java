@@ -60,11 +60,19 @@ public class GlobalExceptionHandler {
 
   // 404 예외 처리
   @ExceptionHandler(NoHandlerFoundException.class)
-  public ResponseEntity<Map<String, Object>> handleNoHandlerFoundException(
-      NoHandlerFoundException ex) {
-    log.warn("NoHandlerFoundException 발생: {}", ex.getMessage());
-    return new ResponseEntity<>(buildErrorResponse(ErrorCode.USER_NOT_FOUND),
-        ErrorCode.USER_NOT_FOUND.getHttpStatus());
+  public ResponseEntity<Map<String, Object>> handleNoHandlerFoundException(NoHandlerFoundException ex) {
+    log.warn("404 Not Found 발생 - Request URL: {}, Request Method: {}", ex.getRequestURL(),
+        ex.getHttpMethod());
+
+    // 404 전용 에러 코드 사용 또는 생성 필요
+    Map<String, Object> errorResponse = new HashMap<>();
+    errorResponse.put("timestamp", LocalDateTime.now());
+    errorResponse.put("status", HttpStatus.NOT_FOUND.value());
+    errorResponse.put("error", HttpStatus.NOT_FOUND.getReasonPhrase());
+    errorResponse.put("message", "요청하신 페이지를 찾을 수 없습니다.");
+    errorResponse.put("path", ex.getRequestURL());
+
+    return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
   }
 
   // 일반적인 예외 처리
