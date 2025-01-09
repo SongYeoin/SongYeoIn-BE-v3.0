@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -45,12 +46,12 @@ public class Attendance {
   //@PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
   @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
-  private LocalDateTime enrollDate;
+  private LocalDateTime enrollDate = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
 
   //@PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
   @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
-  private LocalDateTime modifiedDate;
+  private LocalDateTime modifiedDate = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
 
   @NotNull(message = "교시 ID는 필수입니다.")
   @Column(nullable = false)
@@ -72,8 +73,8 @@ public class Attendance {
     this.id = id;
     this.status = status;
     this.date = date != null ? date : LocalDate.now(ZoneId.of("Asia/Seoul"));
-    this.enrollDate = enrollDate != null ? enrollDate : LocalDateTime.now(ZoneId.of("Asia/Seoul"));
-    this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+    this.enrollDate = enrollDate != null ? enrollDate : ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+    this.modifiedDate = modifiedDate != null ? modifiedDate : ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
     this.periodId = periodId;
     this.courseId = courseId;
     this.memberId = memberId;
