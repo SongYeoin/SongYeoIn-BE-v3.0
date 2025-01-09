@@ -1,5 +1,8 @@
 package com.syi.project.attendance.service;
 
+import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_NOT_IN_RANGE;
+import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_NOT_YET;
+
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.StudentAllAttendRequestDTO;
@@ -10,12 +13,11 @@ import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceS
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
-import com.syi.project.attendance.exception.AttendanceNotYetException;
-import com.syi.project.attendance.exception.NotInRangeException;
 import com.syi.project.attendance.repository.AttendanceRepository;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.common.enums.AttendanceStatus;
+import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.repository.CourseRepository;
 import com.syi.project.enroll.repository.EnrollRepository;
@@ -43,7 +45,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
@@ -322,7 +323,7 @@ public class AttendanceService {
 
     if (!isWithinNetwork(userIp)) {
       log.error("User IP 가 허용된 범주 안에 있지 않습니다: {}", userIp);
-      throw new NotInRangeException("학원 네트워크에서만 출석이 가능합니다.", HttpStatus.FORBIDDEN);
+      throw new InvalidRequestException(ATTENDANCE_NOT_IN_RANGE);
     }
 
     status = checkIfWithinTimeWindow(period);
@@ -458,7 +459,7 @@ public class AttendanceService {
 
     // 교시 시작 5분 전보다 더 이른 경우 예외 처리
     if (now.isBefore(allowedStart)) {
-      throw new AttendanceNotYetException("교시 시작 5분 전보다 더 전에는 출석이 불가능합니다.");
+      throw new InvalidRequestException(ATTENDANCE_NOT_YET);
     }
 
     // 교시 시작 5분 전 ~ 교시 시작 10분 후 => 출석 가능
