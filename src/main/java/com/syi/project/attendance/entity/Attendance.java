@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -46,12 +45,14 @@ public class Attendance {
   //@PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
   @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
-  private LocalDateTime enrollDate = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+  private LocalDateTime enrollDate = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
+      .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
 
   //@PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
   @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
-  private LocalDateTime modifiedDate = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+  private LocalDateTime modifiedDate = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
+      .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
 
   @NotNull(message = "교시 ID는 필수입니다.")
   @Column(nullable = false)
@@ -73,8 +74,10 @@ public class Attendance {
     this.id = id;
     this.status = status;
     this.date = date != null ? date : LocalDate.now(ZoneId.of("Asia/Seoul"));
-    this.enrollDate = enrollDate != null ? enrollDate : ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
-    this.modifiedDate = modifiedDate != null ? modifiedDate : ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+    this.enrollDate = enrollDate != null ? enrollDate : ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
+        .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();;
+    this.modifiedDate = modifiedDate != null ? modifiedDate : ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
+        .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
     this.periodId = periodId;
     this.courseId = courseId;
     this.memberId = memberId;
