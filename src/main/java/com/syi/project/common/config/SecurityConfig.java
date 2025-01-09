@@ -66,7 +66,7 @@ public class SecurityConfig {
             // OPTIONS 메서드에 대해 인증 없이 허용
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             // 인증 없이 접근 가능한 경로 설정
-            .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
+            .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/favicon.ico",
                 "/webjars/**", "/", "/admin/member/login", "/member/login", "/member/check-username", "/member/check-email", "/member/register", "/member/logout", "/refresh").permitAll()
             // 해당 경로는 인증 필요
             .requestMatchers("/jwt/test","/enrollments/my").authenticated()
