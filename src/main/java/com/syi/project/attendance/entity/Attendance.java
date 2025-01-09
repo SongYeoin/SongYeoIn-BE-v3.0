@@ -42,12 +42,12 @@ public class Attendance {
   private LocalDate date;
 
   @NotNull(message = "등록일은 필수입니다.")
-  @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
   @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
   private LocalDateTime enrollDate;
 
-  @PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
   @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
   private LocalDateTime modifiedDate;
