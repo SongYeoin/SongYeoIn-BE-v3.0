@@ -209,7 +209,7 @@ public class ScheduleService {
   public void deletePeriod(Long memberId,Long courseId) {
     log.info("교시 삭제 By 교육 과정 ID: {} , 삭제자: {}", courseId, memberId);
 
-
+    // Schedule 조회
     Schedule existingSchedule = scheduleRepository.findByCourseId(courseId);
 
     if(existingSchedule == null){
@@ -217,24 +217,23 @@ public class ScheduleService {
       throw new NoSuchElementException("Schedule not found with courseId: " + courseId);
     }
 
-
+    // Period 조회 (없는 경우에도 에러 발생하지 않도록 처리)
     List<Period> existingPeriod = periodRepository.findByCourseId(courseId);
 
-    if(existingPeriod == null || existingPeriod.isEmpty()){
-      log.error("Period not found with courseId: {}", courseId);
-      throw new NoSuchElementException("Period not found with courseId " + courseId);
+    if (existingPeriod != null && !existingPeriod.isEmpty()) {
+      // Period 삭제
+      for (Period period : existingPeriod) {
+        period.updateDeletedBy(memberId);
+        log.info("periodId: {} deletedBy로 삭제", period.getId());
+        periodRepository.save(period);
+      }
+      log.info("모든 Period 삭제 완료 for courseId: {}", courseId);
+    } else {
+      log.info("Period not found for courseId: {}, 삭제 생략", courseId);
     }
 
-    // 2. List<Period> 먼저 삭제하기
-    for(Period period : existingPeriod){
-      period.updateDeletedBy(memberId);
-      log.info("periodId: {} deletedBy로 삭제", period.getId());
-      // deletedBy로 삭제 완료
-      periodRepository.save(period);
-      log.info("periodId: {} 삭제 완료", period.getId());
-    }
 
-    log.info("ScheduleId: {} deletedBy로 삭제", existingSchedule.getId());
+    log.info("ScheduleId: {} deletedBy로 삭제 시작", existingSchedule.getId());
     existingSchedule.updateDeletedBy(memberId);
     scheduleRepository.save(existingSchedule);
     log.info("ScheduleId: {} 삭제 완료", existingSchedule.getId());
