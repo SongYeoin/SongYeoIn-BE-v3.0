@@ -100,21 +100,13 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
   }
 
   @Override
-  public void deleteEnrollmentByCourseId(Long adminId, Long courseId) {
+  public void deleteEnrollmentByCourseId(Long enrollId,Long adminId, Long courseId) {
     queryFactory.update(enroll)
         .set(enroll.deletedBy, adminId)
-        .where(enroll.courseId.eq(courseId))
+        .where(enroll.courseId.eq(courseId).and(enroll.id.eq(enrollId)))
         .execute();
   }
 
-  /*@Override
-  public List<Long> findStudentIdByCourseId(Long courseId) {
-    return queryFactory.select(enroll.memberId)
-        .from(enroll)
-        .where(enroll.courseId.eq(courseId)
-            .and(enroll.deletedBy.isNull()))
-        .fetch();
-  }*/
   @Override
   public List<Long> findStudentIdByCourseId(Long courseId) {
     return queryFactory.select(enroll.memberId)

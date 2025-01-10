@@ -92,13 +92,15 @@ public class EnrollService {
     log.info("교육과정 ID로 수강 목록 삭제: {}, 삭제자(관리자) ID: {}", courseId, adminId);
 
     List<Enroll> existingEnroll = enrollRepository.findEnrollmentsByCourseId(courseId);
-    if (existingEnroll == null || existingEnroll.isEmpty()) {
-      throw new EntityNotFoundException("해당 courseId의 수강 신청이 존재하지 않습니다: " + courseId);
-    }
 
-    for (Enroll enroll : existingEnroll) {
-      enrollRepository.deleteEnrollmentByCourseId(adminId, courseId);
-      log.info("1개의 수강신청 목록 삭제");
+    // 수강 정보 존재하면 삭제
+    if (existingEnroll != null && !existingEnroll.isEmpty()) {
+      for (Enroll enroll : existingEnroll) {
+        enrollRepository.deleteEnrollmentByCourseId(enroll.getId(), adminId, courseId);
+        log.info("1개의 수강신청 목록 삭제");
+      }
+    }else{
+      log.info("해당 courseId {}의 수강 신청이 존재하지 않습니다, 삭제 생략", courseId);
     }
 
     log.info("courseId {}에 해당하는 수강신청 목록 삭제 완료", courseId);
