@@ -31,14 +31,36 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
             course.id,
             course.name,
             course.adminName,
-            course.teacherName,  // 추가
+            course.teacherName,
             course.enrollDate,
             course.startDate,
             course.endDate
         ))
         .from(enroll)
         .join(course).on(enroll.courseId.eq(course.id))
-        .where(enroll.memberId.eq(memberId).and(enroll.deletedBy.isNull()))
+        .where(enroll.memberId.eq(memberId)
+            .and(enroll.deletedBy.isNull())
+            .and(course.deletedBy.isNull())
+        )
+        .fetch();
+  }
+
+  @Override
+  public List<EnrollResponseDTO> findAllActiveCourses() {
+    return queryFactory
+        .select(Projections.constructor(
+            EnrollResponseDTO.class,
+            course.id,
+            course.id,
+            course.name,
+            course.adminName,
+            course.teacherName,
+            course.enrollDate,
+            course.startDate,
+            course.endDate
+        ))
+        .from(course)
+        .where(course.deletedBy.isNull())
         .fetch();
   }
 

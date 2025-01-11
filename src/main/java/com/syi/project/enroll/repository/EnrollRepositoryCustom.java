@@ -10,6 +10,8 @@ public interface EnrollRepositoryCustom {
 
   List<EnrollResponseDTO> findEnrollmentsByMemberId(Long memberId);
 
+  List<EnrollResponseDTO> findAllActiveCourses();
+
   void deleteEnrollment(Long enrollmentId, Long memberId);
 
   List<Member> findStudentByCourseId(Long courseId);
