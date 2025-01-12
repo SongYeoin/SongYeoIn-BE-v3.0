@@ -1,5 +1,6 @@
 package com.syi.project.enroll.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.querydsl.core.annotations.QueryProjection;
 import com.syi.project.enroll.entity.Enroll;
 import java.time.LocalDate;
@@ -18,6 +19,18 @@ public class EnrollResponseDTO {
   private LocalDate endDate;  // 종강일
   private Long memberId;
   private Long deletedBy;
+
+  // name으로도 접근 가능하도록 설정
+  @JsonProperty("name")
+  public String getName() {
+    return this.courseName;
+  }
+
+  // courses로도 접근 가능하도록 설정
+  @JsonProperty("courses")
+  public String getCourses() {
+    return this.courseName;
+  }
 
   public EnrollResponseDTO(Enroll enroll) {
     this.id = enroll.getId();
