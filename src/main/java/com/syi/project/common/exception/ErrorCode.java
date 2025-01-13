@@ -62,7 +62,7 @@ public enum ErrorCode {
   ATTENDANCE_NOT_IN_RANGE("ATTENDANCE_001", "학원 네트워크에서만 출석이 가능합니다.", HttpStatus.FORBIDDEN),
   ATTENDANCE_NOT_YET("ATTENDANCE_002", "교시 시작 5분 전보다 더 전에는 출석이 불가능합니다.", HttpStatus.FORBIDDEN),
 
-  // 수강신청 관련 에러 추가
+  // 수강신청 관련 에러
   ENROLL_NOT_FOUND("ENROLL_001", "수강 이력을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   ENROLL_ACCESS_DENIED("ENROLL_002", "수강 이력에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN);
 
