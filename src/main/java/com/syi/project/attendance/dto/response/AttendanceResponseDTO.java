@@ -20,42 +20,6 @@ import org.springframework.data.domain.Page;
 @Schema(description = "출석 응답 DTO")
 public class AttendanceResponseDTO {
 
-  public interface Update {
-
-  }
-
-  /*@Getter
-  @ToString
-  public static class CourseListDTO{
-    private List<CourseDTO> courseList;
-
-    @Builder
-    public CourseListDTO(List<CourseDTO> courseList) {
-      this.courseList = courseList;
-    }
-  }*/
-
-
-  @Getter
-  @ToString
-  public static class AdminAttendListDTO {
-
-    private Long studentId;
-    private String studentName;
-    private String courseName;
-    //private List<CourseListDTO> courseList;
-    private Page<AttendListResponseDTO> attends;
-
-
-
-
-    /*@Builder
-    public AdminAttendListDTO(List<CourseListDTO> courseList, Page<AdminAttendList> attends) {
-      this.courseList = courseList;
-      this.attends = attends;
-    }*/
-  }
-
   @Getter
   @ToString
   public static class AttendListResponseDTO {
@@ -158,19 +122,6 @@ public class AttendanceResponseDTO {
     }
   }
 
-/*  @Getter
-  @ToString
-  public static class AttendanceMainDTO {
-
-    private List<AttendanceTableDTO> tableDTOS;
-    private List<String> periods;
-
-    @Builder
-    public AttendanceMainDTO(List<AttendanceTableDTO> tableDTOS, List<String> periods) {
-      this.tableDTOS = tableDTOS;
-      this.periods = periods;
-    }
-  }*/
 
   @Getter
   @ToString
@@ -178,21 +129,24 @@ public class AttendanceResponseDTO {
     private String periodName;
     private String status; // 출석, 결석, 지각 등
     private Long periodId;
+    private LocalDateTime enterTime;
+    private LocalDateTime exitTime;
 
     @Builder
-    public AttendanceTableDTO(String periodName, String status, Long periodId) {
+    public AttendanceTableDTO(String periodName, String status, Long periodId, LocalDateTime enterTime,LocalDateTime exitTime ) {
       this.periodName = periodName;
       this.status = status;
       this.periodId = periodId;
+      this.enterTime = enterTime;
+      this.exitTime = exitTime;
     }
   }
 
 
-  //@NotNull(groups = Update.class, message = "출석 ID는 필수입니다.")
   private Long attendanceId;
 
   @Schema(description = "출석 상태", example = "")
-  @NotNull(groups = Update.class, message = "출석 상태는 필수입니다.")
+  @NotNull(message = "출석 상태는 필수입니다.")
   private String status;
 
   @Schema(description = "출석 날짜", example = "")
@@ -224,11 +178,17 @@ public class AttendanceResponseDTO {
   @Schema(description = "예외시 표시 메시지", example = "학원 네트워크에서만 출석이 가능합니다.")
   private String resultMessage;
 
+  @Schema(description = "입실 시간", example = "03:11:12 2025-01-22")
+  private LocalDateTime enterTime; // 입실 시간
+
+  @Schema(description = "퇴실 시간", example = "03:11:12 2025-01-22")
+  private LocalDateTime exitTime; // 퇴실 시간
+
 
   @Builder
   public AttendanceResponseDTO(Long attendanceId, String status, LocalDate date,
       LocalDateTime enrollDate, LocalDateTime modifiedDate, Long periodId, Long courseId,
-      Long memberId, String memo ,String resultMessage) {
+      Long memberId, String memo ,String resultMessage, LocalDateTime enterTime, LocalDateTime exitTime) {
     this.attendanceId = attendanceId;
     this.status = status;
     this.date = date;
@@ -239,24 +199,8 @@ public class AttendanceResponseDTO {
     this.memberId = memberId;
     this.memo = memo;
     this.resultMessage = resultMessage;
+    this.enterTime = enterTime;
+    this.exitTime = exitTime;
   }
 
- /* public static AttendanceResponseDTO fromEntity(Attendance attendance) {
-    return AttendanceResponseDTO.builder()
-        .attendanceId(attendance.getId())
-        .status(attendance.getStatus())
-        .date(attendance.getDate())
-        .enrollDate(attendance.getEnrollDate())
-        .modifiedDate(attendance.getModifiedDate())
-        .periodId(attendance.getPeriodId())
-        .courseId(attendance.getPeriodId())
-        .memberId(attendance.getMemberId())
-        .memo(attendance.getMemo())
-        .build();
-  }*/
-  public static AttendanceResponseDTO withMessage(String message) {
-    return AttendanceResponseDTO.builder()
-        .resultMessage(message)
-        .build();
-  }
 }
