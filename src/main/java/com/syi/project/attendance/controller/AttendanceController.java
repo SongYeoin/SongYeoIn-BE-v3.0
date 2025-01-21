@@ -12,12 +12,12 @@ import com.syi.project.auth.service.MemberService;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.service.CourseService;
+import com.syi.project.period.dto.PeriodResponseDTO;
 import com.syi.project.schedule.service.ScheduleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -54,15 +54,16 @@ public class AttendanceController {
       responses = {
           @ApiResponse(responseCode = "200", description = "출석을 성공적으로 등록했습니다."),
       })
-  @PostMapping("/enroll/{periodId}")
-  public void createAttendance(
-      @AuthenticationPrincipal CustomUserDetails userDetails,
-      @PathVariable Long periodId, HttpServletRequest request) {
+  @PostMapping("/enroll")
+  public AttendanceResponseDTO createAttendance(
+      @AuthenticationPrincipal CustomUserDetails userDetails, HttpServletRequest request,
+      @RequestBody AttendanceRequestDTO attendanceRequestDTO) {
     log.info("출석 등록 요청");
-    log.info("등록 요청된 periodId: {}", periodId);
-    attendanceService.createAttendance(userDetails,periodId, request);
+    AttendanceResponseDTO responseDTO = attendanceService.createAttendance(userDetails, attendanceRequestDTO.getCourseId(),
+        attendanceRequestDTO.isEntering(), request);
     log.info("출석 등록 완료");
 
+    return responseDTO;
   }
 
   // 출석 전체 조회_수강생(일주일단위로)
@@ -125,6 +126,17 @@ public class AttendanceController {
   ) {
     List<AttendanceTableDTO> attendanceList = attendanceService.getAttendanceByCourseAndDate(
         userDetails, courseId, date);
+    return ResponseEntity.ok(attendanceList);
+  }
+
+  /* 메인 페이지에서 초기 로딩으로 해당 반의 시간표 불러오기 */
+  @GetMapping("/period/all/{courseId}")
+  public ResponseEntity<List<PeriodResponseDTO>> getPeriodsByDateAndDayOfWeek(
+      @PathVariable Long courseId,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    List<PeriodResponseDTO> attendanceList = attendanceService.getPeriodsByDateAndDayOfWeek(
+        userDetails, courseId);
     return ResponseEntity.ok(attendanceList);
   }
 
