@@ -50,7 +50,7 @@ public class JournalService {
   private final S3Uploader s3Uploader;
   private final EnrollRepository enrollRepository;
 
-  private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("hwp", "docx", "doc");
+  private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("hwp", "hwpx", "docx", "doc");
 
   // 신규: 공통 검증 메서드들
   private Member validateAndGetMember(Long memberId) {
@@ -315,17 +315,39 @@ public class JournalService {
   }
 
   // 기존 메서드 유지
+//  public ResponseEntity<Resource> downloadJournalFile(Long journalId, Long memberId) {
+//    log.debug("교육일지 파일 다운로드 시작 - journalId: {}", journalId);
+//
+//    Member member = validateAndGetMember(memberId);
+//    Journal journal = validateAndGetJournal(journalId);
+//
+//    if (journal.getJournalFile() == null) {
+//      throw new IllegalArgumentException("첨부된 파일이 없습니다.");
+//    }
+//
+//    FileDownloadDTO downloadDTO = fileService.downloadFile(journal.getJournalFile().getFile().getId(), member);
+//    return fileService.getDownloadResponseEntity(downloadDTO);
+//  }
   public ResponseEntity<Resource> downloadJournalFile(Long journalId, Long memberId) {
     log.debug("교육일지 파일 다운로드 시작 - journalId: {}", journalId);
 
     Member member = validateAndGetMember(memberId);
-    Journal journal = validateAndGetJournal(journalId);
+    Journal journal = journalRepository.findByIdWithFile(journalId)  // 변경된 부분
+        .orElseThrow(() -> {
+          log.error("교육일지를 찾을 수 없음 - journalId: {}", journalId);
+          return new IllegalArgumentException("존재하지 않는 교육일지입니다.");
+        });
 
     if (journal.getJournalFile() == null) {
       throw new IllegalArgumentException("첨부된 파일이 없습니다.");
     }
 
-    FileDownloadDTO downloadDTO = fileService.downloadFile(journal.getJournalFile().getFile().getId(), member);
+    Long fileId = journal.getJournalFile().getFile().getId();
+    log.debug("파일 다운로드 시도 - fileId: {}", fileId);
+
+    FileDownloadDTO downloadDTO = fileService.downloadFile(fileId, member);
+    log.info("파일 다운로드 성공 - journalId: {}, fileId: {}", journalId, fileId);
+
     return fileService.getDownloadResponseEntity(downloadDTO);
   }
 
