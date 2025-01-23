@@ -69,17 +69,14 @@ public class NoticeService {
   @Transactional
   public NoticeResponseDTO createNotice(Long memberId, NoticeRequestDTO requestDTO,
       List<MultipartFile> files) {
-    log.info("공지사항 생성 시작 - memberId: {}, courseId: {}", memberId, requestDTO.getCourseId());
-    Member member = getMember(memberId);
+    log.info("공지사항 생성 시작 - memberId: {}, courseId: {}, isPinned: {}", memberId, requestDTO.getCourseId(), requestDTO.isPinned());
 
-    Course course = null;
-    if (!requestDTO.isGlobal() && requestDTO.getCourseId() != null) {
-      course = courseRepository.findById(requestDTO.getCourseId())
-          .orElseThrow(() -> {
-            log.error("교육과정을 찾을 수 없습니다 - courseId: {}", requestDTO.getCourseId());
-            return new InvalidRequestException(ErrorCode.COURSE_NOT_FOUND);
-          });
-    }
+    Member member = getMember(memberId);
+    Course course = courseRepository.findById(requestDTO.getCourseId())
+        .orElseThrow(() -> {
+          log.error("교육과정을 찾을 수 없습니다 - courseId: {}", requestDTO.getCourseId());
+          return new InvalidRequestException(ErrorCode.COURSE_NOT_FOUND);
+        });
 
     Notice notice = requestDTO.toEntity(member, course);
     noticeRepository.save(notice);
@@ -112,16 +109,10 @@ public class NoticeService {
     log.info("공지사항 목록 조회 시작 - courseId: {}, memberId: {}, titleKeyword: {}, pageable: {}",
         courseId, memberId, titleKeyword, pageable);
 
-    Page<Notice> notices = noticeRepository.findNoticesByCourseIdAndGlobal(courseId, titleKeyword,
-        pageable);
+    Page<Notice> notices = noticeRepository.findNoticesByCourseId(courseId, titleKeyword, pageable);
+    Page<NoticeResponseDTO> noticeDtos = notices.map(notice ->
+        NoticeResponseDTO.fromEntity(notice, s3Uploader));
 
-    AtomicInteger postNumberCounter = new AtomicInteger(
-        notices.getNumber() * notices.getSize() + 1);
-    Page<NoticeResponseDTO> noticeDtos = notices.map(notice -> {
-      String postNumber =
-          notice.isGlobal() ? "전체" : String.valueOf(postNumberCounter.getAndIncrement());
-      return NoticeResponseDTO.fromEntityWithPostNumber(notice, postNumber, s3Uploader);
-    });
     log.info("공지사항 목록 조회 완료 - 총 조회된 공지 수: {}", noticeDtos.getContent().size());
     return noticeDtos;
   }
@@ -159,14 +150,13 @@ public class NoticeService {
     log.info("공지사항 수정 시작 - id: {}, memberId: {}", id, memberId);
 
     Member member = getMember(memberId);
-
     Notice notice = noticeRepository.findByIdAndMemberIdAndDeletedByIsNull(id, memberId)
         .orElseThrow(() -> {
           log.error("공지사항 수정 권한이 없습니다 - id: {}, memberId: {}", id, memberId);
           return new InvalidRequestException(ErrorCode.NOTICE_UPDATE_DENIED);
         });
 
-    notice.update(requestDTO.getTitle(), requestDTO.getContent(), requestDTO.isGlobal());
+    notice.update(requestDTO.getTitle(), requestDTO.getContent(), requestDTO.isPinned());
     log.info("공지사항 기본 정보 수정 완료 - noticeId: {}", id);
 
     // 기존 파일 삭제

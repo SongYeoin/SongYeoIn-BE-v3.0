@@ -20,7 +20,7 @@ public interface EnrollRepositoryCustom {
 
   List<Enroll> findEnrollmentsByCourseId(Long courseId);
 
-  void deleteEnrollmentByCourseId(Long adminId, Long courseId);
+  void deleteEnrollmentByCourseId(Long enrollId,Long adminId, Long courseId);
 
   List<Long> findStudentIdByCourseId(Long courseId);
 

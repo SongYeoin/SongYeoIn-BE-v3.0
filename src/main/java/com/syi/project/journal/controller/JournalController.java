@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
@@ -115,5 +116,15 @@ public class JournalController {
     log.info("교육일지 삭제 요청 - journalId: {}, memberId: {}", journalId, memberId);
     journalService.deleteJournal(memberId, journalId);
     return ResponseEntity.noContent().build();
+  }
+
+  @Operation(summary = "교육일지 파일 다운로드", description = "수강생이 교육일지 파일을 다운로드합니다.")
+  @GetMapping("/{journalId}/download")
+  public ResponseEntity<Resource> downloadJournalFile(
+      @PathVariable Long journalId,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    log.info("교육일지 파일 다운로드 요청 - journalId: {}", journalId);
+    return journalService.downloadJournalFile(journalId, userDetails.getId());
   }
 }

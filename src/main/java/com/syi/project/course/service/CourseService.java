@@ -236,6 +236,14 @@ public class CourseService {
   public void deleteCourse(Long memberId, Long courseId) {
     log.info("교육 과정 ID {} 삭제, 삭제자 {}", courseId, memberId);
 
+    // 교시 삭제
+    scheduleService.deletePeriod(memberId, courseId);
+    log.info("시간표, 교시 삭제 완료");
+
+    // enroll 에서  삭제
+    enrollService.deleteEnrollmentByCourseId(memberId, courseId);
+    log.info("수강 테이블에서 수강생 목록 삭제 완료");
+
     Course existingCourse = courseRepository.findById(courseId)
         .orElseThrow(() -> {
           log.error("Course not found with courseId: {}", courseId);
@@ -248,13 +256,6 @@ public class CourseService {
     courseRepository.save(existingCourse);
     log.info("교육 과정 ID {}, 삭제자 {} 삭제 완료", courseId, memberId);
 
-    // 교시 삭제
-    scheduleService.deletePeriod(memberId, courseId);
-    log.info("시간표, 교시 삭제 완료");
-
-    // enroll 에서  삭제
-    enrollService.deleteEnrollmentByCourseId(memberId, courseId);
-    log.info("수강 테이블에서 수강생 목록 삭제 완료");
 
     log.info("courseId {}에 대한 시간표, 수강신청 목록 삭제 완료", courseId);
 

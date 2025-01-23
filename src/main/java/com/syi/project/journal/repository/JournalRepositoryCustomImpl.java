@@ -22,7 +22,9 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
     return queryFactory
         .selectFrom(journal)
         .leftJoin(journal.member).fetchJoin()
-        .leftJoin(journal.course).fetchJoin();
+        .leftJoin(journal.course).fetchJoin()
+        .leftJoin(journal.journalFile).fetchJoin()  // 추가
+        .leftJoin(journal.journalFile.file).fetchJoin();  // 추가
   }
 
   // 검색 조건을 통합한 메서드
