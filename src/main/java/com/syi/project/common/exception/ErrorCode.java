@@ -57,6 +57,8 @@ public enum ErrorCode {
   JOURNAL_FILE_REQUIRED("JOURNAL_005", "교육일지 파일 첨부는 필수입니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_DATE_OUT_OF_RANGE("JOURNAL_006", "교육일자가 과정 기간을 벗어났습니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_INVALID_FILE_TYPE("JOURNAL_007", "교육일지는 HWP, HWPX, DOCX, DOC 형식만 첨부 가능합니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_FILE_NOT_FOUND("JOURNAL_008", "선택된 교육일지 중 파일이 없는 항목이 있습니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_DOWNLOAD_FAILED("JOURNAL_009", "교육일지 일괄 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
   // 출석 관련 에러
   ATTENDANCE_NOT_IN_RANGE("ATTENDANCE_001", "학원 네트워크에서만 출석이 가능합니다.", HttpStatus.FORBIDDEN),

@@ -1,18 +1,25 @@
 package com.syi.project.file.service;
 
+import com.amazonaws.util.IOUtils;
 import com.syi.project.auth.entity.Member;
+import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.file.dto.FileDownloadDTO;
 import com.syi.project.file.dto.FileUpdateDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.enums.FileStatus;
 import com.syi.project.file.repository.FileRepository;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -188,14 +195,36 @@ public class FileService {
     }
   }
 
-  public ResponseEntity<Resource> getDownloadResponseEntity(FileDownloadDTO downloadDTO) {
-    String encodedFileName = URLEncoder.encode(downloadDTO.getOriginalName(), StandardCharsets.UTF_8)
-        .replaceAll("\\+", "%20");
+  // 일괄 다운로드 zip파일
+  @Transactional(readOnly = true)
+  public Resource downloadFilesAsZip(List<File> files, String zipFileName) {
+    try {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      ZipOutputStream zos = new ZipOutputStream(baos);
 
+      for (File file : files) {
+        InputStream inputStream = s3Uploader.downloadFile(file.getPath());
+        ZipEntry entry = new ZipEntry(file.getOriginalName());
+        zos.putNextEntry(entry);
+        IOUtils.copy(inputStream, zos);
+        zos.closeEntry();
+        inputStream.close();
+      }
+
+      zos.close();
+      return new ByteArrayResource(baos.toByteArray());
+    } catch (IOException e) {
+      log.error("파일 압축 실패: {}", e.getMessage());
+      throw new RuntimeException("파일 압축에 실패했습니다.", e);
+    }
+  }
+
+  //추가
+  public ResponseEntity<Resource> getDownloadResponseEntity(FileDownloadDTO downloadDTO) {
     return ResponseEntity.ok()
         .contentType(MediaType.parseMediaType(downloadDTO.getContentType()))
-        .header(HttpHeaders.CONTENT_DISPOSITION,
-            "attachment; filename*=UTF-8''" + encodedFileName)
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" +
+            URLEncoder.encode(downloadDTO.getOriginalName(), StandardCharsets.UTF_8))
         .body(downloadDTO.getResource());
   }
 
