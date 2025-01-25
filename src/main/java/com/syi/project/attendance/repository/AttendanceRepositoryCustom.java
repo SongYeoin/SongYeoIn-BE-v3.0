@@ -9,6 +9,7 @@ import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoI
 import com.syi.project.attendance.entity.Attendance;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -29,6 +30,9 @@ public interface AttendanceRepositoryCustom {
 
   MemberInfoInDetail findMemberInfoByAttendance(Long courseId, Long studentId, LocalDate date);
 
-  List<AttendanceTableDTO> finAttendanceStatusByPeriods(Long id, Long courseId, LocalDate date,
+  List<AttendanceTableDTO> findAttendanceStatusByPeriods(Long id, Long courseId, LocalDate date,
       String dayOfWeek);
+
+ Optional<Attendance> findByMemberIdAndPeriodIdAndDate(Long memberId, Long periodId,
+     LocalDate localDate);
 }
