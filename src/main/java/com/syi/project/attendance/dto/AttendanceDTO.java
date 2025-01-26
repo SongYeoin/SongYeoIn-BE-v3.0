@@ -40,6 +40,9 @@ public class AttendanceDTO {
   @Schema(description = "메모", example = "수강생 네트워크 문제로 출석 상태 수정(지각->출석)")
   private String memo;
 
+  private LocalDateTime enterTime; // 입실 시간
+
+  private LocalDateTime exitTime; // 퇴실 시간
 
   private String periodName;
 
@@ -47,7 +50,7 @@ public class AttendanceDTO {
   @Builder
   public AttendanceDTO(Long id, String status, LocalDate date, LocalDateTime enrollDate,
       LocalDateTime modifiedDate, Long periodId, Long courseId, Long memberId, String memo,
-      String periodName) {
+      String periodName, LocalDateTime enterTime, LocalDateTime exitTime) {
     this.id = id;
     this.status = status;
     this.date = date;
@@ -58,5 +61,7 @@ public class AttendanceDTO {
     this.memberId = memberId;
     this.memo = memo;
     this.periodName = periodName;
+    this.enterTime = enterTime;
+    this.exitTime = exitTime;
   }
 }
