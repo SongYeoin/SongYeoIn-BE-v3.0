@@ -117,7 +117,7 @@ public class AdminAttendanceController {
     return ResponseEntity.ok(updateStatus);
   }
 
-//  일괄 결석 처리
+/*//  일괄 결석 처리
   @PostMapping("/absent")
   @Operation(summary = "일괄 결석 처리", description = "선택된 학생들을 일괄 결석 처리합니다.",
       responses = {
@@ -130,7 +130,7 @@ public class AdminAttendanceController {
     attendanceService.updateAbsentStatus(attendanceRequestDTO);
     //log.info("일괄 결석 처리 완료된 정보: {}", updateAbsent);
     return ResponseEntity.noContent().build();
-  }
+  }*/
 
   @GetMapping("/courses")
   public ResponseEntity<List<CourseListDTO>> getAllCoursesByAdminId(
