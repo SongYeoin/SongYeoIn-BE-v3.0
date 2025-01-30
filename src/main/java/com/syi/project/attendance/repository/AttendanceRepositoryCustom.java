@@ -1,5 +1,6 @@
 package com.syi.project.attendance.repository;
 
+import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
@@ -35,4 +36,6 @@ public interface AttendanceRepositoryCustom {
 
  Optional<Attendance> findByMemberIdAndPeriodIdAndDate(Long memberId, Long periodId,
      LocalDate localDate);
+
+  List<AttendanceDailyStats> findAttendanceStatsByMemberAndCourse(Long memberId, Long courseId);
 }
