@@ -8,6 +8,8 @@ import static com.syi.project.period.eneity.QPeriod.period;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
+import com.syi.project.attendance.dto.projection.QAttendanceDailyStats;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
@@ -443,6 +445,24 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
             .where(attendance.memberId.eq(memberId).and(attendance.periodId.eq(periodId)).and(attendance.date.eq(localDate)))
             .fetchOne()
     );
+  }
+
+  @Override
+  public List<AttendanceDailyStats> findAttendanceStatsByMemberAndCourse(Long memberId,
+      Long courseId) {
+    return queryFactory
+        .select(new QAttendanceDailyStats(
+            attendance.date,
+            attendance.status.count(),
+            attendance.status.when(AttendanceStatus.LATE).then(1L).otherwise(0L).sum(),
+            attendance.status.when(AttendanceStatus.ABSENT).then(1L).otherwise(0L).sum()
+        ))
+        .from(attendance)
+        .where(attendance.memberId.eq(memberId)
+            .and(attendance.courseId.eq(courseId)))
+        .groupBy(attendance.date)
+        .orderBy(attendance.date.asc())
+        .fetch();
   }
 
 
