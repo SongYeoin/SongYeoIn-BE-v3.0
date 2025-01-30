@@ -7,6 +7,7 @@ import com.syi.project.auth.dto.MemberLoginResponseDTO;
 import com.syi.project.auth.dto.MemberSignUpRequestDTO;
 import com.syi.project.auth.dto.MemberSignUpResponseDTO;
 import com.syi.project.auth.dto.MemberUpdateRequestDTO;
+import com.syi.project.auth.dto.PasswordResetResponseDTO;
 import com.syi.project.auth.entity.JwtBlacklist;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.entity.RefreshToken;
@@ -24,6 +25,7 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -259,6 +261,62 @@ public class MemberService {
     }
 
     return MemberDTO.fromEntity(member);
+  }
+  
+  // 비밀번호 초기화
+  @Transactional
+  public PasswordResetResponseDTO resetPassword(Long memberId) {
+    Member member = memberRepository.findByIdAndIsDeletedFalse(memberId)
+        .orElseThrow(() -> {
+          log.warn("비밀번호 초기화 실패 - 존재하지 않는 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    String temporaryPassword = generateTemporaryPassword();
+    String encodedPassword = passwordEncoder.encode(temporaryPassword);
+
+    member.updatePassword(encodedPassword);
+    member.setPasswordChangeRequired(true);
+
+    log.info("회원 비밀번호 초기화 완료 - 회원 ID: {}", memberId);
+
+    return PasswordResetResponseDTO.builder()
+        .temporaryPassword(temporaryPassword)
+        .resetTime(LocalDateTime.now())
+        .build();
+  }
+
+  private String generateTemporaryPassword() {
+    StringBuilder password = new StringBuilder();
+    Random random = new Random();
+
+    // 대문자, 소문자, 숫자, 특수문자 각각 최소 1개 포함
+    String upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    String lowerCase = "abcdefghijklmnopqrstuvwxyz";
+    String numbers = "0123456789";
+    String specialChars = "!@#$%^&*";
+
+    password.append(upperCase.charAt(random.nextInt(upperCase.length())));
+    password.append(lowerCase.charAt(random.nextInt(lowerCase.length())));
+    password.append(numbers.charAt(random.nextInt(numbers.length())));
+    password.append(specialChars.charAt(random.nextInt(specialChars.length())));
+
+    // 나머지 6자리는 모든 문자들 중에서 랜덤 선택
+    String allChars = upperCase + lowerCase + numbers + specialChars;
+    for (int i = 0; i < 6; i++) {
+      password.append(allChars.charAt(random.nextInt(allChars.length())));
+    }
+
+    // 생성된 비밀번호를 섞음
+    char[] passwordArray = password.toString().toCharArray();
+    for (int i = passwordArray.length - 1; i > 0; i--) {
+      int j = random.nextInt(i + 1);
+      char temp = passwordArray[i];
+      passwordArray[i] = passwordArray[j];
+      passwordArray[j] = temp;
+    }
+
+    return new String(passwordArray);
   }
 
   // 회원 탈퇴

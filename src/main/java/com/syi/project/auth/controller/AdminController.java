@@ -3,6 +3,7 @@ package com.syi.project.auth.controller;
 import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
+import com.syi.project.auth.dto.PasswordResetResponseDTO;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
@@ -130,6 +131,23 @@ public class AdminController {
     memberService.updateMemberRole(id, newRole);
     log.info("회원 역할 변경 성공 - 회원 ID: {}, 새로운 역할: {}", id, newRole);
     return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/reset-password/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
+  @Operation(summary = "회원 비밀번호 초기화", description = "관리자가 회원의 비밀번호를 임시 비밀번호로 초기화합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "비밀번호 초기화 성공"),
+      @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
+  public ResponseEntity<PasswordResetResponseDTO> resetMemberPassword(
+      @Parameter(description = "회원 ID", required = true) @PathVariable Long id) {
+
+    log.info("회원 비밀번호 초기화 요청 - 회원 ID: {}", id);
+    PasswordResetResponseDTO response = memberService.resetPassword(id);
+    log.info("회원 비밀번호 초기화 성공 - 회원 ID: {}", id);
+    return ResponseEntity.ok(response);
   }
 
 
