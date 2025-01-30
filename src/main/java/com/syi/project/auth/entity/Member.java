@@ -50,6 +50,9 @@ public class Member {
   @Column(nullable = false, length = 7)
   private Role role;
 
+  @Column(nullable = false)
+  private boolean passwordChangeRequired = false;
+
   private String profileUrl;
 
   // 기본 생성자
@@ -88,5 +91,9 @@ public class Member {
 
   public void deactivate() {
     this.isDeleted = true;
+  }
+
+  public void setPasswordChangeRequired(boolean required) {
+    this.passwordChangeRequired = required;
   }
 }
