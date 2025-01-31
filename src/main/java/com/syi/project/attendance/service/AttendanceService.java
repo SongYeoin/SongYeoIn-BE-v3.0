@@ -6,6 +6,8 @@ import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_NOT_AL
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_EXIT_NOT_ALLOWED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_NOT_IN_RANGE;
 
+import com.syi.project.attendance.AttendanceCalculator;
+import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.StudentAllAttendRequestDTO;
@@ -41,6 +43,7 @@ import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -680,6 +683,17 @@ public class AttendanceService {
     log.debug(periods.toString());
 
     return periods.stream().map(PeriodResponseDTO::fromEntity).toList();
+  }
+
+  @Transactional
+  public Map<String, Object> getStudentAttendanceRates(Long memberId, Long courseId) {
+
+    log.debug("memberId: {}, courseId: {}",memberId,courseId);
+
+    List<AttendanceDailyStats> dailyStats = attendanceRepository.findAttendanceStatsByMemberAndCourse(memberId, courseId);
+    log.debug(dailyStats.toString());
+
+    return AttendanceCalculator.calculateAttendanceRates(dailyStats);
   }
 
 }
