@@ -28,6 +28,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -137,6 +138,20 @@ public class MemberController {
     }
   }
 
+  @GetMapping("/info")
+  @Operation(summary = "회원정보 조회", description = "로그인된 회원의 정보를 조회합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "회원정보 조회 성공"),
+      @ApiResponse(responseCode = "401", description = "권한 없음"),
+      @ApiResponse(responseCode = "404", description = "회원 정보 없음")
+  })
+  public ResponseEntity<MemberDTO> getMemberInfo(
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+    Long memberId = userDetails.getId();
+    MemberDTO memberDTO = memberService.getMemberInfo(memberId);
+    return ResponseEntity.ok(memberDTO);
+  }
 
   @PatchMapping("/update")
   @Operation(summary = "회원정보 수정", description = "비밀번호와 이메일을 수정한 후 변경된 정보를 반환합니다.")
