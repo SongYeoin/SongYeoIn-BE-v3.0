@@ -30,7 +30,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     log.debug("사용자 정보 조회 시작 - 사용자 아이디(username): {}", username);
 
     //username으로 사용자 조회
-    Member member = memberRepository.findByUsernameAndIsDeletedFalse(username)
+    Member member = memberRepository.findByUsernameAndDeletedByIsNull(username)
         .orElseThrow(() -> {
           log.warn("삭제되었거나 존재하지 않는 사용자 아이디(username): {}", username);
           return new UsernameNotFoundException("사용자를 찾을 수 없거나 삭제된 계정입니다: " + username);
@@ -53,7 +53,7 @@ public class CustomUserDetailsService implements UserDetailsService {
   public UserDetails loadUserById(Long id) throws UsernameNotFoundException {
     log.debug("사용자 정보 조회 시작 - 사용자 ID: {}", id);
 
-    Member member = memberRepository.findByIdAndIsDeletedFalse(id)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
           log.warn("삭제되었거나 존재하지 않는 사용자 ID: {}", id);
           return new UsernameNotFoundException("사용자를 찾을 수 없거나 삭제된 계정입니다: " + id);

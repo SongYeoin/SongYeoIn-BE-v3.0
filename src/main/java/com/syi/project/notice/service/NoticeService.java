@@ -239,7 +239,7 @@ public class NoticeService {
 
   // 사용자 정보 호출
   private Member getMember(Long memberId) {
-    return memberRepository.findByIdAndIsDeletedFalse(memberId)
+    return memberRepository.findByIdAndDeletedByIsNull(memberId)
         .orElseThrow(() -> {
           log.error("사용자를 찾을 수 없습니다 - memberId: {}", memberId);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);

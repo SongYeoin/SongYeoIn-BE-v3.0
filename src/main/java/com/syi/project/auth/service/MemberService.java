@@ -108,7 +108,7 @@ public class MemberService {
   public MemberLoginResponseDTO login(MemberLoginRequestDTO requestDTO, Role requiredRole) {
     log.info("로그인 검증 시작 - 사용자 Username: {}", requestDTO.getUsername());
 
-    Member member = memberRepository.findByUsernameAndIsDeletedFalse(requestDTO.getUsername())
+    Member member = memberRepository.findByUsernameAndDeletedByIsNull(requestDTO.getUsername())
         .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
 
     if (!passwordEncoder.matches(requestDTO.getPassword(), member.getPassword())) {
@@ -193,10 +193,10 @@ public class MemberService {
     return members.map(MemberDTO::fromEntity);
   }
 
-  // 회원 상세 조회
+  // 관리자 특정 회원 상세 조회
   public MemberDTO getMemberDetail(Long id) {
     log.info("회원 상세 정보 조회 - 회원 ID: {}", id);
-    Member member = memberRepository.findByIdAndIsDeletedFalse(id)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
           log.warn("회원 상세 조회 실패 - 회원 ID: {} (회원 정보 없음)", id);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
@@ -208,7 +208,7 @@ public class MemberService {
   // 승인상태
   @Transactional
   public void updateApprovalStatus(Long id, CheckStatus newStatus) {
-    Member member = memberRepository.findByIdAndIsDeletedFalse(id)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
           log.warn("회원 승인 상태 업데이트 실패 - 존재하지 않는 회원 ID: {}", id);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
@@ -221,7 +221,7 @@ public class MemberService {
   // 역할
   @Transactional
   public void updateMemberRole(Long id, Role newRole) {
-    Member member = memberRepository.findByIdAndIsDeletedFalse(id)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
           log.warn("역할 변경 실패 - 회원 정보 없음: 회원 ID: {}", id);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
@@ -229,11 +229,23 @@ public class MemberService {
     member.updateRole(newRole);
     log.info("역할 변경 완료 - 회원 ID: {}, 새로운 역할: {}", id, newRole);
   }
+  
+  // 회원정보 조회
+  public MemberDTO getMemberInfo(Long memberId) {
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
+        .orElseThrow(() -> {
+          log.error("회원정보 조회 실패 - 회원 정보 없음: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    log.info("회원정보 조회 성공 - 회원 ID: {}", memberId);
+    return MemberDTO.fromEntity(member);
+  }
 
   // 회원정보 수정
   @Transactional
   public MemberDTO updateMemberInfo(Long memberId, MemberUpdateRequestDTO requestDTO) {
-    Member member = memberRepository.findByIdAndIsDeletedFalse(memberId)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
         .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
 
     // 현재 비밀번호 검증
@@ -266,7 +278,7 @@ public class MemberService {
   // 비밀번호 초기화
   @Transactional
   public PasswordResetResponseDTO resetPassword(Long memberId) {
-    Member member = memberRepository.findByIdAndIsDeletedFalse(memberId)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
         .orElseThrow(() -> {
           log.warn("비밀번호 초기화 실패 - 존재하지 않는 회원 ID: {}", memberId);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
@@ -323,10 +335,10 @@ public class MemberService {
   @Transactional
   public void deleteMember(Long memberId) {
     // 회원 조회
-    Member member = memberRepository.findByIdAndIsDeletedFalse(memberId)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
         .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
 
-    member.deactivate();
+    member.deactivate(memberId);
   }
 
   // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드
