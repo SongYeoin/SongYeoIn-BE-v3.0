@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -138,6 +139,19 @@ public class AttendanceController {
     List<PeriodResponseDTO> attendanceList = attendanceService.getPeriodsByDateAndDayOfWeek(
         userDetails, courseId);
     return ResponseEntity.ok(attendanceList);
+  }
+
+  @GetMapping("course/{courseId}/rate")
+  public ResponseEntity<Map<String, Object>> getRateByCourseId(@PathVariable Long courseId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+    Long memberId = userDetails.getId();
+    log.debug("memberId: {}", memberId);
+
+    Map<String, Object> rateMap = attendanceService.getStudentAttendanceRates(memberId,courseId);
+    log.debug("rateMap: {}", rateMap);
+
+    return ResponseEntity.ok(rateMap);
   }
 
 
