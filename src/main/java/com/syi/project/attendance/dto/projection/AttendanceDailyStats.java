@@ -3,8 +3,10 @@ package com.syi.project.attendance.dto.projection;
 import com.querydsl.core.annotations.QueryProjection;
 import java.time.LocalDate;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
+@ToString
 public class AttendanceDailyStats {
   private LocalDate date;
   private long totalSessions;
