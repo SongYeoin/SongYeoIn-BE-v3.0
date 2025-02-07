@@ -9,7 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AttendanceCalculator {
 
   // 출석 상태별 감점 비율 (1교시 기준)
@@ -23,6 +25,9 @@ public class AttendanceCalculator {
    */
   // 115일 전체 출석률 및 20일 단위 출석률 계산
   public static Map<String, Object> calculateAttendanceRates(List<AttendanceDailyStats> dailyStats) {
+
+    log.info("출석률 계산기 로직 진입");
+
     double totalAttendanceScore = 100.0; // 115일 전체 출석률 (누적)
     List<Double> twentyDayRates = new ArrayList<>(); // 20일 단위 출석률 저장
     double twentyDayScore = 100.0; // 20일 단위 출석률 (리셋됨)
@@ -47,6 +52,7 @@ public class AttendanceCalculator {
 
       // 20일이 지나면 출석률 저장 후 리셋
       if (dayCount % 20 == 0) {
+        twentyDayScore = roundToTwoDecimalPlaces(twentyDayScore);
         twentyDayRates.add(twentyDayScore);
         twentyDayScore = 100.0;
       }
@@ -55,11 +61,29 @@ public class AttendanceCalculator {
     /*// 20일 단위 출석률 평균 계산
     double averageTwentyDayRate = twentyDayRates.stream().mapToDouble(Double::doubleValue).average().orElse(100.0);*/
 
+    // 전체 출석률과 20일 출석률을 소수점 둘째 자리까지 반올림
+    totalAttendanceScore = roundToTwoDecimalPlaces(totalAttendanceScore);
+    twentyDayScore = roundToTwoDecimalPlaces(twentyDayScore);
+
+    log.debug("전체 출석률(115일) {}", totalAttendanceScore);
+    log.debug("20일 출석률(20일) {}", twentyDayScore);
+
     // 결과 반환
     return Map.of(
         "overallAttendanceRate", totalAttendanceScore,
-        "twentyDayRates", twentyDayRates
+        "twentyDayRates", twentyDayRates,
+        "twentyDayScore", twentyDayScore
     );
+
   }
+
+  /**
+   * 소수점 둘째 자리까지 반올림하는 유틸리티 메서드
+   */
+  private static double roundToTwoDecimalPlaces(double value) {
+    return Math.round(value * 100.0) / 100.0;
+  }
+
+
 
 }
