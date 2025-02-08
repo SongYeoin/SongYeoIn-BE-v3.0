@@ -157,7 +157,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
   public Page<AttendListResponseDTO> findPagedAdminAttendListByCourseId(Long courseId,
       AllAttendancesRequestDTO dto,List<String> periodNames, Pageable pageable) {
     log.info("queryDSL 실행 요청");
-    log.debug("courseId: {}, date: {}",courseId,dto.getDate());
+    log.debug("memberId: {}, courseId: {}, date: {}",dto.getStudentId(),courseId,dto.getDate());
     log.debug("필터링 요청 데이터: studentName={}, status={}, startDate={}, endDate={}",
         dto.getStudentName(), dto.getAttendanceStatus(), dto.getStartDate(), dto.getEndDate());
 
@@ -220,11 +220,12 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
 
       log.info("학생별 출석 데이터 조회");
 
-      log.debug("조회된 출석 데이터: {}",tuples);
+      log.debug("관리자가 조회한 출석 데이터: {}",tuples);
 
     } else {
       tuples = queryFactory
           .select(
+              attendance.memberId,
               attendance.date,  //date
               attendance.periodId,  //periodId
               attendance.status     //status
@@ -237,7 +238,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
 
       log.info("출석 데이터 조회");
 
-      log.debug("조회된 출석 데이터: {}",tuples);
+      log.debug("학생이 조회한 출석 데이터: {}",tuples);
     }
 
     Map<Object, AttendListResponseDTO> attendanceMap = new HashMap<>();
@@ -259,8 +260,10 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         log.debug("DTO 형태의 studentId, studentName, courseName, date 가 매핑된 데이터");
       }else{
         LocalDate date = tuple.get(attendance.date); // 날짜
+        Long studentId = tuple.get(attendance.memberId);
         log.debug("날짜: {}",date);
         responseDTO = attendanceMap.computeIfAbsent(date, d -> AttendListResponseDTO.builder()
+            .studentId(studentId)
             .date((LocalDate) d) // 날짜
             .students(new LinkedHashMap<>())
             .periods(periodNames)
