@@ -23,11 +23,8 @@ public interface AttendanceRepositoryCustom {
 
   List<Attendance> findAttendanceByDateAndMemberId(LocalDate yesterday, Long id);
 
-  Page<AttendListResponseDTO> findPagedAdminAttendListByCourseId(Long courseId,
+  Page<AttendListResponseDTO> findPagedAttendListByCourseId(Long courseId,
       AllAttendancesRequestDTO dto, List<String> periods, Pageable pageable);
-
-  Page<AttendListResponseDTO> findPagedStudentAttendListByCourseId(Long courseId,
-      AttendanceRequestDTO dto, Pageable pageable);
 
   MemberInfoInDetail findMemberInfoByAttendance(Long courseId, Long studentId, LocalDate date);
 
@@ -38,4 +35,6 @@ public interface AttendanceRepositoryCustom {
      LocalDate localDate);
 
   List<AttendanceDailyStats> findAttendanceStatsByMemberAndCourse(Long memberId, Long courseId);
+
+  List<AttendanceDailyStats> findAttendanceStatsByCourse(Long courseId);
 }
