@@ -688,10 +688,11 @@ public class AttendanceService {
   @Transactional
   public Map<String, Object> getStudentAttendanceRates(Long memberId, Long courseId) {
 
+    log.info("출석률 조회 요청");
     log.debug("memberId: {}, courseId: {}",memberId,courseId);
 
     List<AttendanceDailyStats> dailyStats = attendanceRepository.findAttendanceStatsByMemberAndCourse(memberId, courseId);
-    log.debug(dailyStats.toString());
+    dailyStats.forEach(stat -> log.debug("AttendanceDailyStats: {}", stat));
 
     return AttendanceCalculator.calculateAttendanceRates(dailyStats);
   }
