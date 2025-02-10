@@ -7,6 +7,7 @@ import static com.syi.project.period.eneity.QPeriod.period;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
 import com.syi.project.attendance.dto.projection.QAttendanceDailyStats;
@@ -188,6 +189,8 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
   private Page<AttendListResponseDTO> findStudentAttendanceData(Long courseId, AllAttendancesRequestDTO dto, List<Period> periods, List<String> periodNames, Pageable pageable) {
     BooleanBuilder predicate = buildStudentPredicate(courseId, dto);
 
+    log.debug("courseId: {}, dto: {}, periods: {}, periodNames: {}", courseId, dto, periods, periodNames);
+
     List<Tuple> tuples = queryFactory
         .select(
             attendance.memberId,
@@ -239,10 +242,16 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
 
     List<AttendListResponseDTO> content = mapTuplesToDTO(tuples, periods, periodNames, true);
 
+    // 데이터가 없어도 예외발생 하지 않도록 처리
+    if (content.isEmpty()) {
+      log.debug("조건에 맞는 데이터가 없습니다.");
+      return new PageImpl<>(Collections.emptyList(), pageable, 0);
+    }
+
     Long total = queryFactory
         .select(attendance.id.count())
         .from(attendance)
-        .join(member).on(attendance.memberId.eq(member.id)) // ✅ 카운트 쿼리에서도 join 추가
+        //.join(member).on(attendance.memberId.eq(member.id)) // ✅ 카운트 쿼리에서도 join 추가
         .where(predicate)
         .fetchOne();
 
@@ -301,7 +310,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
       if (isAdmin) {
         Long studentId = tuple.get(member.id);
         responseDTO = attendanceMap.computeIfAbsent(studentId, id -> AttendListResponseDTO.builder()
-            .studentId(studentId)
+            .studentId((Long)id)
             .studentName(tuple.get(member.name))
             .courseName(tuple.get(course.name))
             .date(tuple.get(attendance.date))
@@ -312,8 +321,8 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         LocalDate date = tuple.get(attendance.date);
         Long studentId = tuple.get(attendance.memberId);
         responseDTO = attendanceMap.computeIfAbsent(date, d -> AttendListResponseDTO.builder()
-            .studentId(studentId)
-            .date(date)
+            //.studentId(studentId)
+            .date((LocalDate) d)
             .students(new LinkedHashMap<>())
             .periods(periodNames)
             .build());
@@ -322,7 +331,10 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
       log.debug("AttendListResponseDTO: {}", responseDTO);
 
       Long periodId = tuple.get(attendance.periodId);
-      String status = Objects.requireNonNull(tuple.get(attendance.status)).toKorean();
+      String status = tuple.get(attendance.status) != null
+          ? tuple.get(attendance.status).toKorean()
+          : "UNKNOWN";  // 기본값 설정
+
 
       String periodName = periods.stream()
           .filter(p -> p.getId().equals(periodId))
@@ -471,7 +483,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
       Long courseId) {
     return queryFactory
         .select(new QAttendanceDailyStats(
-            null,
+            Expressions.nullExpression(),
             attendance.date,
             attendance.status.count(),
             attendance.status.when(AttendanceStatus.LATE).then(1L).otherwise(0L).sum(),

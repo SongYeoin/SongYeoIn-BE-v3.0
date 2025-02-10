@@ -110,8 +110,10 @@ public class AttendanceService {
     log.debug("수강생 Id: {}", studentId);
 
     // 1교시, 2교시... 교시명 모음
-    List<String> periods = periodRepository.findPeriodsInRange(courseId,dto.getStartDate(),
-        dto.getEndDate());
+    List<String> periods = List.of("1교시", "2교시", "3교시", "4교시", "5교시", "6교시", "7교시", "8교시");
+
+    /*List<String> periods = periodRepository.findPeriodsInRange(courseId,dto.getStartDate(),
+        dto.getEndDate());*/
     log.debug("조회된 교시 모음: {}", periods);
 
     log.info("dto 변환");

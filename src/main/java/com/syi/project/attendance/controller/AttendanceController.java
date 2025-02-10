@@ -146,7 +146,7 @@ public class AttendanceController {
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
     Long memberId = userDetails.getId();
-    log.debug("memberId: {}", memberId);
+    log.debug("출석률 조회할 memberId: {}", memberId);
 
     Map<String, Object> rateMap = attendanceService.getStudentAttendanceRates(memberId,courseId);
     log.debug("rateMap: {}", rateMap);
