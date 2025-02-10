@@ -3,7 +3,6 @@ package com.syi.project.journal.service;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.repository.MemberRepository;
 import com.syi.project.common.entity.Criteria;
-import com.syi.project.common.enums.CourseStatus;
 import com.syi.project.common.enums.Role;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
@@ -23,7 +22,6 @@ import com.syi.project.journal.repository.JournalRepository;
 import com.syi.project.file.entity.File;
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +29,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+
 
 @Slf4j
 @Service
@@ -289,7 +290,7 @@ public class JournalService {
     log.debug("날짜 및 페이징 조건 유효성 검증 완료");
   }
 
-  // 기존 메서드 유지
+  // 수강생 교육과정
   private void validateEnrollment(Long memberId, Long courseId) {
     log.debug("수강생-교육과정 매칭 검증 시작 - memberId: {}, courseId: {}", memberId, courseId);
 
@@ -302,7 +303,7 @@ public class JournalService {
     log.debug("수강생-교육과정 매칭 검증 완료");
   }
 
-  // 기존 메서드 유지
+  // 관리자 교육과정 조회
   public List<JournalCourseResponseDTO> getActiveCourses(Long adminId) {
     log.debug("관리자의 활성화된 교육과정 목록 조회 시작 - adminId: {}", adminId);
 
@@ -314,20 +315,7 @@ public class JournalService {
         .collect(Collectors.toList());
   }
 
-  // 기존 메서드 유지
-//  public ResponseEntity<Resource> downloadJournalFile(Long journalId, Long memberId) {
-//    log.debug("교육일지 파일 다운로드 시작 - journalId: {}", journalId);
-//
-//    Member member = validateAndGetMember(memberId);
-//    Journal journal = validateAndGetJournal(journalId);
-//
-//    if (journal.getJournalFile() == null) {
-//      throw new IllegalArgumentException("첨부된 파일이 없습니다.");
-//    }
-//
-//    FileDownloadDTO downloadDTO = fileService.downloadFile(journal.getJournalFile().getFile().getId(), member);
-//    return fileService.getDownloadResponseEntity(downloadDTO);
-//  }
+  // 파일 다운로드
   public ResponseEntity<Resource> downloadJournalFile(Long journalId, Long memberId) {
     log.debug("교육일지 파일 다운로드 시작 - journalId: {}", journalId);
 
@@ -349,6 +337,27 @@ public class JournalService {
     log.info("파일 다운로드 성공 - journalId: {}, fileId: {}", journalId, fileId);
 
     return fileService.getDownloadResponseEntity(downloadDTO);
+  }
+
+  // zip 다운로드
+  public ResponseEntity<Resource> downloadJournalsAsZip(List<Long> journalIds, Long memberId) {
+    Member member = validateAndGetMember(memberId);
+    if (member.getRole() != Role.ADMIN) {
+      throw new InvalidRequestException(ErrorCode.ACCESS_DENIED);
+    }
+
+    List<Journal> journals = journalRepository.findAllByIdsWithFiles(journalIds);
+    List<File> files = journals.stream()
+        .map(j -> j.getJournalFile().getFile())
+        .collect(Collectors.toList());
+
+    Resource zipResource = fileService.downloadFilesAsZip(files, "교육일지_일괄다운로드.zip");
+
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .header(HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename*=UTF-8''교육일지_일괄다운로드.zip")
+        .body(zipResource);
   }
 
   private void validateEducationDate(LocalDate educationDate, Course course, Member member) {

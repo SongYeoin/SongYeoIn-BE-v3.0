@@ -7,6 +7,8 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.syi.project.file.dto.FileResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,8 +43,9 @@ public class S3Uploader {
   @PostMapping("/upload")
   // 파일 업로드 (단일/다중 처리 통합)
   public String uploadFile(MultipartFile file, String dirName) throws IOException {
+    String dateFolder = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     String fileName = createFileName(file.getOriginalFilename());
-    String fullPath = dirName + "/" + fileName;
+    String fullPath = dirName + "/" + dateFolder + "/" + fileName;
 
     ObjectMetadata metadata = new ObjectMetadata();
     metadata.setContentType(file.getContentType());

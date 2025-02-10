@@ -17,9 +17,8 @@ public interface JournalRepository extends JpaRepository<Journal, Long>, Journal
   Optional<Journal> findByIdAndMemberId(Long id, Long memberId);
   boolean existsByMemberIdAndCourseIdAndEducationDate(Long memberId, Long courseId, LocalDate educationDate);
 
-  @Query("SELECT j FROM Journal j " +
-      "LEFT JOIN FETCH j.journalFile jf " +
-      "LEFT JOIN FETCH jf.file f " +
-      "WHERE j.id = :journalId")
+  @Query("SELECT j FROM Journal j LEFT JOIN FETCH j.journalFile jf LEFT JOIN FETCH jf.file f WHERE j.id = :journalId")
   Optional<Journal> findByIdWithFile(@Param("journalId") Long journalId);
+  @Query("SELECT j FROM Journal j LEFT JOIN FETCH j.journalFile jf LEFT JOIN FETCH jf.file f WHERE j.id IN :journalIds")
+  List<Journal> findAllByIdsWithFiles(@Param("journalIds") List<Long> journalIds);
 }

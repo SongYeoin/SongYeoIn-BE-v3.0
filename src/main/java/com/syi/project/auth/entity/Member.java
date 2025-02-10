@@ -43,12 +43,15 @@ public class Member {
   @Column(nullable = false, length = 1)
   private CheckStatus checkStatus = CheckStatus.W;
 
-  @Column(nullable = false)
-  private Boolean isDeleted = false;
+  @Column(nullable = true)
+  private Long deletedBy;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 7)
   private Role role;
+
+  @Column(nullable = false)
+  private boolean passwordChangeRequired = false;
 
   private String profileUrl;
 
@@ -67,7 +70,6 @@ public class Member {
     this.role = role;
     this.enrollDate = LocalDate.now();
     this.checkStatus = CheckStatus.W;
-    this.isDeleted = false;
   }
 
   public void updateCheckStatus(CheckStatus newStatus) {
@@ -86,7 +88,11 @@ public class Member {
     this.email = newEmail;
   }
 
-  public void deactivate() {
-    this.isDeleted = true;
+  public void deactivate(Long deletedBy) {
+    this.deletedBy = deletedBy;
+  }
+
+  public void setPasswordChangeRequired(boolean required) {
+    this.passwordChangeRequired = required;
   }
 }

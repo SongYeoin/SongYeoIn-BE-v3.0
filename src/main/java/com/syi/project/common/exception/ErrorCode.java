@@ -57,10 +57,20 @@ public enum ErrorCode {
   JOURNAL_FILE_REQUIRED("JOURNAL_005", "교육일지 파일 첨부는 필수입니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_DATE_OUT_OF_RANGE("JOURNAL_006", "교육일자가 과정 기간을 벗어났습니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_INVALID_FILE_TYPE("JOURNAL_007", "교육일지는 HWP, HWPX, DOCX, DOC 형식만 첨부 가능합니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_FILE_NOT_FOUND("JOURNAL_008", "선택된 교육일지 중 파일이 없는 항목이 있습니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_DOWNLOAD_FAILED("JOURNAL_009", "교육일지 일괄 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
   // 출석 관련 에러
   ATTENDANCE_NOT_IN_RANGE("ATTENDANCE_001", "학원 네트워크에서만 출석이 가능합니다.", HttpStatus.FORBIDDEN),
-  ATTENDANCE_NOT_YET("ATTENDANCE_002", "교시 시작 5분 전보다 더 전에는 출석이 불가능합니다.", HttpStatus.FORBIDDEN),
+   ATTENDANCE_ENTRY_NOT_ALLOWED("ATTENDANCE_002", "입실 가능 시간이 아닙니다. 교시 시작 전후 10분부터 가능합니다.", HttpStatus.FORBIDDEN),
+   ATTENDANCE_EXIT_NOT_ALLOWED("ATTENDANCE_008", "퇴실 가능 시간이 아닙니다. 교시 종료 전후 10분부터 가능합니다.", HttpStatus.FORBIDDEN),
+   //ATTENDANCE_ENTRY_TOO_EARLY("ATTENDANCE_002", "입실 시간이 너무 이릅니다. 교시 시작 10분 전부터 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_ENTRY_TOO_LATE("ATTENDANCE_003", "입실 시간이 너무 늦었습니다. 교시 시작 후 10분 후까지 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_EXIT_TOO_EARLY("ATTENDANCE_004", "퇴실 시간이 너무 이릅니다. 교시 종료 10분 전부터 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_EXIT_TOO_LATE("ATTENDANCE_005", "퇴실 시간이 너무 늦었습니다. 교시 종료 후 10분 후까지 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_ALREADY_ENTERED("ATTENDANCE_006","이미 입실했습니다.", HttpStatus.BAD_REQUEST),
+  ATTENDANCE_ALREADY_EXITED("ATTENDANCE_007","이미 퇴실했습니다.", HttpStatus.BAD_REQUEST),
+
 
   // 수강신청 관련 에러
   ENROLL_NOT_FOUND("ENROLL_001", "수강 이력을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),

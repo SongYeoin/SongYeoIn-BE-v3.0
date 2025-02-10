@@ -70,7 +70,9 @@ public class SecurityConfig {
                 "/webjars/**", "/", "/admin/member/login", "/member/login", "/member/check-username", "/member/check-email", "/member/register", "/member/logout", "/refresh").permitAll()
             // 해당 경로는 인증 필요
             .requestMatchers("/jwt/test","/enrollments/my").authenticated()
-            // 관리자 전용 엔드포인트 접근 설정 예시
+            // student, admin 모두 접근
+            .requestMatchers("/member/info", "/member/update", "/member/delete").hasAnyRole("STUDENT", "ADMIN")
+            // 관리자 전용 엔드포인트 접근 설정
             .requestMatchers("/admin/**", "/enrollments/**").hasRole("ADMIN")
             .requestMatchers("/**").hasRole("STUDENT")
             // 나머지 모든 요청은 인증을 오구
@@ -99,7 +101,7 @@ public class SecurityConfig {
     )); // 프론트엔드 주소
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("*"));
-    configuration.setExposedHeaders(List.of("Authorization"));
+    configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

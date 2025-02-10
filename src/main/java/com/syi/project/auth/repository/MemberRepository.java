@@ -19,16 +19,16 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   // 이메일 중복 체크
   boolean existsByEmail(String email);
 
-  Optional<Member> findByUsernameAndIsDeletedFalse(String username);
+  Optional<Member> findByUsernameAndDeletedByIsNull(String username);
 
-  Optional<Member> findByIdAndIsDeletedFalse(Long id);
+  Optional<Member> findByIdAndDeletedByIsNull(Long id);
 
   // 회원 목록 조회
   @Query("SELECT m FROM Member m " +
       "WHERE (:checkStatus IS NULL OR m.checkStatus = :checkStatus) " +
       "AND (:role IS NULL OR m.role = :role) " +
       "AND (:word IS NULL OR LOWER(m.name) LIKE LOWER(CONCAT('%', :word, '%'))) " +
-      "AND m.isDeleted = false " +
+      "AND m.deletedBy IS NULL " +
       "ORDER BY m.enrollDate DESC")
   Page<Member> findByStatusAndRole(
       @Param("checkStatus") CheckStatus checkStatus,
@@ -37,7 +37,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
       Pageable pageable
   );
 
-  @Query("SELECT m FROM Member m where(m.role = 'ADMIN' and  m.isDeleted = false)")
+  @Query("SELECT m FROM Member m WHERE m.role = 'ADMIN' AND m.deletedBy IS NULL")
   List<Member> findAdminList();
 
 

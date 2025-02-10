@@ -10,6 +10,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.syi.project.period.DayOrderUtil;
 import com.syi.project.period.eneity.Period;
 import com.syi.project.period.eneity.QPeriod;
 import com.syi.project.schedule.dto.ScheduleResponseDTO;
@@ -40,7 +41,7 @@ public class ScheduleRepositoryCustomImpl implements ScheduleRepositoryCustom {
         .where(schedule.courseId.eq(courseId))
         .fetch();*/
 
-    NumberExpression<Integer> dayOrder = new CaseBuilder()
+/*    NumberExpression<Integer> dayOrder = new CaseBuilder()
         .when(period.dayOfWeek.eq("월요일")).then(1)
         .when(period.dayOfWeek.eq("화요일")).then(2)
         .when(period.dayOfWeek.eq("수요일")).then(3)
@@ -49,17 +50,17 @@ public class ScheduleRepositoryCustomImpl implements ScheduleRepositoryCustom {
         .when(period.dayOfWeek.eq("토요일")).then(6)
         .otherwise(7);
 
-    OrderSpecifier<Integer> orderSpecifier = new OrderSpecifier<>(Order.ASC, dayOrder);
+    OrderSpecifier<Integer> orderSpecifier = new OrderSpecifier<>(Order.ASC, dayOrder);*/
 
     List<Tuple> scheduleWithPeriods = queryFactory
         .select(schedule, period)
         .from(schedule)
         .leftJoin(period).on(period.scheduleId.eq(schedule.id))
         .where(schedule.courseId.eq(courseId))
-        .orderBy(orderSpecifier,period.startTime.asc())
+        .orderBy(DayOrderUtil.getDayOrder(period.dayOfWeek),period.startTime.asc())
         .fetch();
 
-    if (scheduleWithPeriods.isEmpty() || scheduleWithPeriods.get(0).get(QSchedule.schedule) == null) {
+    if (scheduleWithPeriods.isEmpty() || scheduleWithPeriods.get(0).get(schedule) == null) {
       //throw new NoSuchElementException("Schedule not found for courseId: " + courseId);
       log.warn("경고 : 교육과정 ID {}에 대한 시간표가 비어있습니다.", courseId);
       return ScheduleResponseDTO.builder()

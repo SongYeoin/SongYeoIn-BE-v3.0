@@ -7,6 +7,7 @@ import com.syi.project.auth.dto.MemberLoginResponseDTO;
 import com.syi.project.auth.dto.MemberSignUpRequestDTO;
 import com.syi.project.auth.dto.MemberSignUpResponseDTO;
 import com.syi.project.auth.dto.MemberUpdateRequestDTO;
+import com.syi.project.auth.dto.PasswordResetResponseDTO;
 import com.syi.project.auth.entity.JwtBlacklist;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.auth.entity.RefreshToken;
@@ -24,6 +25,7 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -106,7 +108,7 @@ public class MemberService {
   public MemberLoginResponseDTO login(MemberLoginRequestDTO requestDTO, Role requiredRole) {
     log.info("로그인 검증 시작 - 사용자 Username: {}", requestDTO.getUsername());
 
-    Member member = memberRepository.findByUsernameAndIsDeletedFalse(requestDTO.getUsername())
+    Member member = memberRepository.findByUsernameAndDeletedByIsNull(requestDTO.getUsername())
         .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
 
     if (!passwordEncoder.matches(requestDTO.getPassword(), member.getPassword())) {
@@ -191,10 +193,10 @@ public class MemberService {
     return members.map(MemberDTO::fromEntity);
   }
 
-  // 회원 상세 조회
+  // 관리자 특정 회원 상세 조회
   public MemberDTO getMemberDetail(Long id) {
     log.info("회원 상세 정보 조회 - 회원 ID: {}", id);
-    Member member = memberRepository.findByIdAndIsDeletedFalse(id)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
           log.warn("회원 상세 조회 실패 - 회원 ID: {} (회원 정보 없음)", id);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
@@ -206,7 +208,7 @@ public class MemberService {
   // 승인상태
   @Transactional
   public void updateApprovalStatus(Long id, CheckStatus newStatus) {
-    Member member = memberRepository.findByIdAndIsDeletedFalse(id)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
           log.warn("회원 승인 상태 업데이트 실패 - 존재하지 않는 회원 ID: {}", id);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
@@ -219,7 +221,7 @@ public class MemberService {
   // 역할
   @Transactional
   public void updateMemberRole(Long id, Role newRole) {
-    Member member = memberRepository.findByIdAndIsDeletedFalse(id)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
           log.warn("역할 변경 실패 - 회원 정보 없음: 회원 ID: {}", id);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
@@ -227,11 +229,23 @@ public class MemberService {
     member.updateRole(newRole);
     log.info("역할 변경 완료 - 회원 ID: {}, 새로운 역할: {}", id, newRole);
   }
+  
+  // 회원정보 조회
+  public MemberDTO getMemberInfo(Long memberId) {
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
+        .orElseThrow(() -> {
+          log.error("회원정보 조회 실패 - 회원 정보 없음: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    log.info("회원정보 조회 성공 - 회원 ID: {}", memberId);
+    return MemberDTO.fromEntity(member);
+  }
 
   // 회원정보 수정
   @Transactional
   public MemberDTO updateMemberInfo(Long memberId, MemberUpdateRequestDTO requestDTO) {
-    Member member = memberRepository.findByIdAndIsDeletedFalse(memberId)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
         .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
 
     // 현재 비밀번호 검증
@@ -260,15 +274,71 @@ public class MemberService {
 
     return MemberDTO.fromEntity(member);
   }
+  
+  // 비밀번호 초기화
+  @Transactional
+  public PasswordResetResponseDTO resetPassword(Long memberId) {
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
+        .orElseThrow(() -> {
+          log.warn("비밀번호 초기화 실패 - 존재하지 않는 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    String temporaryPassword = generateTemporaryPassword();
+    String encodedPassword = passwordEncoder.encode(temporaryPassword);
+
+    member.updatePassword(encodedPassword);
+    member.setPasswordChangeRequired(true);
+
+    log.info("회원 비밀번호 초기화 완료 - 회원 ID: {}", memberId);
+
+    return PasswordResetResponseDTO.builder()
+        .temporaryPassword(temporaryPassword)
+        .resetTime(LocalDateTime.now())
+        .build();
+  }
+
+  private String generateTemporaryPassword() {
+    StringBuilder password = new StringBuilder();
+    Random random = new Random();
+
+    // 대문자, 소문자, 숫자, 특수문자 각각 최소 1개 포함
+    String upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    String lowerCase = "abcdefghijklmnopqrstuvwxyz";
+    String numbers = "0123456789";
+    String specialChars = "!@#$%^&*";
+
+    password.append(upperCase.charAt(random.nextInt(upperCase.length())));
+    password.append(lowerCase.charAt(random.nextInt(lowerCase.length())));
+    password.append(numbers.charAt(random.nextInt(numbers.length())));
+    password.append(specialChars.charAt(random.nextInt(specialChars.length())));
+
+    // 나머지 6자리는 모든 문자들 중에서 랜덤 선택
+    String allChars = upperCase + lowerCase + numbers + specialChars;
+    for (int i = 0; i < 6; i++) {
+      password.append(allChars.charAt(random.nextInt(allChars.length())));
+    }
+
+    // 생성된 비밀번호를 섞음
+    char[] passwordArray = password.toString().toCharArray();
+    for (int i = passwordArray.length - 1; i > 0; i--) {
+      int j = random.nextInt(i + 1);
+      char temp = passwordArray[i];
+      passwordArray[i] = passwordArray[j];
+      passwordArray[j] = temp;
+    }
+
+    return new String(passwordArray);
+  }
 
   // 회원 탈퇴
   @Transactional
   public void deleteMember(Long memberId) {
     // 회원 조회
-    Member member = memberRepository.findByIdAndIsDeletedFalse(memberId)
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
         .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
 
-    member.deactivate();
+    member.deactivate(memberId);
   }
 
   // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드

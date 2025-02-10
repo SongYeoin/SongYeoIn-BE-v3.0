@@ -18,10 +18,14 @@ public class JournalResponseDTO {
   private FileResponseDTO file;
   private LocalDateTime createdAt;
   private LocalDate educationDate;
+  private boolean hasFile;
+  private String fileName;
+
 
   private JournalResponseDTO(Long id, String memberName, String courseName,
       String title, String content, FileResponseDTO file,
-      LocalDateTime createdAt, LocalDate educationDate) {
+      LocalDateTime createdAt, LocalDate educationDate,
+      boolean hasFile, String fileName) {
     this.id = id;
     this.memberName = memberName;
     this.courseName = courseName;
@@ -30,6 +34,8 @@ public class JournalResponseDTO {
     this.file = file;
     this.createdAt = createdAt;
     this.educationDate = educationDate;
+    this.hasFile = hasFile;
+    this.fileName = fileName;
   }
 
   // from 메서드 유지 (기존 코드와의 일관성)
@@ -44,7 +50,9 @@ public class JournalResponseDTO {
             .map(file -> FileResponseDTO.from(file.getFile(), s3Uploader))
             .orElse(null),
         journal.getCreatedAt(),
-        journal.getEducationDate()
+        journal.getEducationDate(),
+        journal.getJournalFile() != null,
+        journal.getJournalFile() != null ? journal.getJournalFile().getFile().getOriginalName() : null
     );
   }
 
