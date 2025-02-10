@@ -407,8 +407,9 @@ public class AttendanceService {
         .filter(p -> {
           LocalDateTime periodStart = LocalDateTime.of(enterDateTime.toLocalDate(), p.getStartTime());
           LocalDateTime periodEnd = LocalDateTime.of(enterDateTime.toLocalDate(), p.getEndTime());
-          return enterDateTime.isAfter(periodStart) &&
-              enterDateTime.isBefore(periodEnd);
+          LocalDateTime periodStartEarly = periodStart.minusMinutes(10); // 시작 10분 전
+
+          return enterDateTime.isAfter(periodStartEarly) && enterDateTime.isBefore(periodEnd);
         })
         .findFirst()
         .orElseThrow(() -> new InvalidRequestException(ATTENDANCE_ENTRY_NOT_ALLOWED));
@@ -425,6 +426,8 @@ public class AttendanceService {
 
       LocalDateTime periodStart = LocalDateTime.of(enterDateTime.toLocalDate(), period.getStartTime());
       LocalDateTime periodEnd = LocalDateTime.of(enterDateTime.toLocalDate(), period.getEndTime());
+      LocalDateTime periodStartEarly = periodStart.minusMinutes(10); // 교시 시작 10분 전
+      LocalDateTime periodStartLate = periodStart.plusMinutes(10); // 교시 시작 후 10분까지
 
       if (period.getStartTime().isBefore(enterPeriod.getStartTime())) {
         // 입실한 교시 이전이면 결석 처리
