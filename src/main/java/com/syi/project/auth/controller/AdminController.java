@@ -1,5 +1,6 @@
 package com.syi.project.auth.controller;
 
+import com.syi.project.auth.dto.MemberAdminUpdateRequestDTO;
 import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
@@ -148,6 +149,27 @@ public class AdminController {
     PasswordResetResponseDTO response = memberService.resetPassword(id);
     log.info("회원 비밀번호 초기화 성공 - 회원 ID: {}", id);
     return ResponseEntity.ok(response);
+  }
+
+  @PatchMapping("/update/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
+  @Operation(summary = "관리자의 회원 정보 수정", description = "관리자가 회원의 정보를 수정합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "회원정보 수정 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+      @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
+  public ResponseEntity<MemberDTO> updateMemberByAdmin(
+      @Parameter(description = "수정할 회원의 ID", required = true)
+      @PathVariable Long id,
+      @Parameter(description = "수정할 회원 정보", required = true)
+      @Valid @RequestBody MemberAdminUpdateRequestDTO requestDTO) {
+
+    log.info("관리자의 회원 정보 수정 요청 - 회원 ID: {}", id);
+    MemberDTO updatedMember = memberService.updateMemberByAdmin(id, requestDTO);
+    log.info("관리자의 회원 정보 수정 완료 - 회원 ID: {}", id);
+    return ResponseEntity.ok(updatedMember);
   }
 
 
