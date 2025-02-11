@@ -141,7 +141,7 @@ public class AttendanceController {
     return ResponseEntity.ok(attendanceList);
   }
 
-  @GetMapping("course/{courseId}/rate")
+  @GetMapping("/course/{courseId}/rate")
   public ResponseEntity<Map<String, Object>> getRateByCourseId(@PathVariable Long courseId,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
 
