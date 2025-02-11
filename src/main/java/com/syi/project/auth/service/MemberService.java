@@ -1,6 +1,7 @@
 package com.syi.project.auth.service;
 
 import com.syi.project.auth.dto.DuplicateCheckDTO;
+import com.syi.project.auth.dto.MemberAdminUpdateRequestDTO;
 import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
@@ -272,6 +273,43 @@ public class MemberService {
       member.updateEmail(requestDTO.getEmail());
     }
 
+    return MemberDTO.fromEntity(member);
+  }
+
+  // 관리자의 회원정보 수정
+  @Transactional
+  public MemberDTO updateMemberByAdmin(Long memberId, MemberAdminUpdateRequestDTO requestDTO) {
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
+        .orElseThrow(() -> {
+          log.warn("회원 정보 수정 실패 - 존재하지 않는 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    // 이메일 중복 검사
+    if (!member.getEmail().equals(requestDTO.getEmail())) {
+      if (memberRepository.existsByEmail(requestDTO.getEmail())) {
+        throw new InvalidRequestException(ErrorCode.EMAIL_ALREADY_EXISTS);
+      }
+    }
+
+    // 아이디 중복 검사
+    if (!member.getUsername().equals(requestDTO.getUsername())) {
+      if (memberRepository.existsByUsername(requestDTO.getUsername())) {
+        throw new InvalidRequestException(ErrorCode.USER_ALREADY_EXISTS);
+      }
+    }
+
+    // 각 필드 업데이트
+    member.updateByAdmin(
+        requestDTO.getName(),
+        requestDTO.getUsername(),
+        requestDTO.getBirthday(),
+        requestDTO.getEmail(),
+        requestDTO.getRole(),
+        requestDTO.getCheckStatus()
+    );
+
+    log.info("관리자에 의한 회원 정보 수정 완료 - 회원 ID: {}", memberId);
     return MemberDTO.fromEntity(member);
   }
   
