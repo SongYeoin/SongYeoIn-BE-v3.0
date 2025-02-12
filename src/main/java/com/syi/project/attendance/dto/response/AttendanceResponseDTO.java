@@ -31,7 +31,7 @@ public class AttendanceResponseDTO {
     //private List<AttendanceDTO> attendanceList;
     // 교시별 출석 상태 (교시 ID를 키로 사용)
     private List<String> periods;
-    private Map<String, String> students;
+    private Map<String, String> students; //교시명, 출석상태
 
     @Builder
     public AttendListResponseDTO(Long studentId, String studentName, String courseName,
