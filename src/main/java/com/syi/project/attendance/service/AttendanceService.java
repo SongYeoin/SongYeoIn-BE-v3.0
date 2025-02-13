@@ -41,10 +41,12 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -88,7 +90,7 @@ public class AttendanceService {
     log.debug("{} 의"
         + " 교시명 모음: {}",dayOfWeek, periods);
 
-    return attendanceRepository.findPagedAdminAttendListByCourseId(courseId, dto, periods,
+    return attendanceRepository.findPagedAttendListByCourseId(courseId, dto, periods,
         pageable);
 
   }
@@ -121,7 +123,7 @@ public class AttendanceService {
         .status(dto.getStatus())
         .build();
 
-    return attendanceRepository.findPagedAdminAttendListByCourseId(courseId, requestDTO, periods,
+    return attendanceRepository.findPagedAttendListByCourseId(courseId, requestDTO, periods,
         pageable);
 
   }
@@ -692,11 +694,43 @@ public class AttendanceService {
     log.debug("memberId: {}, courseId: {}",memberId,courseId);
 
     List<AttendanceDailyStats> dailyStats = attendanceRepository.findAttendanceStatsByMemberAndCourse(memberId, courseId);
-    dailyStats.forEach(stat -> log.debug("AttendanceDailyStats: {}", stat));
+    dailyStats.forEach(stat -> log.debug("학생-AttendanceDailyStats: {}", stat));
 
     return AttendanceCalculator.calculateAttendanceRates(dailyStats);
   }
 
+
+  public Map<Long, Map<String, Object>> getAllStudentsAttendanceRates(Long courseId) {
+
+    log.info("관리자용 출석률 조회 요청 - Course ID: {}", courseId);
+
+    // 해당 강좌의 모든 학생별 출석 데이터 조회
+    List<AttendanceDailyStats> dailyStatsList = attendanceRepository.findAttendanceStatsByCourse(courseId);
+    dailyStatsList.forEach(stat -> log.debug("관리자-AttendanceDailyStats: {}", stat));
+
+    // 학생별 출석률 계산 결과를 저장할 Map
+    Map<Long, Map<String, Object>> studentAttendanceRates = new HashMap<>();
+
+    // 학생별로 데이터를 그룹화
+    Map<Long, List<AttendanceDailyStats>> groupedStats = dailyStatsList.stream()
+        .collect(Collectors.groupingBy(AttendanceDailyStats::getStudentId));
+
+    // 학생별 출석률 계산
+    for (Map.Entry<Long, List<AttendanceDailyStats>> entry : groupedStats.entrySet()) {
+      Long studentId = entry.getKey();
+      List<AttendanceDailyStats> studentStats = entry.getValue();
+
+      log.debug("학생 {} 출석률 계산 시작", studentId);
+
+      Map<String, Object> attendanceRate = AttendanceCalculator.calculateAttendanceRates(studentStats);
+      studentAttendanceRates.put(studentId, attendanceRate);
+
+      log.debug("학생 {} 출석률 계산 완료: {}", studentId, attendanceRate);
+    }
+
+    return studentAttendanceRates;
+
+  }
 }
 
 
