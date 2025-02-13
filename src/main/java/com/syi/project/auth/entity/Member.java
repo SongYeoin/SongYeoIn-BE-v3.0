@@ -95,4 +95,13 @@ public class Member {
   public void setPasswordChangeRequired(boolean required) {
     this.passwordChangeRequired = required;
   }
+
+  public void updateByAdmin(String name, String username, String birthday, String email, Role role, CheckStatus checkStatus) {
+    this.name = name;
+    this.username = username;
+    this.birthday = birthday;
+    this.email = email;
+    this.role = role;
+    this.checkStatus = checkStatus;
+  }
 }
