@@ -83,6 +83,13 @@ public class Period {
     this.endTime = endTime;
   }
 
+  public Period(long id, String name, LocalTime startTime, LocalTime endTime) {
+    this.id = id;
+    this.name = name;
+    this.startTime = startTime;
+    this.endTime = endTime;
+  }
+
   public void updateWith(PeriodRequestDTO dto) {
     if (dto.getDayOfWeek() != null) {
       this.dayOfWeek = dto.getDayOfWeek();
