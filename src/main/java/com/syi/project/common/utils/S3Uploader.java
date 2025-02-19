@@ -1,6 +1,7 @@
 package com.syi.project.common.utils;
 
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,13 +41,16 @@ public class S3Uploader {
   @Value("${cloud.aws.region.static}")
   private String region;
 
+  // 파일 업로드 (단일/다중 처리 통합)
   @Operation(summary = "파일 업로드 (단일/다중)")
   @PostMapping("/upload")
-  // 파일 업로드 (단일/다중 처리 통합)
   public String uploadFile(MultipartFile file, String dirName) throws IOException {
+    String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
     String dateFolder = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     String fileName = createFileName(file.getOriginalFilename());
-    String fullPath = dirName + "/" + dateFolder + "/" + fileName;
+
+    // dirName/memberId/dateFolder/fileName 형태로 경로 구성
+    String fullPath = String.format("%s/%s/%s/%s", dirName, memberId, dateFolder, fileName);
 
     ObjectMetadata metadata = new ObjectMetadata();
     metadata.setContentType(file.getContentType());
@@ -54,7 +59,9 @@ public class S3Uploader {
     amazonS3Client.putObject(
         new PutObjectRequest(bucket, fullPath, file.getInputStream(), metadata)
     );
-    return amazonS3Client.getUrl(bucket, fullPath).toString();
+
+    log.info("파일 업로드 성공 경로: {}", fullPath);
+    return fullPath;
   }
 
   // 파일 수정

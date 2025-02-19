@@ -102,15 +102,15 @@ public class FileService {
   @Transactional
   public File uploadFile(MultipartFile multipartFile, String dirName, Member uploader) {
     try {
-      // 1. S3에 파일 업로드
-      String fileUrl = s3Uploader.uploadFile(multipartFile, dirName);
-      String objectKey = extractObjectKeyFromUrl(fileUrl);
+      // 1. S3에 파일 업로드하고 저장 경로 받기
+      // dirName은 이미 기능명을 나타내므로 그대로 전달
+      String fullPath = s3Uploader.uploadFile(multipartFile, dirName);
 
       // 2. DB에 메타데이터 저장
       File file = File.builder()
           .originalName(multipartFile.getOriginalFilename())
-          .objectKey(objectKey)
-          .path(dirName + "/" + objectKey)
+          .objectKey(fullPath)        // 전체 경로를 objectKey로 저장
+          .path(fullPath)             // 전체 경로를 path로 저장
           .size(multipartFile.getSize())
           .mimeType(multipartFile.getContentType())
           .uploadedBy(uploader)
@@ -124,6 +124,7 @@ public class FileService {
     }
   }
 
+  // 단일 파일 수정
   @Transactional
   public File updateFile(Long fileId, MultipartFile newFile, String dirName, Member modifier) {
     File existingFile = fileRepository.findById(fileId)
