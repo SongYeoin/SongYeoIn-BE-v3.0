@@ -1,5 +1,6 @@
 package com.syi.project.notice.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.file.dto.FileResponseDTO;
@@ -8,6 +9,7 @@ import com.syi.project.notice.entity.NoticeFile;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -43,15 +45,17 @@ public class NoticeResponseDTO {
   private final List<FileResponseDTO> files;
 
   @Schema(description = "등록일", example = "2024-11-21")
-  private final LocalDate regDate;
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+  private final LocalDateTime regDate;
 
   @Schema(description = "수정일", example = "2024-11-21")
-  private final LocalDate modifyDate;
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+  private final LocalDateTime modifyDate;
 
   @Builder
   public NoticeResponseDTO(Long id, Long courseId, String title, String content,
       String memberName, Long viewCount, boolean isPinned, List<FileResponseDTO> files,
-      LocalDate regDate, LocalDate modifyDate) {
+      LocalDateTime regDate, LocalDateTime modifyDate) {
     this.id = id;
     this.courseId = courseId;
     this.title = title;

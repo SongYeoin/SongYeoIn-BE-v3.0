@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -72,7 +73,7 @@ public class AdminNoticeController {
       @Parameter(description = "교육과정 ID") @RequestParam(required = true) Long courseId,
       @Parameter(description = "제목 키워드 필터") @RequestParam(required = false) String titleKeyword,
       @AuthenticationPrincipal CustomUserDetails userDetails,
-      Pageable pageable) {
+      @PageableDefault(size = 20) Pageable pageable) {
     Long memberId = userDetails.getId();
     log.info("공지사항 목록 조회 요청 - courseId: {}, memberId: {}, titleKeyword: {}, pageable: {}",
         courseId, titleKeyword, memberId, pageable);

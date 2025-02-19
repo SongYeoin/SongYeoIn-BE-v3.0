@@ -13,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -49,10 +49,10 @@ public class Notice {
   private Course course;
 
   @CreatedDate
-  private LocalDate regDate;
+  private LocalDateTime regDate;
 
   @LastModifiedDate
-  private LocalDate modifyDate;
+  private LocalDateTime modifyDate;
 
   @Column(nullable = false)
   private boolean isPinned;
