@@ -121,7 +121,8 @@ public class AttendanceRequestDTO {
   @Size(max = 255, message = "메모는 최대 255자까지 가능합니다.")
   private String memo;
 
-  private boolean isEntering;
+  private String attendanceType;  // 입실/퇴실/조퇴
+
 
   /* 필터링 조건들 */
   private String studentName;
@@ -137,7 +138,7 @@ public class AttendanceRequestDTO {
   @Builder
   public AttendanceRequestDTO(Long id, String status, LocalDate date,
       LocalDateTime enrollDate, LocalDateTime modifiedDate, Long periodId, Long courseId,
-      Long memberId, String memo, String studentName,LocalDate startDate,LocalDate endDate,List<Long> attendanceIds, boolean isEntering) {
+      Long memberId, String memo, String studentName,LocalDate startDate,LocalDate endDate,List<Long> attendanceIds, String attendanceType) {
     this.id = id;
     this.status = status;
     this.date = date;
@@ -151,7 +152,7 @@ public class AttendanceRequestDTO {
     this.startDate = startDate;
     this.endDate = endDate;
     this.attendanceIds = attendanceIds;
-    this.isEntering = isEntering;
+    this.attendanceType = attendanceType;
   }
 
 
