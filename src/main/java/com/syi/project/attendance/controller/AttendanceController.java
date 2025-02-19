@@ -61,7 +61,7 @@ public class AttendanceController {
       @RequestBody AttendanceRequestDTO attendanceRequestDTO) {
     log.info("출석 등록 요청");
     AttendanceResponseDTO responseDTO = attendanceService.createAttendance(userDetails, attendanceRequestDTO.getCourseId(),
-        attendanceRequestDTO.isEntering(), request);
+        attendanceRequestDTO.getAttendanceType(),attendanceRequestDTO.getPeriodId(), request);
     log.info("출석 등록 완료");
 
     return responseDTO;
