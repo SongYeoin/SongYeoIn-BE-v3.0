@@ -73,7 +73,7 @@ public class AdminController {
       @RequestParam(value = "role", required = false) Role role,
       @Parameter(description = "검색어 (이름)", required = false)
       @RequestParam(value = "word", required = false) String word,
-      @PageableDefault(size = 15) Pageable pageable) {
+      @PageableDefault(size = 20) Pageable pageable) {
     log.info("회원 목록 조회 요청 - 상태: {}, 역할: {}, 검색어: {}", checkStatus, role, word);
     Page<MemberDTO> members = memberService.getFilteredMembers(checkStatus, role, word, pageable);
     log.info("회원 목록 조회 성공 - 총 {}명", members.getTotalElements());
