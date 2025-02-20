@@ -6,7 +6,8 @@ import lombok.Getter;
 public enum AttendanceStatus {
   PRESENT("출석"),
   ABSENT("결석"),
-  LATE("지각");
+  LATE("지각"),
+  EARLY_EXIT("조퇴");
 
   // status 값을 반환하는 메서드
   private final String status;

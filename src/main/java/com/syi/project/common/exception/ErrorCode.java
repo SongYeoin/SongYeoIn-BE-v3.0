@@ -54,22 +54,34 @@ public enum ErrorCode {
   JOURNAL_ACCESS_DENIED("JOURNAL_002", "교육일지에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
   JOURNAL_DUPLICATE_DATE("JOURNAL_003", "해당 날짜에 이미 작성된 교육일지가 있습니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_INVALID_DATE("JOURNAL_004", "유효하지 않은 교육일자입니다.", HttpStatus.BAD_REQUEST),
-  JOURNAL_FILE_REQUIRED("JOURNAL_005", "교육일지 파일 첨부는 필수입니다.", HttpStatus.BAD_REQUEST),
-  JOURNAL_DATE_OUT_OF_RANGE("JOURNAL_006", "교육일자가 과정 기간을 벗어났습니다.", HttpStatus.BAD_REQUEST),
-  JOURNAL_INVALID_FILE_TYPE("JOURNAL_007", "교육일지는 HWP, HWPX, DOCX, DOC 형식만 첨부 가능합니다.", HttpStatus.BAD_REQUEST),
-  JOURNAL_FILE_NOT_FOUND("JOURNAL_008", "선택된 교육일지 중 파일이 없는 항목이 있습니다.", HttpStatus.BAD_REQUEST),
-  JOURNAL_DOWNLOAD_FAILED("JOURNAL_009", "교육일지 일괄 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+  JOURNAL_DATE_OUT_OF_RANGE("JOURNAL_007", "교육일자가 과정 기간을 벗어났습니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_INVALID_FILE_TYPE("JOURNAL_008", "교육일지는 HWP, HWPX, DOCX, DOC 형식만 첨부 가능합니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_FILE_NOT_FOUND("JOURNAL_009", "선택된 교육일지 중 파일이 없는 항목이 있습니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_DOWNLOAD_FAILED("JOURNAL_010", "교육일지 일괄 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
   // 출석 관련 에러
+  // 공통
   ATTENDANCE_NOT_IN_RANGE("ATTENDANCE_001", "학원 네트워크에서만 출석이 가능합니다.", HttpStatus.FORBIDDEN),
-   ATTENDANCE_ENTRY_NOT_ALLOWED("ATTENDANCE_002", "입실 가능 시간이 아닙니다. 교시 시작 전후 10분부터 가능합니다.", HttpStatus.FORBIDDEN),
-   ATTENDANCE_EXIT_NOT_ALLOWED("ATTENDANCE_008", "퇴실 가능 시간이 아닙니다. 교시 종료 전후 10분부터 가능합니다.", HttpStatus.FORBIDDEN),
-   //ATTENDANCE_ENTRY_TOO_EARLY("ATTENDANCE_002", "입실 시간이 너무 이릅니다. 교시 시작 10분 전부터 가능합니다.", HttpStatus.FORBIDDEN),
-  ATTENDANCE_ENTRY_TOO_LATE("ATTENDANCE_003", "입실 시간이 너무 늦었습니다. 교시 시작 후 10분 후까지 가능합니다.", HttpStatus.FORBIDDEN),
-  ATTENDANCE_EXIT_TOO_EARLY("ATTENDANCE_004", "퇴실 시간이 너무 이릅니다. 교시 종료 10분 전부터 가능합니다.", HttpStatus.FORBIDDEN),
-  ATTENDANCE_EXIT_TOO_LATE("ATTENDANCE_005", "퇴실 시간이 너무 늦었습니다. 교시 종료 후 10분 후까지 가능합니다.", HttpStatus.FORBIDDEN),
-  ATTENDANCE_ALREADY_ENTERED("ATTENDANCE_006","이미 입실했습니다.", HttpStatus.BAD_REQUEST),
-  ATTENDANCE_ALREADY_EXITED("ATTENDANCE_007","이미 퇴실했습니다.", HttpStatus.BAD_REQUEST),
+  ATTENDANCE_FAILED("ATTENDANCE_002", "출석에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+  // 입실
+  ATTENDANCE_ENTRY_NOT_ALLOWED("ATTENDANCE_ENTRY_001", "입실이 가능한 시간이 아닙니다", HttpStatus.FORBIDDEN),
+  ATTENDANCE_ENTRY_TOO_EARLY("ATTENDANCE_ENTRY_002", "입실 가능한 시간이 아닙니다. 교시 시작 40분 전부터 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_ENTRY_TOO_LATE("ATTENDANCE_ENTRY_003", "입실 가능한 시간이 아닙니다. 마지막 교시 시작 후 20분 전까지 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_ALREADY_ENTERED("ATTENDANCE_ENTRY_004","이미 입실했습니다.", HttpStatus.BAD_REQUEST),
+  ATTENDANCE_ENTRY_NOT_FIND_PERIOD("ATTENDANCE_ENTRY_005","입실 가능한 교시가 없습니다.",HttpStatus.BAD_REQUEST),
+
+  // 퇴실
+  ATTENDANCE_EXIT_NOT_ALLOWED("ATTENDANCE_EXIT_001", "퇴실 가능 시간이 아닙니다. 마지막 교시 종료 전 20분부터 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_EXIT_TOO_EARLY("ATTENDANCE_EXIT_002", "퇴실 시간이 너무 이릅니다. 교시 종료 10분 전부터 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_EXIT_TOO_LATE("ATTENDANCE_EXIT_003", "퇴실 시간이 너무 늦었습니다. 교시 종료 후 10분 후까지 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_ALREADY_EXITED("ATTENDANCE_EXIT_004","이미 퇴실했습니다.", HttpStatus.BAD_REQUEST),
+  ATTENDANCE_ENTRY_NOT_FOUND("ATTENDANCE_EXIT_005","입실한 기록이 없습니다.",HttpStatus.BAD_REQUEST),
+  ATTENDANCE_EXIT_NOT_FIND_PERIOD("ATTENDANCE_EXIT_006","퇴실 가능한 교시가 없습니다.",HttpStatus.BAD_REQUEST),
+
+  // 조퇴
+  ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS("ATTENDANCE_EARLY_EXIT_001","이미 출석한 교시에는 조퇴할 수 없습니다.",HttpStatus.BAD_REQUEST),
+
+
 
 
   // 수강신청 관련 에러

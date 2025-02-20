@@ -485,9 +485,9 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .select(new QAttendanceDailyStats(
             Expressions.nullExpression(),
             attendance.date,
-            attendance.status.count(),
-            attendance.status.when(AttendanceStatus.LATE).then(1L).otherwise(0L).sum(),
-            attendance.status.when(AttendanceStatus.ABSENT).then(1L).otherwise(0L).sum()
+            attendance.status.count().intValue(),
+            attendance.status.when(AttendanceStatus.LATE).then(1).otherwise(0).sum(),
+            attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum()
         ))
         .from(attendance)
         .where(attendance.memberId.eq(memberId)
@@ -503,9 +503,9 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .select(new QAttendanceDailyStats(
             attendance.memberId,  // 학생 ID 추가
             attendance.date,
-            attendance.status.count(),
-            attendance.status.when(AttendanceStatus.LATE).then(1L).otherwise(0L).sum(),
-            attendance.status.when(AttendanceStatus.ABSENT).then(1L).otherwise(0L).sum()
+            attendance.status.count().intValue(),
+            attendance.status.when(AttendanceStatus.LATE).then(1).otherwise(0).sum(),
+            attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum()
         ))
         .from(attendance)
         .where(attendance.courseId.eq(courseId))

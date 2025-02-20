@@ -213,7 +213,7 @@ public class ClubService {
 
             // 파일 처리
             if (file != null) {
-                String dirName = "club/" + clubId;
+                String dirName = "club";
 
                 // 기존 파일이 있는 경우 삭제하고 새 파일로 교체
                 ClubFile clubFile = clubFileRepository.findByClubId(clubId).stream().findFirst().orElse(null);

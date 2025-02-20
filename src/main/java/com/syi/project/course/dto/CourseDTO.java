@@ -53,13 +53,13 @@ public class CourseDTO {
 
   @Schema(description = "교육 과정명", example = "자바 스프링 백엔드 과정")
   @NotBlank(groups = Create.class,message = "교육 과정명은 필수입니다.")
-  @Size(min = 2, max = 20,message = "교육 과정명은 2자 이상 20자 이하이어야 합니다.")
+  @Size(min = 2, max = 50,message = "교육 과정명은 2자 이상 50자 이하이어야 합니다.")
   private String name;
 
   @Schema(description = "교육과정 설명", example = "자바와 스픠링을 배우고 익힙니다.")
   //@NotBlank(message = "교육과정 설명은 필수입니다.")
   @Nullable
-  @Size(min = 0, max = 50, message = "교육 과정 설명은 50자 이하이어야 합니다.")
+  @Size(min = 0, max = 100, message = "교육 과정 설명은 100자 이하이어야 합니다.")
   private String description;
 
   @Schema(description = "담당자명", example = "황정미")

@@ -11,4 +11,5 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long>,At
 
   boolean existsByMemberIdAndDateAndExitTimeNotNull(Long id, LocalDate localDate);
 
+  boolean existsByMemberIdAndDateAndEnterTimeNotNull(Long id, LocalDate localDate);
 }
