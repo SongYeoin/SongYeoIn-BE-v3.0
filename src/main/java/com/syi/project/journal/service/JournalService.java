@@ -109,8 +109,7 @@ public class JournalService {
       log.info("기존 파일 삭제 완료 - fileId: {}", existingJournalFile.getFile().getId());
     }
 
-    // 파일 업로드 시 journal의 educationDate 전달
-    File savedFile = fileService.uploadFile(newFile, "journals", member, journal.getEducationDate());
+    File savedFile = fileService.uploadFile(newFile, "journals", member);
     log.info("새 파일 업로드 완료 - fileName: {}", savedFile.getOriginalName());
 
     if (existingJournalFile != null) {
@@ -207,14 +206,7 @@ public class JournalService {
         .educationDate(requestDTO.getEducationDate())
         .build();
 
-    // 파일 업로드 시 educationDate 전달
-    if (requestDTO.getFile() != null && !requestDTO.getFile().isEmpty()) {
-      File savedFile = fileService.uploadFile(requestDTO.getFile(), "journals", member, requestDTO.getEducationDate());
-      journal.setFile(JournalFile.builder()
-          .journal(journal)
-          .file(savedFile)
-          .build());
-    }
+    updateJournalFile(journal, requestDTO.getFile(), member);
 
     Journal savedJournal = journalRepository.save(journal);
     log.info("교육일지 등록 완료 - journalId: {}", savedJournal.getId());

@@ -225,12 +225,10 @@ public class ClubService {
                         fileService.deleteFile(existingFile.getId(), member); // 기존 파일 삭제
                     }
 
-                    // 새 파일 업로드 - club의 regDate 사용
-                    File uploadedFile = fileService.uploadFile(file, dirName, member, club.getRegDate());
+                    // 새 파일 업로드
+                    File uploadedFile = fileService.uploadFile(file, dirName, member);
                     log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
                     clubFile.updateFile(uploadedFile);
-                    fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
-                    clubFile.updateClub(club);
 
                     // 파일 DTO 생성
                     fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
@@ -242,8 +240,8 @@ public class ClubService {
                     // ClubFile 저장
                     //clubFileRepository.save(clubFile);  // ClubFile을 명시적으로 저장
                 } else {
-                    // 기존 파일이 없는 경우 새 파일 업로드 - club의 regDate 사용
-                    File uploadedFile = fileService.uploadFile(file, dirName, member, club.getRegDate());
+                    // 기존 파일이 없는 경우 새 파일 업로드
+                    File uploadedFile = fileService.uploadFile(file, dirName, member);
                     log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
                     ClubFile newClubFile = ClubFile.builder()
                             .club(club)

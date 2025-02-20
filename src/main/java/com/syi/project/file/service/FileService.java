@@ -13,7 +13,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -48,12 +47,12 @@ public class FileService {
 
   // 다중 파일 업로드
   @Transactional
-  public List<File> uploadFiles(List<MultipartFile> multipartFiles, String dirName, Member uploader, LocalDate targetDate) {
+  public List<File> uploadFiles(List<MultipartFile> multipartFiles, String dirName, Member uploader) {
     List<File> uploadedFiles = new ArrayList<>();
 
     for (MultipartFile file : multipartFiles) {
       try {
-        File uploadedFile = uploadFile(file, dirName, uploader, targetDate);  // targetDate 전달
+        File uploadedFile = uploadFile(file, dirName, uploader);
         uploadedFiles.add(uploadedFile);
       } catch (Exception e) {
         log.error("파일 업로드 실패: {}", file.getOriginalFilename());
@@ -73,7 +72,7 @@ public class FileService {
 
   // 다중 파일 수정
   @Transactional
-  public List<File> updateFiles(FileUpdateDTO updateDTO, String dirName, Member modifier, LocalDate originalPostDate) {
+  public List<File> updateFiles(FileUpdateDTO updateDTO, String dirName, Member modifier) {
     List<File> updatedFiles = new ArrayList<>();
 
     // 1. 삭제 요청된 파일들 처리
@@ -87,8 +86,8 @@ public class FileService {
     if (updateDTO.getNewFiles() != null && !updateDTO.getNewFiles().isEmpty()) {
       for (MultipartFile newFile : updateDTO.getNewFiles()) {
         try {
-          File uploadedFile = uploadFile(newFile, dirName, modifier, originalPostDate);  // this.uploadFile 또는 uploadFile로 호출
-          updatedFiles.add(uploadedFile);  // save는 uploadFile 내부에서 이미 하고 있음
+          File uploadedFile = uploadFile(newFile, dirName, modifier);
+          updatedFiles.add(uploadedFile);
         } catch (Exception e) {
           log.error("새 파일 업로드 실패: {}", newFile.getOriginalFilename());
           throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
@@ -101,10 +100,11 @@ public class FileService {
 
   // 단일 파일 업로드
   @Transactional
-  public File uploadFile(MultipartFile multipartFile, String dirName, Member uploader, LocalDate targetDate) {
+  public File uploadFile(MultipartFile multipartFile, String dirName, Member uploader) {
     try {
       // 1. S3에 파일 업로드하고 저장 경로 받기
-      String fullPath = s3Uploader.uploadFile(multipartFile, dirName, targetDate);
+      // dirName은 이미 기능명을 나타내므로 그대로 전달
+      String fullPath = s3Uploader.uploadFile(multipartFile, dirName);
 
       // 2. DB에 메타데이터 저장
       File file = File.builder()
@@ -126,7 +126,7 @@ public class FileService {
 
   // 단일 파일 수정
   @Transactional
-  public File updateFile(Long fileId, MultipartFile newFile, String dirName, Member modifier, LocalDate originalPostDate) {
+  public File updateFile(Long fileId, MultipartFile newFile, String dirName, Member modifier) {
     File existingFile = fileRepository.findById(fileId)
         .orElseThrow(() -> new IllegalArgumentException("파일이 존재하지 않습니다."));
 
@@ -136,8 +136,8 @@ public class FileService {
     }
 
     try {
-      // 1. 새 파일 업로드 시도 - originalPostDate 사용
-      String newFileUrl = s3Uploader.uploadFile(newFile, dirName, originalPostDate);
+      // 1. 새 파일 업로드 시도
+      String newFileUrl = s3Uploader.uploadFile(newFile, dirName);
 
       // 2. 기존 파일 삭제
       s3Uploader.deleteFile(existingFile.getPath());

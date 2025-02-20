@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.time.LocalDate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,7 +31,7 @@ public class TestController {
       @Parameter(description = "업로드할 파일")  // 파라미터 설명 추가
       @RequestParam("file") MultipartFile file
   ) throws IOException {
-    return s3Uploader.uploadFile(file, "test", LocalDate.now());  // 현재 날짜 전달
+    return s3Uploader.uploadFile(file, "test");
   }
 }
 
