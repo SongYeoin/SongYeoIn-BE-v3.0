@@ -10,12 +10,12 @@ import lombok.ToString;
 public class AttendanceDailyStats {
   private Long studentId;
   private LocalDate date;
-  private long totalSessions;
-  private long lateCount;
-  private long absentCount;
+  private int totalSessions;
+  private int lateCount;
+  private int absentCount;
 
   @QueryProjection
-  public AttendanceDailyStats(Long studentId, LocalDate date, long totalSessions, long lateCount, long absentCount) {
+  public AttendanceDailyStats(Long studentId, LocalDate date, int totalSessions, int lateCount, int absentCount) {
     this.studentId = studentId;
     this.date = date;
     this.totalSessions = totalSessions;
