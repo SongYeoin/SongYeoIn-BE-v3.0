@@ -57,10 +57,10 @@ management:
 
 logging:
   level:
-    com.syi.project: DEBUG
-    org.springframework: INFO
-    org.hibernate.SQL: DEBUG   # SQL 생성 로그
-    org.hibernate.type.descriptor.sql: TRACE  # SQL 바인딩 로그
+      com.syi.project.journal.controller: INFO    # 컨트롤러는 INFO 레벨
+      com.syi.project.journal.service: DEBUG      # 서비스는 DEBUG 레벨
+      org.springframework: INFO
+      com.ict: DEBUG
 
 
 jwt:
