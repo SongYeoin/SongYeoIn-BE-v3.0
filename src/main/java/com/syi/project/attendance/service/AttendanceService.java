@@ -13,6 +13,7 @@ import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_FAILED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_NOT_IN_RANGE;
 
 //import com.syi.project.attendance.AttendanceCalculator;
+import com.syi.project.attendance.AttendanceCalculator;
 import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
@@ -55,6 +56,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,6 +79,7 @@ public class AttendanceService {
   //private final EnrollRepository enrollRepository;
   private final PeriodRepository periodRepository;
   private final EnrollRepository enrollRepository;
+  private final HolidayService holidayService;
 
   // 담당자
   /* 출석 전체 조회 */
@@ -906,8 +909,14 @@ public class AttendanceService {
     List<AttendanceDailyStats> dailyStats = attendanceRepository.findAttendanceStatsByMemberAndCourse(memberId, courseId);
     dailyStats.forEach(stat -> log.debug("학생-AttendanceDailyStats: {}", stat));
 
-     return null;
-    //return AttendanceCalculator.calculateAttendanceRates(dailyStats, startDate, endDate);
+    int year = startDate.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
+
+    log.debug("교육과정 기간 기준 연도: {}", year);
+
+    // ✅ 해당 연도의 공휴일 정보를 DB에서 가져오기
+    Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
+
+    return AttendanceCalculator.calculateAttendanceRates(dailyStats, startDate, endDate,holidays);
   }
 
 
@@ -937,12 +946,18 @@ public class AttendanceService {
 
       log.debug("학생 {} 출석률 계산 시작", studentId);
 
-      // 임시
-/*      Map<String, Object> attendanceRate = AttendanceCalculator.calculateAttendanceRates(
-          studentStats, startDate, endDate);
-      studentAttendanceRates.put(studentId, attendanceRate);*/
+      int year = startDate.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
 
-      //log.debug("학생 {} 출석률 계산 완료: {}", studentId, attendanceRate);
+      log.debug("(관리자) - 교육과정 기간 기준 연도: {}", year);
+
+      // ✅ 해당 연도의 공휴일 정보를 DB에서 가져오기
+      Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
+
+      Map<String, Object> attendanceRate = AttendanceCalculator.calculateAttendanceRates(
+          studentStats, startDate, endDate, holidays);
+      studentAttendanceRates.put(studentId, attendanceRate);
+
+      log.debug("학생 {} 출석률 계산 완료: {}", studentId, attendanceRate);
     }
 
     return studentAttendanceRates;
