@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.file.dto.FileResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import java.io.InputStream;
@@ -45,7 +46,8 @@ public class S3Uploader {
   @Operation(summary = "파일 업로드 (단일/다중)")
   @PostMapping("/upload")
   public String uploadFile(MultipartFile file, String dirName) throws IOException {
-    String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
+    // Member 엔티티에서 ID를 가져오도록 수정 필요
+    Long memberId = ((CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
     String dateFolder = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     String fileName = createFileName(file.getOriginalFilename());
 

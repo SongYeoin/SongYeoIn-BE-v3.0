@@ -91,21 +91,13 @@ public class JournalService {
 
   // 신규: 파일 관련 공통 메서드들
   private void validateAndProcessFile(MultipartFile file, String action) {
-    if (file == null || file.isEmpty()) {
-      throw new InvalidRequestException(ErrorCode.JOURNAL_FILE_REQUIRED);
-    }
-
+    // 파일 필수 체크는 DTO에서 처리되므로 제거
     String originalFilename = file.getOriginalFilename();
-    if (originalFilename == null || originalFilename.isEmpty()) {
-      throw new InvalidRequestException(ErrorCode.FILE_UPLOAD_FAILED, "파일명이 비어있습니다.");
-    }
 
+    // 파일 형식 검사만 여기서 처리
     String extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
     if (!ALLOWED_EXTENSIONS.contains(extension)) {
-      throw new InvalidRequestException(
-          ErrorCode.FILE_EXTENSION_MISMATCH,
-          String.format("교육일지는 %s 형식만 첨부 가능합니다.", String.join(", ", ALLOWED_EXTENSIONS).toUpperCase())
-      );
+      throw new InvalidRequestException(ErrorCode.JOURNAL_INVALID_FILE_TYPE);
     }
   }
 
@@ -192,19 +184,26 @@ public class JournalService {
     Member member = validateAndGetMember(memberId);
     validateMemberRole(member);
     validateEnrollment(memberId, requestDTO.getCourseId());
-    validateAndProcessFile(requestDTO.getFile(), "등록");
+
+    String fileName = requestDTO.getFile().getOriginalFilename();
+    if (fileName != null) {
+      String extension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+      if (!ALLOWED_EXTENSIONS.contains(extension)) {
+        throw new InvalidRequestException(ErrorCode.JOURNAL_INVALID_FILE_TYPE);
+      }
+    }
 
     Course course = courseRepository.findById(requestDTO.getCourseId())
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 강좌입니다."));
 
-    validateEducationDate(requestDTO.getEducationDate(), course, member);  // 여기에 추가
+    validateEducationDate(requestDTO.getEducationDate(), course, member);
 
     Journal journal = Journal.builder()
         .member(member)
         .course(course)
         .title(requestDTO.getTitle())
         .content(requestDTO.getContent())
-        .educationDate(requestDTO.getEducationDate())  // 교육일자 추가
+        .educationDate(requestDTO.getEducationDate())
         .build();
 
     updateJournalFile(journal, requestDTO.getFile(), member);
