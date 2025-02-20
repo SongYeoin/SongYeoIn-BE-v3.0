@@ -32,10 +32,6 @@ spring:
       ddl-auto: update
     database: mysql
     database-platform: org.hibernate.dialect.MySQL8Dialect
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
 
   thymeleaf:
     enabled: true
@@ -57,16 +53,15 @@ management:
 
 logging:
   level:
-      com.syi.project.journal.controller: INFO    # 컨트롤러는 INFO 레벨
-      com.syi.project.journal.service: DEBUG      # 서비스는 DEBUG 레벨
-      org.springframework: INFO
-      com.ict: DEBUG
-
+    com.syi.project.journal.controller: INFO    # 컨트롤러는 INFO 레벨
+    com.syi.project.journal.service: DEBUG      # 서비스는 DEBUG 레벨
+    org.springframework: INFO
+    com.ict: DEBUG
 
 jwt:
-  secret: "7ZWc7IOd7KCc7J6Q7Yq47Yq467Cx7Iuc7Yq4IO2VnOq1rOudvCDsoIDslYjsirXrs7Qg" # Base64 인코딩된 시크릿 키 (송여인스프링부트프로젝트)
+  secret: ${JWT_SECRET} # Base64 인코딩된 시크릿 키
   accessTokenValidity: 1800000 # Access Token 유효시간 (30분)
-  refreshTokenValidity: 1209600000 # Refresh Token 유효시간 (14일)
+  refreshTokenValidity: 604800000 # Refresh Token 유효시간 (7일)
 
 cloud:
   aws:
@@ -74,9 +69,9 @@ cloud:
       access-key: ${AWS_ACCESS_KEY}    # 팀에서 공유하는 IAM 사용자 키
       secret-key: ${AWS_SECRET_KEY}    # 팀에서 공유하는 IAM 시크릿 키
     s3:
-      bucket: songyeoin-file-storage       # 버킷 이름
+      bucket: ${AWS_BUCKET}       # 버킷 이름
     region:
-      static: ap-northeast-2         # 서울 리전
+      static: ${AWS_REGION}         # 서울 리전
     stack:
       auto: false
 
@@ -89,4 +84,4 @@ cloud:
 
 public:
   api:
-      service-key: ${PUBLIC_API_SERVICE_KEY}  # 공휴일 api
+    service-key: ${PUBLIC_API_SERVICE_KEY}  # 공휴일 api
