@@ -82,12 +82,13 @@ public class NoticeService {
     noticeRepository.save(notice);
     log.info("공지사항 저장 완료 - id: {}", notice.getId());
 
-    // 파일 업로드 처리
+    // 파일 업로드 처리 - notice의 regDate 사용
     if (files != null && !files.isEmpty()) {
       files.forEach(file -> {
         validateFile(file);
         try {
-          File uploadedFile = fileService.uploadFile(file, "notices", member);
+          // notice의 regDate를 파일 저장 경로에 사용
+          File uploadedFile = fileService.uploadFile(file, "notices", member, notice.getRegDate());
           NoticeFile noticeFile = NoticeFile.builder()
               .notice(notice)
               .file(uploadedFile)
@@ -175,12 +176,13 @@ public class NoticeService {
       });
     }
 
-    // 새 파일 추가
+    // 새 파일 추가 - notice의 regDate 사용
     if (newFiles != null && !newFiles.isEmpty()) {
       newFiles.forEach(file -> {
         validateFile(file);
         try {
-          File uploadedFile = fileService.uploadFile(file, "notices", notice.getMember());
+          // notice의 regDate를 파일 저장 경로에 사용
+          File uploadedFile = fileService.uploadFile(file, "notices", notice.getMember(), notice.getRegDate());
           NoticeFile noticeFile = NoticeFile.builder()
               .notice(notice)
               .file(uploadedFile)

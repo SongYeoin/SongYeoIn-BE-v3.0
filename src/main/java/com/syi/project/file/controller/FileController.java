@@ -10,6 +10,7 @@ import com.syi.project.file.entity.File;
 import com.syi.project.file.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -37,12 +38,13 @@ public class FileController {
   public ResponseEntity<FileResponseDTO> uploadFile(
       @RequestParam("file") MultipartFile file,
       @RequestParam("dirName") String dirName,
+      @RequestParam("targetDate") LocalDate targetDate,  // 추가
       @AuthenticationPrincipal Long memberId
   ) {
     Member member = memberRepository.findById(memberId)
         .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
-    File uploadedFile = fileService.uploadFile(file, dirName, member);
+    File uploadedFile = fileService.uploadFile(file, dirName, member, targetDate);  // targetDate 전달
     FileResponseDTO response = FileResponseDTO.from(uploadedFile, s3Uploader);
 
     return ResponseEntity.ok(response);
@@ -53,12 +55,13 @@ public class FileController {
   public ResponseEntity<List<FileResponseDTO>> uploadMultipleFiles(
       @RequestParam("files") List<MultipartFile> files,
       @RequestParam("dirName") String dirName,
+      @RequestParam("targetDate") LocalDate targetDate,  // 추가
       @AuthenticationPrincipal Long memberId
   ) {
     Member member = memberRepository.findById(memberId)
         .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
-    List<File> uploadedFiles = fileService.uploadFiles(files, dirName, member);
+    List<File> uploadedFiles = fileService.uploadFiles(files, dirName, member, targetDate);  // targetDate 전달
     List<FileResponseDTO> response = uploadedFiles.stream()
         .map(file -> FileResponseDTO.from(file, s3Uploader))
         .collect(Collectors.toList());
@@ -72,12 +75,13 @@ public class FileController {
       @PathVariable Long fileId,
       @RequestParam(value = "file", required = false) MultipartFile newFile,
       @RequestParam("dirName") String dirName,
+      @RequestParam("targetDate") LocalDate targetDate,  // 추가
       @AuthenticationPrincipal Long memberId
   ) {
     Member member = memberRepository.findById(memberId)
         .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
-    File updatedFile = fileService.updateFile(fileId, newFile, dirName, member);
+    File updatedFile = fileService.updateFile(fileId, newFile, dirName, member, targetDate);  // targetDate 전달
     FileResponseDTO response = FileResponseDTO.from(updatedFile, s3Uploader);
 
     return ResponseEntity.ok(response);
@@ -88,12 +92,13 @@ public class FileController {
   public ResponseEntity<List<FileResponseDTO>> updateMultipleFiles(
       @ModelAttribute FileUpdateDTO updateDTO,
       @RequestParam("dirName") String dirName,
+      @RequestParam("targetDate") LocalDate targetDate,  // 추가
       @AuthenticationPrincipal Long memberId
   ) {
     Member member = memberRepository.findById(memberId)
         .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
-    List<File> updatedFiles = fileService.updateFiles(updateDTO, dirName, member);
+    List<File> updatedFiles = fileService.updateFiles(updateDTO, dirName, member, targetDate);  // targetDate 전달
     List<FileResponseDTO> response = updatedFiles.stream()
         .map(file -> FileResponseDTO.from(file, s3Uploader))
         .collect(Collectors.toList());
