@@ -37,13 +37,13 @@ public class Course {
   private Long id;
 
   @NotNull
-  @Size(min = 2, max = 20, message = "교육 과정명은 2자 이상 20자 이하이어야 합니다.")
-  @Column(nullable = false, unique = true, length = 20)
+  @Size(min = 2, max = 50, message = "교육 과정명은 2자 이상 50자 이하이어야 합니다.")
+  @Column(nullable = false, unique = true, length = 50)
   private String name;
 
   //@NotNull
-  @Size(max = 50, message = "교육 과정 설명은 50자 이하이어야 합니다.")
-  @Column(length = 50)
+  @Size(max = 100, message = "교육 과정 설명은 100자 이하이어야 합니다.")
+  @Column(length = 100)
   private String description;
 
   @NotNull
