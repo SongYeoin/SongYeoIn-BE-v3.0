@@ -87,6 +87,11 @@ public enum ErrorCode {
   // 조퇴
   ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS("ATTENDANCE_EARLY_EXIT_001","이미 출석한 교시에는 조퇴할 수 없습니다.",HttpStatus.BAD_REQUEST),
 
+  // 출석률 관련
+  ATTENDANCE_SEGMENT_NOT_FOUND("ATTENANCE_SEGMENT_001","해당하는 차수를 찾을 수 없습니다.",HttpStatus.NOT_FOUND),
+
+  // 프린트 관련
+  ATTENDANCE_PRINT_DATA_NOT_FOUND("ATTENDANCE_PRINT_001","해당 차수에 대한 프린트 데이터가 없습니다",HttpStatus.NOT_FOUND),
 
 
 
