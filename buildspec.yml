@@ -13,7 +13,7 @@ phases:
       - echo "Creating necessary directories..."
       - mkdir -p .platform/nginx/conf.d      # Nginx 설정 디렉토리 생성
       - mkdir -p .platform/hooks/postdeploy  # Hook 스크립트 디렉토리 생성
-      - mkdir -p /opt/elasticbeanstalk/hooks/postdeploy  # EB에서 실행할 Hook 위치 생성
+      - mkdir -p /opt/elasticbeanstalk/hooks/postdeploy  # Elastic Beanstalk의 postdeploy Hook 실행 디렉토리 생성
 
       # Nginx 설정 다운로드
       - aws ssm get-parameter --name "/platform_nginx_conf" --query "Parameter.Value" --output text | sed 's/\\n/\n/g' > .platform/nginx/conf.d/custom.conf
@@ -81,13 +81,10 @@ phases:
       - ls -l application.jar Procfile
       - ls -aR .platform
 
-      # Nginx 설정을 실제 적용
-      - echo "Applying custom Nginx configuration..."
-      - sudo cp .platform/nginx/conf.d/custom.conf /etc/nginx/conf.d/custom.conf  # Nginx 설정 반영
-      - sudo nginx -t  # Nginx 설정 테스트
-      - sudo systemctl restart nginx  # Nginx 재시작
+      # Elastic Beanstalk 인스턴스에서 실행할 Hook 스크립트가 설정을 적용하도록 수정
+      - echo "Skipping direct Nginx configuration in CodeBuild (Handled by Hook in Elastic Beanstalk)..."
 
-      # ZIP 파일 생성
+      # 배포 ZIP 파일 생성
       - echo "Creating deployment ZIP file..."
       - zip -r deployment.zip application.jar Procfile .platform
       - echo "Checking ZIP file contents..."
