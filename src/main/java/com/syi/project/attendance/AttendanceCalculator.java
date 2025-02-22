@@ -6,10 +6,12 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+
 
 @Slf4j
 public class AttendanceCalculator {
@@ -17,7 +19,7 @@ public class AttendanceCalculator {
   // 참여수당 (20일)
   private static final int SEGMENT_DAYS = 20;
   private static final int TOTAL_SESSIONS_PER_DAY = 8; // 하루 8교시
-  private static final int LATE_THRESHOLD = 3;
+  private static final int THRESHOLD = 3;  // 지각/조퇴 3회시 결석
 
   /**
    * 출석률을 계산하는 메서드 (주말, 공휴일 제외 + 지각 3회 누적 시 결서 1일 적용)
@@ -34,121 +36,249 @@ public class AttendanceCalculator {
 
     log.info("출석률 계산 시작");
 
-    // 첫 날 제외
+    // 첫 날 제외하고 유효한 전체 출석일 (115일)
     List<LocalDate> validDays = getValidDays(startDate.plusDays(1), endDate, holidays);
-
-
     // 20일 단위 차수 계산
-    List<Map<String, Object>> twentyDaySegments = calculateTwentyDaySegments(validDays);
-    // 20일 단위 출석률 리스트
-    List<Map<String, Object>> segmentAttendanceRates = new ArrayList<>();
+    List<Map<String, Object>> segments = calculateTwentyDaySegments(validDays);
+    log.debug("20일 단위 차수: {}", segments);
 
     int totalAttendanceDays = 0; // 학생이 실제 출석한 총 일수
-    //int validAttendanceDays = 0; // 출석 가능한 총 일수 (주말/공휴일 제외) - 교육과정 기간
+    int totalLateCount = 0;     // 지각한 횟수
+    int totalEarlyLeaveCount = 0;   // 조퇴한 횟수
+
+    int accumulatedIncidents = 0; // 전체 기간 동안의 지각+조퇴 누적 횟수
+
     List<Map<String, Object>> twentyDayRateDetails = new ArrayList<>(); // 20일 단위 출석률 저장 리스트
 
-    int twentyDayAttendanceDays = 0;  // 20일 중 실제 출석일수
-    int accumulatedLateCount = 0;   // 지각 횟수 누적
+    int currentSegmentDays = 0;
+    int currentSegmentAttendance = 0;
+    int currentSegmentLateCount = 0;
+    int currentSegmentEarlyLeaveCount = 0;
+    int periodIndex = 0;
 
-    // 20일 단위 출석률 기간 미리 설정
-/*    List<Map<String, Object>> twentyDayPeriods = calculateTwentyDayPeriods(startDate.plusDays(1), endDate,
-        holidays);*/
-
-/*    // 유효한 출석 일수 계산
-    validAttendanceDays = twentyDayPeriods.stream()
-        .mapToInt(period -> {
-          LocalDate start = LocalDate.parse((String) period.get("startDate"));
-          LocalDate end = LocalDate.parse((String) period.get("endDate"));
-          return (int) start.datesUntil(end.plusDays(1))
-              .filter(d -> !(d.getDayOfWeek() == DayOfWeek.SATURDAY
-                  || d.getDayOfWeek() == DayOfWeek.SUNDAY || holidays.contains(d)))
-              .count();
-        })
-        .sum();
-
-    log.debug("유효한 출석 가능 일수 - 교육과정 기간: {}일", validAttendanceDays);*/
+    int currentSegmentIncidents = 0; // 현재 20일 기간의 지각+조퇴 누적 횟수
 
     dailyStats.sort(Comparator.comparing(AttendanceDailyStats::getDate)); // 날짜순으로 정렬
 
-    int processedDays = 0;  // 처리한 출석 가능 일수
-    int periodIndex = 0;    // 현재 20일 차수 인덱스
-
     for (AttendanceDailyStats stats : dailyStats) {
+      log.info("===============start=================");
       LocalDate date = stats.getDate();
+      log.debug("처리 중인 날짜: {}", date);
 
-      // ✅ 첫날 제외
+      // 첫날 제외
       if (date.isEqual(startDate)) {
         continue;
       }
 
       // 주말 및 공휴일 제외
-      if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+      if (date.getDayOfWeek() == DayOfWeek.SATURDAY ||
+          date.getDayOfWeek() == DayOfWeek.SUNDAY ||
+          holidays.contains(date)) {
         continue;
       }
-      if (holidays.contains(date)) {
-        continue;
-      }
+
+      log.debug("학생 ID: {}",stats.getStudentId() == null ? "학생거라 null" : stats.getStudentId());
+      log.debug("totalSessions(출석 데이처가 있는 총 교시 수): {}", stats.getTotalSessions());
+      log.debug("lateCount(8교시 중 지각 횟수): {}", stats.getLateCount());
+      log.debug("absentCount(8교시 중 결석 횟수): {}", stats.getAbsentCount());
+      log.debug("earlyLeaveCount(8교시 중 조퇴 횟수): {}", stats.getEarlyLeaveCount());
 
       // 출석 인정 여부
-      boolean isAbsent = stats.getAbsentCount() == 8; // 하루 8교시 전부 결석이면 결석 처리
+      boolean isAbsent = stats.getAbsentCount() == TOTAL_SESSIONS_PER_DAY; // 하루 8교시 전부 결석이면 결석 처리
 
+      // 하루에 하나씩만 카운트
+      boolean isLate = !isAbsent && (stats.getAbsentCount() > 0 || stats.getLateCount() > 0);
+      boolean isEarlyLeave = !isAbsent && stats.getEarlyLeaveCount() > 0;
+
+      // 전체 출석률용 카운트
       if (!isAbsent) {
-        accumulatedLateCount += stats.getLateCount(); // 지각 횟수 누적 => 지각은 하루에 한번밖에 가능하지 않음
+        totalAttendanceDays++;
+        log.debug("출석일 증가: {}", totalAttendanceDays);
 
-        if (accumulatedLateCount >= LATE_THRESHOLD) {
-          isAbsent = true; // 지각이 누적 3회 이상이면 결석 처리
-          accumulatedLateCount -= LATE_THRESHOLD; // 결석 1일 적용 후 남은 지각 횟수 차감
+        /*if (isLate) {
+          totalLateCount++;
+          log.debug("지각 카운트 증가: {}", totalLateCount);
         }
-      }
 
-      if (!isAbsent) {
-        totalAttendanceDays++;  // 전체 출석일 증가
-        twentyDayAttendanceDays++;    // 20일 단위 출석일 증가
-      }
+        if (isEarlyLeave) {
+          totalEarlyLeaveCount++;
+          log.debug("조퇴 카운트 증가: {}", totalEarlyLeaveCount);
+        }*/
 
-      processedDays++;
+        if (isLate || isEarlyLeave) {
+          accumulatedIncidents++; // 지각이나 조퇴가 있으면 누적
+
+          log.debug("지각+조퇴 합한 값: {}",accumulatedIncidents);
+          // 3회가 되면 출석일 하나 차감
+          if (accumulatedIncidents >= THRESHOLD) {
+            totalAttendanceDays--;
+            log.debug("1회 출석일 감소!!");
+            accumulatedIncidents -= THRESHOLD; // 3회 초과분만 남김
+            log.debug("출석일 감소 후 3회 초과분만 남김: {}", accumulatedIncidents);
+          }
+        }
+
+
+
+/*        int totalAbsenceDays = (totalLateCount / THRESHOLD) +
+            (totalEarlyLeaveCount / THRESHOLD);
+        totalLateCount %= THRESHOLD;
+        totalEarlyLeaveCount %= THRESHOLD;*/
+
+
+
+/*        int totalIncidents = (totalLateCount + totalEarlyLeaveCount);
+        int totalAbsenceDays = totalIncidents / THRESHOLD;
+        totalLateCount %= THRESHOLD;
+        totalEarlyLeaveCount %= THRESHOLD;
+
+        if (totalIncidents >= THRESHOLD) {
+          totalIncidents %= THRESHOLD;
+        }*/
+
+        //log.debug("지각 횟수: {}, 조퇴 횟수: {}", totalLateCount, totalEarlyLeaveCount);
+        //log.debug("지각 + 조퇴 총 횟수: {}", accumulatedIncidents);
+        //log.debug("차감될 결석일 수: {}", totalAbsenceDays);
+
+        /*// 남은 횟수 계산 (지각과 조퇴 분리)
+        int remainingIncidents = totalIncidents % THRESHOLD;
+        int previousLateCount = totalLateCount;
+        int previousEarlyLeaveCount = totalEarlyLeaveCount;
+
+        // 남은 지각과 조퇴 횟수를 원래 비율대로 유지
+        if (totalIncidents > 0) {
+          totalLateCount = (previousLateCount * remainingIncidents) / totalIncidents;
+          totalEarlyLeaveCount = remainingIncidents - totalLateCount;
+        }
+
+        log.debug("지각 + 조퇴 총 횟수: {}", totalIncidents);
+        log.debug("이전 지각 횟수: {}, 이전 조퇴 횟수: {}", previousLateCount, previousEarlyLeaveCount);
+        log.debug("totalAbsenceDays(결석으로 처리된 일수): {}", totalAbsenceDays);
+        log.debug("남은 지각 횟수: {}, 남은 조퇴 횟수: {}", totalLateCount, totalEarlyLeaveCount);
+*/
+
+        /*if (totalAbsenceDays > 0) {
+          totalAttendanceDays = Math.max(0, totalAttendanceDays - totalAbsenceDays);
+          log.debug("결석일 적용한 출석일: {}", totalAttendanceDays);
+        }*/
+
+
+      }
 
       // 20일 단위 출석률 계산
-      if (processedDays % SEGMENT_DAYS == 0 || periodIndex == twentyDaySegments.size() - 1
-          || processedDays < SEGMENT_DAYS) {
-        Map<String, Object> period = twentyDaySegments.get(periodIndex);
-        double twentyDayRate = roundToTwoDecimalPlaces(
-            (twentyDayAttendanceDays / (double) SEGMENT_DAYS) * 100);
+      currentSegmentDays++;
+      if (!isAbsent) {
+        currentSegmentAttendance++;
 
-        twentyDayRateDetails.add(Map.of(
-            "periodIndex", period.get("periodIndex"),
-            "startDate", period.get("startDate").toString(),
-            "endDate", period.get("endDate").toString(),
-            "twentyDayRate", twentyDayRate
-        ));
+        if (isLate || isEarlyLeave) {
+          currentSegmentIncidents++; // 현재 20일 기간의 지각/조퇴 누적
 
-        // ⛔ 20일이 다 차지 않은 경우에는 초기화하지 않음
-        if (processedDays % SEGMENT_DAYS == 0) {
-          twentyDayAttendanceDays = 0;
-          periodIndex++;
+          // 3회가 되면 출석일 하나 차감
+          if (currentSegmentIncidents >= THRESHOLD) {
+            currentSegmentAttendance--;
+            currentSegmentIncidents -= THRESHOLD;
+          }
         }
+
+        /*if (isLate) {
+          currentSegmentLateCount++;
+          log.debug("20일 단위 지각 카운트 증가: {}", currentSegmentLateCount);
+        }
+        if (isEarlyLeave) {
+          currentSegmentEarlyLeaveCount++;
+          log.debug("20일 단위 조퇴 카운트 증가: {}", currentSegmentEarlyLeaveCount);
+        }
+
+        // 우선 출석일 증가
+        currentSegmentAttendance++;
+        log.debug("20일 단위 출석일 증가: {}", currentSegmentAttendance);*/
+
+/*        int segmentAbsenceDays = (currentSegmentLateCount / THRESHOLD) +
+            (currentSegmentEarlyLeaveCount / THRESHOLD);
+        currentSegmentLateCount %= THRESHOLD;
+        currentSegmentEarlyLeaveCount %= THRESHOLD;
+
+        if (segmentAbsenceDays > 0) {
+          currentSegmentAttendance = Math.max(0, currentSegmentAttendance - segmentAbsenceDays);
+        } else {
+          currentSegmentAttendance++;
+        }*/
       }
+
+      // 매일매일의 20일 단위 출석률 계산
+      Map<String, Object> segment = segments.get(periodIndex);
+      int daysInSegment = (int) segment.get("일수");  // 현재 차수의 실제 일수
+
+      // 지각과 조퇴의 총 합으로 결석일 계산
+      /*int totalSegmentIncidents = currentSegmentLateCount + currentSegmentEarlyLeaveCount;
+      int segmentAbsenceDays = totalSegmentIncidents / THRESHOLD;
+      currentSegmentAttendance = Math.max(0, currentSegmentAttendance - segmentAbsenceDays);
+
+
+      if( totalSegmentIncidents >= THRESHOLD) {
+        totalSegmentIncidents %= THRESHOLD;
+        currentSegmentLateCount %= THRESHOLD;
+        currentSegmentEarlyLeaveCount %= THRESHOLD;
+
+      }
+
+      log.debug("20일 단위 지각 횟수: {}, 조퇴 횟수: {}", currentSegmentLateCount, currentSegmentEarlyLeaveCount);
+      log.debug("20일 단위 지각+조퇴 총 횟수: {}", totalSegmentIncidents);
+      log.debug("20일 단위 차감될 결석일 수: {}", segmentAbsenceDays);
+      log.debug("20일 단위 최종 출석일 수: {}", currentSegmentAttendance);*/
+
+      double twentyDayRate = roundToTwoDecimalPlaces(
+          (currentSegmentAttendance / (double) daysInSegment) * 100);
+
+      // 이전 데이터가 있다면 업데이트, 없다면 새로 추가
+      // 20일 차수 출석률 정보 저장
+      Map<String, Object> rateInfo = new HashMap<>();
+      rateInfo.put("periodIndex", segment.get("차수"));
+      rateInfo.put("startDate", segment.get("시작일").toString());
+      rateInfo.put("endDate", segment.get("종료일").toString());
+      rateInfo.put("twentyDayRate", twentyDayRate);
+      rateInfo.put("currentDay", currentSegmentDays);
+      rateInfo.put("incidentCount", currentSegmentIncidents); // 현재 누적된 지각/조퇴 횟수
+      rateInfo.put("attendanceDays", currentSegmentAttendance); // 실제 출석일수
+
+      if (twentyDayRateDetails.size() > periodIndex) {
+        twentyDayRateDetails.set(periodIndex, rateInfo);
+      } else {
+        twentyDayRateDetails.add(rateInfo);
+      }
+
+
+      // 20일이 되면 다음 차수로 넘어감
+      if (currentSegmentDays == SEGMENT_DAYS) {
+        currentSegmentDays = 0;
+        currentSegmentAttendance = 0;
+        currentSegmentIncidents = 0;  // 지각과 조퇴 초기화
+/*        currentSegmentLateCount = 0;
+        currentSegmentEarlyLeaveCount = 0;*/
+        periodIndex++;
+      }
+
+      log.info("================end===============");
     }
 
-    int validAttendanceDays = validDays.size();
-    // 전체 출석률 계산
-/*    double overallAttendanceRate = validAttendanceDays ? 100.0 :
-        roundToTwoDecimalPlaces((totalAttendanceDays / (double) validAttendanceDays) * 100);*/
 
-    double overallAttendanceRate = roundToTwoDecimalPlaces((totalAttendanceDays / (double) validAttendanceDays) * 100);
+    double overallAttendanceRate = roundToTwoDecimalPlaces(
+        (totalAttendanceDays / (double) validDays.size()) * 100);
 
-    log.debug("전체 출석 가능 일수: {}", validAttendanceDays);
-    log.debug("전체 출석률: {}", overallAttendanceRate);
-    log.debug("20일 단위 출석률 리스트: {}", twentyDayRateDetails);
+
+    log.debug("최종 출석 가능일 수: {}", validDays.size());
+    log.debug("최종 전체 실제 출석일 수: {}", totalAttendanceDays);
+    log.debug("최종 전체 출석률: {}", overallAttendanceRate);
+    log.debug("최종 20일 단위 출석률 리스트: {}", twentyDayRateDetails);
     Map<String, Object> twentyDayRateDetail = twentyDayRateDetails.get(
         twentyDayRateDetails.size() - 1);
     log.debug("해당하는 20일 단위 출석률: {}", twentyDayRateDetail);
 
-    // 20일 단위 전체 리스트(twentyDayRateDetails)는 보내지 않았음 / 현재 해당하는 20일 단위 출석률+기간(twentyDayRateDetail)
     return Map.of(
-        "validAttendanceDays", validAttendanceDays,
-        "overallAttendanceRate", overallAttendanceRate,
-        "twentyDayRateDetail", twentyDayRateDetail
+        "validAttendanceDays", validDays.size(),  // 유효일 수
+        "overallAttendanceRate", overallAttendanceRate, //  전체 출석률
+        "twentyDayRate", twentyDayRateDetails.get(periodIndex).get("twentyDayRate"), // 현재 진행 중인 차수의 출석률
+        "twentyDayRates", twentyDayRateDetails  // 모든 차수의 일별 20일 단위 출석률
     );
 
   }
@@ -174,6 +304,7 @@ public class AttendanceCalculator {
     }
 
     log.debug("유효한 출석일 수 validDays: {}", validDays);
+    log.debug("유효한 출석일 수: {}", validDays.size());
     log.info("유효 출석일 계산 종료");
     return validDays;
   }
@@ -205,53 +336,6 @@ public class AttendanceCalculator {
     return segments;
   }
 
-
-  /**
-   * 20일 단위의 기간 설정하는 메소드
-   */
-
-  private static List<Map<String, Object>> calculateTwentyDayPeriods(LocalDate startDate,
-      LocalDate endDate, Set<LocalDate> holidays) {
-    log.info("calculateTwentyDayPeriods - 20일 단위 차수 계산 시작");
-    List<Map<String, Object>> twentyDayPeriods = new ArrayList<>();
-    LocalDate currentDate = startDate.plusDays(1);
-    LocalDate periodStart = null;
-    int dayCounter = 0;
-    int periodIndex = 1;
-
-    while (!currentDate.isAfter(endDate)) {
-      if (!(currentDate.getDayOfWeek() == DayOfWeek.SATURDAY
-          || currentDate.getDayOfWeek() == DayOfWeek.SUNDAY || holidays.contains(currentDate))) {
-        if (periodStart == null) {
-          periodStart = currentDate;
-        }
-        dayCounter++;
-
-        if (dayCounter == SEGMENT_DAYS) {
-          twentyDayPeriods.add(Map.of(
-              "periodIndex", periodIndex + "차",
-              "startDate", periodStart.toString(),
-              "endDate", currentDate.toString()
-          ));
-          periodStart = null;
-          dayCounter = 0;
-          periodIndex++;
-        }
-      }
-      currentDate = currentDate.plusDays(1);
-    }
-
-    if (periodStart != null) {
-      twentyDayPeriods.add(Map.of(
-          "periodIndex", periodIndex + "차",
-          "startDate", periodStart.toString(),
-          "endDate", currentDate.minusDays(1).toString()
-      ));
-    }
-    log.info("twentyDayPeriods - 20일 단위 차수 계산 종료");
-    log.debug("twentyDayPeriods - 20일 단위 차수 리스트: {}", twentyDayPeriods);
-    return twentyDayPeriods;
-  }
 
 
   /**

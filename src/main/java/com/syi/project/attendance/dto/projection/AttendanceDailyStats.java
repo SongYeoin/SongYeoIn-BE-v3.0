@@ -13,13 +13,15 @@ public class AttendanceDailyStats {
   private int totalSessions;
   private int lateCount;
   private int absentCount;
+  private int earlyLeaveCount;
 
   @QueryProjection
-  public AttendanceDailyStats(Long studentId, LocalDate date, int totalSessions, int lateCount, int absentCount) {
+  public AttendanceDailyStats(Long studentId, LocalDate date, int totalSessions, int lateCount, int absentCount, int earlyLeaveCount) {
     this.studentId = studentId;
     this.date = date;
     this.totalSessions = totalSessions;
     this.lateCount = lateCount;
     this.absentCount = absentCount;
+    this.earlyLeaveCount = earlyLeaveCount;
   }
 }
