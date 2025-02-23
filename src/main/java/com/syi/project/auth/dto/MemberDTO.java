@@ -43,6 +43,9 @@ public class MemberDTO {
   @Schema(description = "회원 프로필 이미지 URL", example = "https://example.com/profiles/user1234.jpg")
   private final String profileUrl;
 
+  @Schema(description = "탈퇴를 진행한 사용자 ID (null이면 탈퇴되지 않음)", example = "3")
+  private Long deletedBy;
+
   public static MemberDTO fromEntity(Member member) {
     return MemberDTO.builder()
         .id(member.getId())
@@ -54,6 +57,7 @@ public class MemberDTO {
         .checkStatus(member.getCheckStatus())
         .role(member.getRole())
         .profileUrl(member.getProfileUrl())
+        .deletedBy(member.getDeletedBy())
         .build();
   }
 
