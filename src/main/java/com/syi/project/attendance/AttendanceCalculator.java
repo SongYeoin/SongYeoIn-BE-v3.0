@@ -319,15 +319,24 @@ public class AttendanceCalculator {
     List<Map<String, Object>> segments = new ArrayList<>();
     int periodIndex = 1;
 
-    while (!validDays.isEmpty()) {
-      List<LocalDate> periodDays = validDays.subList(0, Math.min(SEGMENT_DAYS, validDays.size()));
+    // 입력받은 리스트를 새로운 리스트로 복사 (원본 보존)
+    List<LocalDate> workingDays = new ArrayList<>(validDays);
+
+    // 현장실습 기간
+    // 마지막 20일 제거 (리스트 크기가 20일 이상인 경우에만)
+    if (workingDays.size() >= SEGMENT_DAYS) {
+      workingDays = workingDays.subList(0, workingDays.size() - SEGMENT_DAYS);
+    }
+
+    while (!workingDays.isEmpty()) {
+      List<LocalDate> periodDays = workingDays.subList(0, Math.min(SEGMENT_DAYS, workingDays.size()));
       segments.add(Map.of(
           "차수", periodIndex + "차",
           "시작일", periodDays.get(0),
           "종료일", periodDays.get(periodDays.size()-1),
           "일수", periodDays.size()
       ));
-      validDays = validDays.subList(Math.min(SEGMENT_DAYS, validDays.size()), validDays.size());
+      workingDays = workingDays.subList(Math.min(SEGMENT_DAYS, workingDays.size()), workingDays.size());
       periodIndex++;
     }
 
