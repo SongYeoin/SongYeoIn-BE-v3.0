@@ -1,8 +1,11 @@
 package com.syi.project.file.service;
 
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.util.IOUtils;
 import com.syi.project.auth.entity.Member;
+import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
+import com.syi.project.common.exception.handler.FileErrorHandler;
 import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.file.dto.FileDownloadDTO;
 import com.syi.project.file.dto.FileUpdateDTO;
@@ -44,6 +47,7 @@ import java.io.IOException;
 public class FileService {
   private final FileRepository fileRepository;
   private final S3Uploader s3Uploader;
+  private final FileErrorHandler fileErrorHandler; // 생성자 주입 추가
 
   // 다중 파일 업로드
   @Transactional
@@ -179,20 +183,26 @@ public class FileService {
 
   // 파일 다운로드
   public FileDownloadDTO downloadFile(Long fileId, Member member) {
-    File file = fileRepository.findById(fileId)
-        .orElseThrow(() -> new IllegalArgumentException("파일이 존재하지 않습니다."));
+    log.debug("파일 다운로드 시작 - fileId: {}", fileId);
+
+    // 파일 존재 여부와 상태 검증을 핸들러로 이동
+    File file = fileErrorHandler.validateFileExists(fileId);
+    fileErrorHandler.validateFileStatus(file);
 
     try {
       Resource resource = new InputStreamResource(s3Uploader.downloadFile(file.getPath()));
-
       return FileDownloadDTO.builder()
           .originalName(file.getOriginalName())
           .contentType(file.getMimeType())
           .resource(resource)
           .build();
+
+    } catch (AmazonS3Exception e) {
+      fileErrorHandler.handleS3DownloadError(e, fileId, file.getPath());
+      return null; // unreachable
     } catch (Exception e) {
-      log.error("파일 다운로드 실패: {}", e.getMessage());
-      throw new RuntimeException("파일 다운로드에 실패했습니다.", e);
+      log.error("파일 다운로드 중 예상치 못한 오류 발생 - fileId: {}, error: {}", fileId, e.getMessage());
+      throw new InvalidRequestException(ErrorCode.FILE_DOWNLOAD_FAILED);
     }
   }
 
