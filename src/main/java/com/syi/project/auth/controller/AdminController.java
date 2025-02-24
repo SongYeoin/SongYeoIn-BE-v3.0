@@ -5,6 +5,7 @@ import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
 import com.syi.project.auth.dto.PasswordResetResponseDTO;
+import com.syi.project.auth.dto.WithdrawRequestDTO;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
@@ -172,5 +173,26 @@ public class AdminController {
     return ResponseEntity.ok(updatedMember);
   }
 
+  @PostMapping("/withdraw/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
+  @Operation(summary = "회원 탈퇴 처리", description = "관리자가 특정 회원을 탈퇴 처리합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "회원 탈퇴 처리 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+      @ApiResponse(responseCode = "404", description = "회원 정보 없음"),
+      @ApiResponse(responseCode = "500", description = "서버 오류")
+  })
+  public ResponseEntity<Void> withdrawMember(
+      @Parameter(description = "탈퇴 처리할 회원의 ID", required = true)
+      @PathVariable Long id,
+      @Parameter(description = "탈퇴 처리를 수행한 관리자 정보", required = true,
+          content = @Content(schema = @Schema(implementation = WithdrawRequestDTO.class)))
+      @Valid @RequestBody WithdrawRequestDTO requestDTO) {
+
+    log.info("회원 탈퇴 처리 요청 - 회원 ID: {}, 처리 관리자 ID: {}", id, requestDTO.getAdminId());
+    memberService.withdrawMember(id, requestDTO.getAdminId());
+    log.info("회원 탈퇴 처리 성공 - 회원 ID: {}", id);
+    return ResponseEntity.ok().build();
+  }
 
 }
