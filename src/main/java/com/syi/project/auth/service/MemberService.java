@@ -372,11 +372,43 @@ public class MemberService {
   // 회원 탈퇴
   @Transactional
   public void deleteMember(Long memberId) {
-    // 회원 조회
+    log.info("회원 자체 탈퇴 처리 시작 - 회원 ID: {}", memberId);
+
     Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
-        .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> {
+          log.warn("회원 탈퇴 처리 실패 - 존재하지 않는 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    if (member.getDeletedBy() != null) {
+      log.warn("이미 탈퇴 처리된 회원입니다 - 회원 ID: {}", memberId);
+      throw new InvalidRequestException(ErrorCode.ALREADY_WITHDRAWN);
+    }
 
     member.deactivate(memberId);
+    log.info("회원 자체 탈퇴 처리 완료 - 회원 ID: {}", memberId);
+  }
+
+  // 관리자의 회원 탈퇴
+  @Transactional
+  public void withdrawMember(Long memberId, Long adminId) {
+    log.info("관리자에 의한 회원 탈퇴 처리 시작 - 회원 ID: {}, 관리자 ID: {}", memberId, adminId);
+
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
+        .orElseThrow(() -> {
+          log.warn("회원 탈퇴 처리 실패 - 존재하지 않는 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    if (member.getDeletedBy() != null) {
+      log.warn("이미 탈퇴 처리된 회원입니다 - 회원 ID: {}", memberId);
+      throw new InvalidRequestException(ErrorCode.ALREADY_WITHDRAWN);
+    }
+
+    member.updateCheckStatus(CheckStatus.N);
+    member.deactivate(adminId);
+
+    log.info("관리자에 의한 회원 탈퇴 처리 완료 - 회원 ID: {}, 관리자 ID: {}", memberId, adminId);
   }
 
   // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드
