@@ -214,19 +214,27 @@ public class FileService {
       ZipOutputStream zos = new ZipOutputStream(baos);
 
       for (File file : files) {
-        InputStream inputStream = s3Uploader.downloadFile(file.getPath());
-        ZipEntry entry = new ZipEntry(file.getOriginalName());
-        zos.putNextEntry(entry);
-        IOUtils.copy(inputStream, zos);
-        zos.closeEntry();
-        inputStream.close();
+        try {
+          InputStream inputStream = s3Uploader.downloadFile(file.getPath());
+          ZipEntry entry = new ZipEntry(file.getOriginalName());
+          zos.putNextEntry(entry);
+          IOUtils.copy(inputStream, zos);
+          zos.closeEntry();
+          inputStream.close();
+        } catch (AmazonS3Exception e) {
+          log.error("저장소에서 파일을 찾을 수 없음 - fileId: {}, path: {}", file.getId(), file.getPath());
+          throw new InvalidRequestException(ErrorCode.JOURNAL_FILE_NOT_FOUND);
+        }
       }
 
       zos.close();
       return new ByteArrayResource(baos.toByteArray());
+    } catch (InvalidRequestException e) {
+      // JOURNAL_FILE_NOT_FOUND 에러 그대로 전달
+      throw e;
     } catch (IOException e) {
       log.error("파일 압축 실패: {}", e.getMessage());
-      throw new RuntimeException("파일 압축에 실패했습니다.", e);
+      throw new InvalidRequestException(ErrorCode.JOURNAL_DOWNLOAD_FAILED);
     }
   }
 
