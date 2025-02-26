@@ -3,6 +3,7 @@ package com.syi.project.club.dto;
 import com.syi.project.club.entity.Club;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.file.dto.FileResponseDTO;
+import java.time.LocalTime;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -63,9 +64,15 @@ public class ClubResponseDTO {
         private LocalDate regDate;  // 작성일
         private LocalDate studyDate;  // 활동일;
         private FileResponseDTO file; // 단일파일
+        private String clubName;    //동아리명
+        private String contactNumber;   //대표연락처
+        private LocalTime startTime;    //시작시간
+        private LocalTime endTime;    //종료시간
+        private int participantCount;   //총 인원
 
         public ClubDetail(Long clubId, String writer, String checker, String participants, String content, CheckStatus checkStatus, String checkMessage,
-                               LocalDate regDate, LocalDate studyDate, FileResponseDTO file) {
+                               LocalDate regDate, LocalDate studyDate, FileResponseDTO file,
+                        String clubName, String contactNumber, LocalTime startTime, LocalTime endTime, int participantCount) {
             this.clubId = clubId;
             this.writer = writer;
             this.checker = checker;
@@ -76,6 +83,11 @@ public class ClubResponseDTO {
             this.regDate = regDate;
             this.studyDate = studyDate;
             this.file = file;
+            this.clubName = clubName;
+            this.contactNumber = contactNumber;
+            this.startTime = startTime;
+            this.endTime = endTime;
+            this.participantCount = participantCount;
         }
 
         // entity -> DTO
@@ -90,7 +102,12 @@ public class ClubResponseDTO {
                     club.getCheckMessage(),
                     club.getRegDate(),
                     club.getStudyDate(),
-                    file
+                    file,
+                    club.getClubName(),
+                    club.getContactNumber(),
+                    club.getStartTime(),
+                    club.getEndTime(),
+                    club.getParticipantCount()
             );
         }
     }

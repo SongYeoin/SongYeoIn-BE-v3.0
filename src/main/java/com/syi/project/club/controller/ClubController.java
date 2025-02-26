@@ -19,12 +19,16 @@ import com.syi.project.course.dto.CourseResponseDTO;
 import com.syi.project.course.service.CourseService;
 import com.syi.project.enroll.dto.EnrollResponseDTO;
 import com.syi.project.enroll.service.EnrollService;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -47,7 +51,7 @@ public class ClubController {
     private static final Logger log = LoggerFactory.getLogger(ClubController.class);
 
     @Autowired
-    private ClubService clubService;
+    private final ClubService clubService;
     @Autowired
     private JwtProvider jwtProvider;
     @Autowired
@@ -231,38 +235,68 @@ public class ClubController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/course/{courseId}")
+    public ResponseEntity<CourseResponseDTO.CourseDetailDTO> getCourseById(
+        @Parameter(description = "상세 조회할 교육과정의 ID", required = true) @PathVariable Long courseId) {
+        log.info("Request to get course with ID: {}", courseId);
+        CourseResponseDTO.CourseDetailDTO courseDetail = courseService.getCourseById(courseId);
+        log.info("get course with ID: {} successfully", courseDetail.getCourse().getId());
+        return ResponseEntity.ok(courseDetail);
+    }
+
+    @GetMapping("/classmates/{courseId}")
+    public ResponseEntity<Page<MemberDTO>> getCourseMembers(@PathVariable Long courseId,
+      @PageableDefault(size = 5) Pageable pageable) {
+        log.info("Request to get course members with ID: {}", courseId);
+        Page<MemberDTO> members = courseService.getMembersByCourse(courseId, pageable);
+        return ResponseEntity.ok(members);
+    }
+
     // 파일 다운로드
-//    @GetMapping("/file/download")
-//    public ResponseEntity<Resource> downloadFile(@RequestParam("fileUrl") String fileUrl) {
+    @GetMapping("/{clubId}/download")
+    public ResponseEntity<Resource> downloadFile(@RequestParam("fileUrl") String fileUrl) {
+        try {
+            InputStream fileStream = s3Uploader.downloadFile(fileUrl);
+            InputStreamResource resource = new InputStreamResource(fileStream);
+
+            // 파일명 추출
+            String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            throw new RuntimeException("파일 다운로드 중 에러가 발생했습니다.", e);
+        }
+    }
+
+
+
+
+
+//    @GetMapping("/{clubId}/download")
+//    public ResponseEntity<Resource> downloadFile(@PathVariable Long clubId, @PathVariable String fileName) {
+//        log.info("동아리일지 파일 다운로드 요청 - clubId: {}", clubId);
 //        try {
-//            InputStream fileStream = s3Uploader.downloadFile(fileUrl);
+//            // Get file content from S3
+//            InputStream fileStream = s3Uploader.downloadFile(fileName);
 //            InputStreamResource resource = new InputStreamResource(fileStream);
 //
-//            // 파일명 추출
-//            String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+//            // Set content type and attachment header
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+//            headers.setContentDispositionFormData("attachment", fileName);
 //
 //            return ResponseEntity.ok()
-//                    .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
-//                    .body(resource);
+//              .headers(headers)
+//              .body(resource);
 //        } catch (Exception e) {
-//            throw new RuntimeException("파일 다운로드 중 에러가 발생했습니다.", e);
+//            return ResponseEntity.notFound().build();
 //        }
 //    }
 
 
-//
 
-//
-//    // Approve Club
-//    @PatchMapping("/{clubId}/approval")
-//    public ResponseEntity<ClubResponseDTO.ClubList> approveClub(@PathVariable Long clubId,
-//                                                                @RequestBody ClubRequestDTO.ClubApproval dto,
-//                                                                @RequestParam String checkerId,
-//                                                                @RequestParam String url) {
-//        ClubResponseDTO.ClubList response = clubService.approveClub(clubId, dto, checkerId, url);
-//        return ResponseEntity.ok(response);
-//    }
-//
-//
+
 }
 
