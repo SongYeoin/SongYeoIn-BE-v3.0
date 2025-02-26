@@ -18,6 +18,9 @@ import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.repository.FileRepository;
 import com.syi.project.file.service.FileService;
+import java.util.Arrays;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,22 +38,25 @@ import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ClubService {
 
     @Autowired
-    private ClubRepository clubRepository;
+    private final ClubRepository clubRepository;
     @Autowired
-    private ClubFileRepository clubFileRepository;
+    private final ClubFileRepository clubFileRepository;
     @Autowired
-    private FileRepository fileRepository;
+    private final FileRepository fileRepository;
     @Autowired
-    private MemberRepository memberRepository;
+    private final MemberRepository memberRepository;
     @Autowired
-    private FileService fileService;
+    private final FileService fileService;
     @Autowired
-    private S3Uploader s3Uploader;
+    private final S3Uploader s3Uploader;
 
     private static final Logger log = LoggerFactory.getLogger(ClubController.class);
+    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("hwp", "hwpx", "docx", "doc");
 
     //등록
     @Transactional
@@ -184,6 +190,9 @@ public class ClubService {
         // 작성자와 로그인 사용자가 동일한지 확인
         verifyWriter(club.getWriterId(), loggedInUserId);
 
+        // 파일 유효성 검사
+        validateFile(file, clubId);
+
         FileResponseDTO fileDto = null;
 
         // 승인 상태에 따른 수정 처리
@@ -199,7 +208,12 @@ public class ClubService {
                         clubUpdate.getParticipants(),
                         clubUpdate.getContent(),
                         clubUpdate.getStudyDate(),
-                        LocalDate.now()
+                        LocalDate.now(),
+                        clubUpdate.getClubName(),
+                        clubUpdate.getContactNumber(),
+                        clubUpdate.getStartTime(),
+                        clubUpdate.getEndTime(),
+                        clubUpdate.getParticipantCount()
                 );
             }
         } else if (club.getCheckStatus() == CheckStatus.Y) {
@@ -316,6 +330,41 @@ public class ClubService {
         }
 
         clubRepository.deleteById(clubId);
+    }
+
+    // 파일확장자 및 개수 제한
+    private void validateFile(MultipartFile file, Long clubId) {
+        // 파일이 없으면 검증 생략
+        if (file == null || file.isEmpty()) {
+            return;
+        }
+
+        // 1. 파일 확장자 검사
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename != null) {
+            String extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
+
+            if (!ALLOWED_EXTENSIONS.contains(extension)) {
+                throw new InvalidRequestException(ErrorCode.INVALID_FILE_FORMAT,
+                  "허용되지 않는 파일 형식입니다. 허용된 확장자: " + String.join(", ", ALLOWED_EXTENSIONS));
+            }
+        }
+
+        // 2. 파일 개수 검사 (clubId가 null이 아닌 경우에만 수행)
+        if (clubId != null) {
+            ClubFile existingClubFile = clubFileRepository.findByClubId(clubId).stream().findFirst().orElse(null);
+
+            // 기존 파일이 없는 상태에서 새 파일 추가는 항상 가능
+            if (existingClubFile == null) {
+                return;
+            }
+
+            // 이미 파일이 존재하는데 새 파일을 추가하려는 경우
+            long fileCount = clubFileRepository.findByClubId(clubId).size();
+            if (fileCount >= 1 && existingClubFile == null) {
+                throw new InvalidRequestException(ErrorCode.FILE_COUNT_EXCEEDED, "클럽당 최대 1개의 파일만 허용됩니다.");
+            }
+        }
     }
 
 
