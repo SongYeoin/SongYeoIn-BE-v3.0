@@ -74,7 +74,11 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
 
   @Override
   public List<Member> findStudentByCourseId(Long courseId) {
-    return List.of();
+    return queryFactory.select(member)
+        .from(enroll)
+        .join(member).on(enroll.memberId.eq(member.id))
+        .where(enroll.courseId.eq(courseId))
+        .fetch();
   }
 
   @Override
