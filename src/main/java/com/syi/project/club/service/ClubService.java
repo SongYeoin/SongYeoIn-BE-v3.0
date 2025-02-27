@@ -176,10 +176,10 @@ public class ClubService {
     //수정
     @Transactional
     public ClubResponseDTO.ClubList updateClub(Long clubId, ClubRequestDTO.ClubUpdate clubUpdate,
-                                               MultipartFile file, Long loggedInUserId) {
+        MultipartFile file, Long loggedInUserId) {
         // 클럽 조회
         Club club = clubRepository.findById(clubId)
-                .orElseThrow(() -> new NoSuchElementException("클럽이 존재하지 않습니다."));
+            .orElseThrow(() -> new NoSuchElementException("클럽이 존재하지 않습니다."));
 
         // 작성자와 로그인 사용자가 동일한지 확인
         verifyWriter(club.getWriterId(), loggedInUserId);
@@ -195,11 +195,12 @@ public class ClubService {
 //
             // 대기 상태: 활동날, 내용, 참여자 수정 가능
             if (clubUpdate != null) {
+                // 수정 시 regDate는 변경하지 않고 유지 (원래 생성일 그대로 사용)
                 club.updateDetails(
-                        clubUpdate.getParticipants(),
-                        clubUpdate.getContent(),
-                        clubUpdate.getStudyDate(),
-                        LocalDate.now()
+                    clubUpdate.getParticipants(),
+                    clubUpdate.getContent(),
+                    clubUpdate.getStudyDate(),
+                    club.getRegDate() // 원래 등록일 유지
                 );
             }
         } else if (club.getCheckStatus() == CheckStatus.Y) {
@@ -209,7 +210,7 @@ public class ClubService {
 //            }
 
             Member member = memberRepository.findById(loggedInUserId)
-                    .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
             // 파일 처리
             if (file != null) {
@@ -225,8 +226,8 @@ public class ClubService {
                         fileService.deleteFile(existingFile.getId(), member); // 기존 파일 삭제
                     }
 
-                    // 새 파일 업로드
-                    File uploadedFile = fileService.uploadFile(file, dirName, member);
+                    // 새 파일 업로드 - 게시글 등록일(regDate) 기준으로 저장
+                    File uploadedFile = fileService.uploadFile(file, dirName, member, club.getRegDate());
                     log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
                     clubFile.updateFile(uploadedFile);
 
@@ -240,13 +241,13 @@ public class ClubService {
                     // ClubFile 저장
                     //clubFileRepository.save(clubFile);  // ClubFile을 명시적으로 저장
                 } else {
-                    // 기존 파일이 없는 경우 새 파일 업로드
-                    File uploadedFile = fileService.uploadFile(file, dirName, member);
+                    // 기존 파일이 없는 경우 새 파일 업로드 - 게시글 등록일(regDate) 기준으로 저장
+                    File uploadedFile = fileService.uploadFile(file, dirName, member, club.getRegDate());
                     log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
                     ClubFile newClubFile = ClubFile.builder()
-                            .club(club)
-                            .file(uploadedFile)
-                            .build();
+                        .club(club)
+                        .file(uploadedFile)
+                        .build();
                     clubFileRepository.save(newClubFile);
 
                     // 파일 DTO 생성
@@ -265,7 +266,6 @@ public class ClubService {
         log.info("클럽 저장 전: club={}", club);
         // 클럽 저장
         Club updatedClub = clubRepository.save(club);
-        //clubRepository.saveAndFlush(club); // saveAndFlush()로 영속성 컨텍스트 반영
         log.info("클럽 저장 후: updatedClub={}", updatedClub);
 
         String writer = getMemberName(club.getWriterId());

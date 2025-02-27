@@ -113,7 +113,7 @@ public class JournalService {
       log.info("기존 파일 삭제 완료 - fileId: {}", existingJournalFile.getFile().getId());
     }
 
-    File savedFile = fileService.uploadFile(newFile, "journals", member);
+    File savedFile = fileService.uploadFile(newFile, "journals", member, journal.getEducationDate());
     log.info("새 파일 업로드 완료 - fileName: {}", savedFile.getOriginalName());
 
     if (existingJournalFile != null) {

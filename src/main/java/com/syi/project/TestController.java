@@ -23,17 +23,17 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class TestController {
 
-  private final S3Uploader s3Uploader;
+//  private final S3Uploader s3Uploader;
 
-  @Operation(summary = "파일 업로드 테스트")  // Swagger 문서 설명 추가
-  @PostMapping(value = "/upload", consumes = "multipart/form-data")  // content type 지정
-  public String uploadFile(
-      @Parameter(description = "업로드할 파일")  // 파라미터 설명 추가
-      @RequestParam("file") MultipartFile file
-  ) throws IOException {
-    return s3Uploader.uploadFile(file, "test");
-  }
-}
+//  @Operation(summary = "파일 업로드 테스트")  // Swagger 문서 설명 추가
+//  @PostMapping(value = "/upload", consumes = "multipart/form-data")  // content type 지정
+//  public String uploadFile(
+//      @Parameter(description = "업로드할 파일")  // 파라미터 설명 추가
+//      @RequestParam("file") MultipartFile file
+//  ) throws IOException {
+//    return s3Uploader.uploadFile(file, "test");
+//  }
+//}
 
 //@RestController
 //@Tag(name = "testController")
@@ -49,4 +49,4 @@ public class TestController {
 //  public String test() {
 //    return "{\"Proxy test successful\"}";
 //  }
-//}
+}
