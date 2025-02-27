@@ -1,5 +1,10 @@
 package com.syi.project.attendance.service;
 
+import static com.syi.project.attendance.AttendanceCalculator.TOTAL_SESSIONS_PER_DAY;
+import static com.syi.project.attendance.AttendanceCalculator.calculateTwentyDayAttendanceRatesForPrint;
+import static com.syi.project.attendance.AttendanceCalculator.calculateTwentyDaySegments;
+import static com.syi.project.attendance.AttendanceCalculator.getValidDays;
+import static com.syi.project.attendance.entity.QAttendance.attendance;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ALREADY_ENTERED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ALREADY_EXITED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS;
@@ -11,8 +16,11 @@ import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_EXIT_NOT_ALL
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_EXIT_NOT_FIND_PERIOD;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_FAILED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_NOT_IN_RANGE;
+import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_SEGMENT_NOT_FOUND;
+import static com.syi.project.common.exception.ErrorCode.COURSE_NOT_FOUND;
+import static com.syi.project.period.eneity.QPeriod.period;
 
-//import com.syi.project.attendance.AttendanceCalculator;
+import com.querydsl.core.Tuple;
 import com.syi.project.attendance.AttendanceCalculator;
 import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
@@ -21,6 +29,8 @@ import com.syi.project.attendance.dto.request.AttendanceRequestDTO.StudentAllAtt
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendancePrintResponseDto;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendancePrintResponseDto.SummaryPageDto;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
@@ -49,14 +59,18 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -318,7 +332,7 @@ public class AttendanceService {
   /* 출석 등록 */
   @Transactional
   public AttendanceResponseDTO createAttendance(CustomUserDetails userDetails, Long courseId,
-      String attendanceType, Long earlyExitPeriodId,
+      String attendanceType, Long earlyLeavePeriodId,
       HttpServletRequest request) {
     log.info("출석 체크 시도 (입실/퇴실/조퇴 여부: {})", attendanceType); /* ENTER면 입실, EARLY_EXIT면 조퇴, EXIT면 퇴실 */
 
@@ -352,7 +366,7 @@ public class AttendanceService {
         return AttendanceResponseDTO.builder().enterTime(now).build(); // 입실
       }
       case "EARLY_EXIT" -> {
-        handleEarlyExitAttendance(userDetails, periods, now, earlyExitPeriodId);
+        handleEarlyLeaveAttendance(userDetails, periods, now, earlyLeavePeriodId);
         return AttendanceResponseDTO.builder().exitTime(now).build();
       }
       case "EXIT" -> {
@@ -364,20 +378,22 @@ public class AttendanceService {
 
   }
 
-  void handleEarlyExitAttendance(CustomUserDetails userDetails, List<Period> periods,
-      LocalDateTime earlyExitTDateTime,
-      Long earlyExitPeriodId) {
+  void handleEarlyLeaveAttendance(CustomUserDetails userDetails, List<Period> periods,
+      LocalDateTime earlyLeaveTDateTime,
+      Long earlyLeavePeriodId) {
     log.info("조퇴 처리 시작");
 
     // 입실한 기록이 있는지 체크하기
-    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndEnterTimeNotNull(userDetails.getId(), earlyExitTDateTime.toLocalDate());
+    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndEnterTimeNotNull(
+        userDetails.getId(), earlyLeaveTDateTime.toLocalDate());
     if (!hasEntryRecord) {
       log.warn("입실한 기록이 없습니다. 조퇴 처리를 할 수 없습니다.");
       throw new InvalidRequestException(ATTENDANCE_ENTRY_NOT_FOUND);
     }
 
     // 이미 퇴실한 기록이 있으면 중복 방지
-    boolean alreadyExited = attendanceRepository.existsByMemberIdAndDateAndExitTimeNotNull(userDetails.getId(), earlyExitTDateTime.toLocalDate());
+    boolean alreadyExited = attendanceRepository.existsByMemberIdAndDateAndExitTimeNotNull(
+        userDetails.getId(), earlyLeaveTDateTime.toLocalDate());
     if (alreadyExited) {
       log.warn("조퇴 - 이미 퇴실한 기록이 있습니다. 조퇴를 할 수 없습니다.");
       throw new InvalidRequestException(ATTENDANCE_ALREADY_EXITED);
@@ -387,12 +403,12 @@ public class AttendanceService {
     periods.sort(Comparator.comparing(Period::getStartTime));
 
     // 조퇴할 교시 찾기
-    Period earlyExitPeriod = periods.stream()
-        .filter(p -> p.getId().equals(earlyExitPeriodId))
+    Period earlyLeavePeriod = periods.stream()
+        .filter(p -> p.getId().equals(earlyLeavePeriodId))
         .findFirst()
         .orElseThrow(() -> new InvalidRequestException(ATTENDANCE_EXIT_NOT_FIND_PERIOD));
 
-    log.debug("조퇴 교시 : {}, ID: {}", earlyExitPeriod.getName(), earlyExitPeriod.getId());
+    log.debug("조퇴 교시 : {}, ID: {}", earlyLeavePeriod.getName(), earlyLeavePeriod.getId());
 
 
     /*
@@ -402,7 +418,7 @@ public class AttendanceService {
     LocalTime allowedLeaveStart = leavePeriodEndTime.minusMinutes(10);  // 조퇴 가능 시작 시간 = 조퇴 교시 종료 10분 전
     LocalTime allowedLeaveEnd = leavePeriodEndTime.plusMinutes(60);  // 조퇴 가능 종료 시간 = 조퇴 교시 종료 + 1시간
 
-    if (earlyExitTDateTime.toLocalTime().isBefore(allowedLeaveStart) || earlyExitTDateTime.toLocalTime().isAfter(allowedLeaveEnd)) {
+    if (earlyLeaveTDateTime.toLocalTime().isBefore(allowedLeaveStart) || earlyLeaveTDateTime.toLocalTime().isAfter(allowedLeaveEnd)) {
       log.warn("조퇴 가능 시간이 아닙니다. 조퇴 가능 시간: {} ~ {}", allowedLeaveStart, allowedLeaveEnd);
       throw new InvalidRequestException(ATTENDANCE_EARLY_LEAVE_NOT_ALLOWED);
     }*/
@@ -410,29 +426,28 @@ public class AttendanceService {
     // ✅ 조퇴 처리 로직
     for (Period period : periods) {
       Attendance attendance = attendanceRepository.findByMemberIdAndPeriodIdAndDate(userDetails.getId(),
-              period.getId(), earlyExitTDateTime.toLocalDate())
+              period.getId(), earlyLeaveTDateTime.toLocalDate())
           .orElseGet(() -> new Attendance(null, null, null, null, null, period.getId(),
               period.getCourseId(), userDetails.getId(), null, null, null));
 
       // ✅ 이미 출석한 교시에 대해 조퇴할 수 없도록 예외 처리
-      if (period.equals(earlyExitPeriod) && attendance.getStatus() != null) {
+      if (period.equals(earlyLeavePeriod) && attendance.getStatus() != null) {
         throw new InvalidRequestException(ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS);
       }
 
-
-      if (period.getStartTime().isBefore(earlyExitPeriod.getStartTime())) {
+      if (period.getStartTime().isBefore(earlyLeavePeriod.getStartTime())) {
         // ✅ 조퇴 교시 이전의 교시들은 정상 출석 처리
         if (attendance.getStatus() == null) {
           attendance.updateStatus(AttendanceStatus.PRESENT);
         }
       } else {
         // ✅ 조퇴 교시 이후의 교시들은 "조퇴" 처리
-        attendance.updateStatus(AttendanceStatus.EARLY_EXIT);
+        attendance.updateStatus(AttendanceStatus.EARLY_LEAVE);
       }
 
       // ✅ 조퇴한 시간 업데이트
-      if (period.equals(earlyExitPeriod)) {
-        attendance.updateExitTime(earlyExitTDateTime);
+      if (period.equals(earlyLeavePeriod)) {
+        attendance.updateExitTime(earlyLeaveTDateTime);
       }
 
       attendanceRepository.save(attendance);
@@ -930,7 +945,7 @@ public class AttendanceService {
 
     // 해당 강좌의 모든 학생별 출석 데이터 조회
     List<AttendanceDailyStats> dailyStatsList = attendanceRepository.findAttendanceStatsByCourse(courseId);
-    dailyStatsList.forEach(stat -> log.debug("관리자-AttendanceDailyStats: {}", stat));
+    //dailyStatsList.forEach(stat -> log.debug("관리자-AttendanceDailyStats: {}", stat));
 
     // 학생별 출석률 계산 결과를 저장할 Map
     Map<Long, Map<String, Object>> studentAttendanceRates = new HashMap<>();
@@ -962,6 +977,322 @@ public class AttendanceService {
 
     return studentAttendanceRates;
 
+  }
+
+  public List<Map<String, Object>> getTwentyTermsByCourseId(Long courseId) {
+    log.info("관리자용 20일 단위 기간 조회 요청 - Course ID: {}", courseId);
+
+    // 1. 과정 조회해서  startDate 와 endDate 가지고 오기
+    Course course = courseRepository.findCourseById(courseId);
+    LocalDate startDate = course.getStartDate();
+    LocalDate endDate = course.getEndDate();
+
+    int year = startDate.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
+    log.debug("(관리자 20일 단위 차수 계산) - 교육과정 기간 기준 연도: {}", year);
+
+    Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
+
+    // 2. getValidDays 사용하기
+    List<LocalDate> validDays = getValidDays(startDate, endDate, holidays);
+
+    // 3. calculateTwentyDaySegments 가져오기
+    return calculateTwentyDaySegments(validDays);
+
+  }
+
+  public AttendancePrintResponseDto getAttendancePrintDataByCourseId(Long courseId,
+      String termLabel) {
+
+    log.info("courseId: {}, term:{} 에 대한 프린트 데이터 요청", courseId, termLabel);
+
+    // 과정 정보 조회하기
+    Course course = courseRepository.findById(courseId)
+        .orElseThrow(() -> {
+          log.error("에러: 교육과정 ID {} 에 대한 과정을 찾을 수 없습니다.", courseId);
+          return new InvalidRequestException(COURSE_NOT_FOUND);
+        });
+
+    // 1. 20일 단위 조각 가지고 오기
+    List<Map<String, Object>> termsByCourseId = getTwentyTermsByCourseId(courseId);
+
+    // 2. term 에 해당하는 기간 가지고 오기
+    Map<String, Object> result = null;
+    for (Map<String, Object> map : termsByCourseId) {
+      if (termLabel.equals(map.get("차수"))) {
+        result = map;
+        break; // 첫 번째 값만 찾으면 반복 종료
+      }
+    }
+
+    // 해당하는 기간이 없을 때
+    if (result == null) {
+      throw new InvalidRequestException(ATTENDANCE_SEGMENT_NOT_FOUND);
+    }
+
+    log.info("term에 해당하는 기간  정보: {}", result);
+
+    // 해당 반을 수강하는 학생 List 조회하기
+    List<Member> students = enrollRepository.findStudentByCourseId(courseId);
+
+    log.debug("해당 반을 수강하는 학생 List(students) : {}", students.toString());
+
+    Object periodDays = result.get("날짜들");
+
+    List<LocalDate> courseDates;
+    if (periodDays instanceof List<?>) {
+      courseDates = ((List<?>) periodDays)
+          .stream()
+          .filter(LocalDate.class::isInstance) // LocalDate 타입인지 확인
+          .map(LocalDate.class::cast) // 안전한 형변환
+          .toList();
+    } else {
+      courseDates = new ArrayList<>(); // 기본값 설정
+    }
+    log.debug("해당 기간에 속하는 날짜들: {}", courseDates);
+    log.info("해당 기간에 속하는 날짜들 사이즈: {}", courseDates.size());
+
+    LocalDate startDate;
+    // 해당 차수의 시작일과 종료일
+    /*if (termLabel.equals("1차")) {
+      startDate = ((LocalDate) result.get("시작일")).minusDays(1);
+      List<LocalDate> newCourseDates = new ArrayList<>(courseDates);
+      newCourseDates.add(0, startDate);
+      courseDates = newCourseDates;
+      log.info("1차라서 교육과정 시작일 {} 을 courseDates에 포함시켰음 : {}", startDate, courseDates.size());
+      //courseDates = courseDates.subList(1, courseDates.size()); // 시작날짜 포함
+    } else {
+      startDate = (LocalDate) result.get("시작일");
+    }*/
+    startDate = (LocalDate) result.get("시작일");
+    LocalDate endDate = (LocalDate) result.get("종료일");
+
+    log.debug("시작일: {}", startDate);
+    log.debug("종료일: {}", endDate);
+
+    // 페이지별 데이터 생성 (5일씩 분할)
+    List<AttendancePrintResponseDto.PrintAttendancePageDto> pages = new ArrayList<>();
+
+    // 5일에 한 장씩 출력이니까
+    for (int pageIndex = 0; pageIndex < courseDates.size(); pageIndex += 5) {
+      int endIdx = Math.min(pageIndex + 5, courseDates.size());
+      List<LocalDate> pageDates = courseDates.subList(pageIndex, endIdx);
+      /* pageDates 변화
+      1회전: 0,4
+      2회전: 5,9
+      3회전: 10, 14
+      4회전: 15, 19
+      * */
+
+      AttendancePrintResponseDto.PrintAttendancePageDto pageDto =
+          AttendancePrintResponseDto.PrintAttendancePageDto.builder()
+              .pageNumber(pageIndex / 5 + 1)
+              .pageStartDate(pageDates.get(0))
+              .pageEndDate(pageDates.get(pageDates.size() - 1))
+              .build(); // 나중에 students 업데이트하기
+
+      List<AttendancePrintResponseDto.PrintStudentAttendanceDto> studentStats = new ArrayList<>();
+
+      for (Member student : students) {
+        AttendancePrintResponseDto.PrintStudentAttendanceDto studentDto =
+            AttendancePrintResponseDto.PrintStudentAttendanceDto.builder()
+                .studentId(student.getId())
+                .studentName(student.getName())
+                .build();   // 나머지 항목 업데이트하기
+
+        List<AttendancePrintResponseDto.PrintDailyAttendanceDto> dailyAttendance = new ArrayList<>();
+        int lateCount = 0;
+        int earlyLeaveCount = 0;
+        int absentCount = 0;
+
+        // 각 날짜별 출석 데이터 조회
+        for (LocalDate date : pageDates) {
+          log.info("해당 날짜의 출석 데이터 조회: {}", date);
+          AttendancePrintResponseDto.PrintDailyAttendanceDto dailyDto =
+              AttendancePrintResponseDto.PrintDailyAttendanceDto.builder()
+                  .date(date)
+                  .build(); // 나머지 항목 업데이트하기
+
+          List<Tuple> attendances = attendanceRepository.findAttendanceStatusByStudentIdAndCourseIdAndDate(
+              student.getId(), courseId, date);
+
+          // 하루동안의 8교시 출석상태
+          List<AttendancePrintResponseDto.PeriodAttendanceDto> periods = new ArrayList<>();
+          String dailySummary = "출석"; // 기본값
+          int late = 0;
+          int earlyLeave = 0;
+          int absent = 0;
+
+          // 하루동안의 8교시 출석상태
+          for (Tuple tuple : attendances) {
+
+            String status = Objects.requireNonNull(tuple.get(attendance.status)).toKorean();
+            String periodName = tuple.get(period.name);
+            Long periodId = tuple.get(period.id);
+
+            AttendancePrintResponseDto.PeriodAttendanceDto periodDto =
+                AttendancePrintResponseDto.PeriodAttendanceDto.builder()
+                    .period(extractPeriodNumber(periodName))
+                    .status(status)
+                    .build();
+
+            periods.add(periodDto);
+
+            // 지각/조퇴 상태 업데이트
+            if ("지각".equals(status)) {
+              late++;
+            } else if ("조퇴".equals(status)) {
+              earlyLeave++;
+            } else if ("결석".equals(status)) {
+              absent++;
+            }
+          } // 교시 반복문 끝
+          // late, earlyLeave, absent 카운트 비교로 dailySummary 설정 및 count 설정
+          boolean isAbsent = absent == TOTAL_SESSIONS_PER_DAY;
+          boolean isLate = !isAbsent && (absent > 0 || late > 0);
+          boolean isEarlyLeave = !isAbsent && earlyLeave > 0;
+
+          if (isAbsent) {
+            dailySummary = "결석";
+            absentCount++;
+          } else if (isLate) {
+            dailySummary = "지각";
+            lateCount++;
+          } else if (isEarlyLeave) {
+            dailySummary = "조퇴";
+            earlyLeaveCount++;
+          }
+          dailyDto = dailyDto.toBuilder()
+              .periods(periods)
+              .dailySummary(dailySummary)
+              .build();
+
+          dailyAttendance.add(dailyDto);
+
+        } // 하루씩 5일
+
+        int processedDays = pageDates.size(); // 해당 페이지의 소정 출석일 (날짜수)
+
+        // 지각과 조퇴를 합산하여 3회당 결석 1회로 계산
+        int lateAndEarlyLeaveTotal = lateCount+earlyLeaveCount;
+        int additionalAbsentDays = lateAndEarlyLeaveTotal / 3;  // 3회당 결석 1회
+
+        // 실제 결석일 = 직접 결석한 일수 + 지각/조퇴로 인한 추가 결석일
+        int totalAbsentDays = absentCount + additionalAbsentDays;
+
+        // 실제출석일 = 소정출석일 - 총 결석일
+        int realAttendDays = processedDays - totalAbsentDays;
+
+        studentDto = studentDto.toBuilder()
+            .processedDays(processedDays)
+            .realAttendDays(realAttendDays)
+            .dailyAttendance(dailyAttendance)
+            .lateCount(lateCount)
+            .earlyLeaveCount(earlyLeaveCount)
+            .absentCount(absentCount)
+            .build();
+
+        studentStats.add(studentDto);
+
+      }
+      pageDto = pageDto.toBuilder()
+          .students(studentStats)
+          .build();
+
+      pages.add(pageDto);
+
+    }
+
+    // 요약 페이지 생성
+    AttendancePrintResponseDto.SummaryPageDto summaryPage = createSummaryPage(students, courseId,
+        startDate, endDate, courseDates, termLabel);
+
+    // 최종 응답 DTO 생성
+    AttendancePrintResponseDto responseDto =
+        AttendancePrintResponseDto.builder()
+            .courseName(course.getName())
+            .termLabel(termLabel)
+            .startDate(course.getStartDate())
+            .endDate(course.getEndDate())
+            .termStartDate(startDate)
+            .termEndDate(endDate)
+            .pages(pages)
+            .summaryPage(summaryPage)
+            .build();
+
+    return responseDto;
+
+  }
+
+  private SummaryPageDto createSummaryPage(List<Member> students, Long courseId,
+      LocalDate startDate, LocalDate endDate,
+      List<LocalDate> courseDates, String termLabel) {
+    log.info("프린트 마지막 장 요약본 메소드 진입");
+
+    AttendancePrintResponseDto.SummaryPageDto summaryPage = new AttendancePrintResponseDto.SummaryPageDto();
+    List<AttendancePrintResponseDto.StudentSummaryDto> summaries = new ArrayList<>();
+
+/*    if (termLabel.equals("1차")) {
+      courseDates.subList(1, courseDates.size());
+      startDate = startDate.plusDays(1);
+      log.info("출석률 계산을 위해 1차라서 포함시켰던 교육과정 시작일 {} 을 배제시킴 : {}", startDate, courseDates.size());
+      //courseDates = courseDates.subList(1, courseDates.size());
+    }*/
+
+    int totalWorkingDays = courseDates.size();
+    log.debug("소정 출석일: {}", totalWorkingDays);
+
+    for (Member student : students) {
+      AttendancePrintResponseDto.StudentSummaryDto summary =
+          AttendancePrintResponseDto.StudentSummaryDto.builder()
+              .studentId(student.getId())
+              .studentName(student.getName())
+              .totalWorkingDays(totalWorkingDays)
+              .build();
+
+      // 한 사람당 기간 동안의 출석 정보 총 20일치
+      List<AttendanceDailyStats> dailyStats = attendanceRepository.findAttendanceStatsByStudentIdAndCourseIdAndDates(
+          student.getId(), courseId, startDate, endDate);
+      log.info("dailyStats 사이즈: {}", dailyStats.size());
+
+      Map<String, Object> twentyDayMap = calculateTwentyDayAttendanceRatesForPrint(dailyStats,
+          courseDates);
+
+      int attendanceDays = (int) twentyDayMap.get("attendanceDays");
+      int lateDays = (int) twentyDayMap.get("lateDays");
+      int earlyLeaveDays = (int) twentyDayMap.get("earlyLeaveDays");
+      int absentDays = (int) twentyDayMap.get("absentDays");
+      double attendanceRate = (double) twentyDayMap.get("attendanceRate");
+
+      summary = summary.toBuilder()
+          .attendanceDays(attendanceDays)
+          .lateDays(lateDays)
+          .earlyLeaveDays(earlyLeaveDays)
+          .absentDays(absentDays)
+          .attendanceRate(attendanceRate)
+          .build();
+
+      summaries.add(summary);
+
+    }
+    summaryPage = summaryPage.toBuilder().studentSummaries(summaries).build();
+    log.info("요약본 만들기 로직 종료");
+    return summaryPage;
+
+  }
+
+  // 교시명에서 숫자 추출 (예: "1교시" -> 1)
+  private int extractPeriodNumber(String periodName) {
+    log.info("교시명에서 숫자 추출하는 로직 시작");
+    // 정규식으로 숫자만 추출
+    Pattern pattern = Pattern.compile("\\d+");  // \d 숫자 의미, + 1개 이상의 숫자가 연속될 경우 => 문자열에서 숫자 찾아냄
+    Matcher matcher = pattern.matcher(periodName);  // periodName 에서 숫자를 찾기
+
+    if (matcher.find()) {
+      log.info("교시명에서 숫자 추출 성공: 교시명: {}, 숫자: {}", periodName, Integer.parseInt(matcher.group()));
+      return Integer.parseInt(matcher.group()); // matcher.group() 찾은 숫자 부분을 문자열로 반환 후 정수로 변환
+    }
+
+    return 0; // 기본값
   }
 }
 
