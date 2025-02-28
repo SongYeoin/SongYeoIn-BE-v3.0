@@ -75,8 +75,13 @@ public class ClubRepositoryCustomImpl implements ClubRepositoryCustom {
         }
 
         // 동아리 목록을 쿼리하고 페이징 처리
+        // 작성일 내림차순, 활동일 내림차순으로 정렬
         List<Club> clubs = queryFactory.selectFrom(club)
                 .where(builder) // 조건을 BooleanBuilder로 설정
+                .orderBy(
+                    club.regDate.desc(), // 작성일 내림차순
+                    club.studyDate.desc() // 활동일 내림차순
+                )
                 .offset(pageable.getOffset()) // 페이징 처리
                 .limit(pageable.getPageSize()) // 페이지 크기
                 .fetch(); // 결과 가져오기
