@@ -11,9 +11,9 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
 import com.syi.project.attendance.dto.projection.QAttendanceDailyStats;
-import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendancePrintResponseDto;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -483,12 +482,12 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
       Long courseId) {
     return queryFactory
         .select(new QAttendanceDailyStats(
-            Expressions.nullExpression(),
+            attendance.memberId,
             attendance.date,
             attendance.status.count().intValue(),
             attendance.status.when(AttendanceStatus.LATE).then(1).otherwise(0).sum(),
             attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum(),
-            attendance.status.when(AttendanceStatus.EARLY_EXIT).then(1).otherwise(0).sum()
+            attendance.status.when(AttendanceStatus.EARLY_LEAVE).then(1).otherwise(0).sum()
         ))
         .from(attendance)
         .where(attendance.memberId.eq(memberId)
@@ -507,7 +506,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
             attendance.status.count().intValue(),
             attendance.status.when(AttendanceStatus.LATE).then(1).otherwise(0).sum(),
             attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum(),
-            attendance.status.when(AttendanceStatus.EARLY_EXIT).then(1).otherwise(0).sum()
+            attendance.status.when(AttendanceStatus.EARLY_LEAVE).then(1).otherwise(0).sum()
         ))
         .from(attendance)
         .where(attendance.courseId.eq(courseId))
@@ -516,6 +515,42 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .fetch();
   }
 
+  @Override
+  public List<Tuple> findAttendanceStatusByStudentIdAndCourseIdAndDate(Long studentId, Long courseId,
+      LocalDate date) {
+    return queryFactory
+        .select(attendance.status, period.name, period.id)
+        .from(attendance)
+        .join(period).on(attendance.periodId.eq(period.id))
+        .where(
+            attendance.memberId.eq(studentId),
+            attendance.courseId.eq(courseId),
+            attendance.date.eq(date)
+        )
+        .orderBy(period.startTime.asc())
+        .fetch();
+  }
+
+  @Override
+  public List<AttendanceDailyStats> findAttendanceStatsByStudentIdAndCourseIdAndDates(Long memberId,
+      Long courseId, LocalDate startDate, LocalDate endDate) {
+    return queryFactory
+        .select(new QAttendanceDailyStats(
+            attendance.memberId,
+            attendance.date,
+            attendance.status.count().intValue(),
+            attendance.status.when(AttendanceStatus.LATE).then(1).otherwise(0).sum(),
+            attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum(),
+            attendance.status.when(AttendanceStatus.EARLY_LEAVE).then(1).otherwise(0).sum()
+        ))
+        .from(attendance)
+        .where(attendance.memberId.eq(memberId)
+            .and(attendance.courseId.eq(courseId))
+            .and(attendance.date.between(startDate,endDate)))
+        .groupBy(attendance.memberId,attendance.date)
+        .orderBy(attendance.date.asc())
+        .fetch();
+  }
 
 
 }
