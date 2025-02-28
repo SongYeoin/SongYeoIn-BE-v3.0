@@ -289,6 +289,7 @@ public class ClubService {
     }
 
     //관리자 수정
+    @Transactional
     public ClubResponseDTO.ClubList approveClub(Long clubId, ClubRequestDTO.ClubApproval clubApproval,
                                                 Long adminId) {
         // 클럽 조회
