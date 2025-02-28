@@ -88,7 +88,7 @@ public class NoticeService {
         validateFile(file);
         try {
           // notice.getRegDate()를 사용하여 게시글 작성일 기준으로 저장
-          File uploadedFile = fileService.uploadFile(file, "notices", member, notice.getRegDate());
+          File uploadedFile = fileService.uploadFile(file, "notices", member, notice.getRegDate().toLocalDate());
           NoticeFile noticeFile = NoticeFile.builder()
               .notice(notice)
               .file(uploadedFile)
@@ -182,7 +182,7 @@ public class NoticeService {
         validateFile(file);
         try {
           // 여기서 notice.getRegDate()를 사용하여 게시글 작성일 기준으로 저장
-          File uploadedFile = fileService.uploadFile(file, "notices", member, notice.getRegDate());
+          File uploadedFile = fileService.uploadFile(file, "notices", member, notice.getRegDate().toLocalDate());
           NoticeFile noticeFile = NoticeFile.builder()
               .notice(notice)
               .file(uploadedFile)
