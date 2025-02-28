@@ -61,7 +61,7 @@ public enum ErrorCode {
   JOURNAL_DUPLICATE_DATE("JOURNAL_003", "해당 날짜에 이미 작성된 교육일지가 있습니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_INVALID_DATE("JOURNAL_004", "유효하지 않은 교육일자입니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_DATE_OUT_OF_RANGE("JOURNAL_007", "교육일자가 과정 기간을 벗어났습니다.", HttpStatus.BAD_REQUEST),
-  JOURNAL_INVALID_FILE_TYPE("JOURNAL_008", "교육일지는 HWP, HWPX, DOCX, DOC 형식만 첨부 가능합니다.", HttpStatus.BAD_REQUEST),
+  JOURNAL_INVALID_FILE_TYPE("JOURNAL_008", "교육일지는 hwp, hwpx, doc, docx 형식만 첨부 가능합니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_FILE_NOT_FOUND("JOURNAL_009", "선택된 교육일지 중 파일이 없는 항목이 있습니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_DOWNLOAD_FAILED("JOURNAL_010", "교육일지 일괄 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 

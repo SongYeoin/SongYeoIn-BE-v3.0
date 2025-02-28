@@ -10,7 +10,10 @@ import com.syi.project.file.entity.File;
 import com.syi.project.file.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -126,4 +129,33 @@ public class FileController {
     fileService.deleteFile(fileId, member);
     return ResponseEntity.noContent().build();
   }
+
+  @Operation(summary = "다중 파일 다운로드")
+  @PostMapping("/download/batch")
+  public ResponseEntity<Resource> downloadMultipleFiles(
+    @RequestBody Map<String, List<Long>> requestBody,
+    @AuthenticationPrincipal Long memberId
+  ) {
+    List<Long> fileIds = requestBody.get("fileIds");
+    if (fileIds == null || fileIds.isEmpty()) {
+      throw new IllegalArgumentException("파일 ID 목록이 비어있습니다.");
+    }
+
+    Member member = memberRepository.findById(memberId)
+      .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+    // 파일 목록 조회
+    List<File> files = fileService.getFilesByIds(fileIds, member);
+
+    // ZIP 파일로 압축하여 다운로드
+    Resource zipResource = fileService.downloadFilesAsZip(files, "selected_files.zip");
+
+    // ZIP 파일 응답 설정
+    return ResponseEntity.ok()
+      .contentType(MediaType.APPLICATION_OCTET_STREAM)
+      .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" +
+        URLEncoder.encode("selected_files.zip", StandardCharsets.UTF_8))
+      .body(zipResource);
+  }
+
 }

@@ -252,23 +252,23 @@ public class ClubController {
         return ResponseEntity.ok(members);
     }
 
-    // 파일 다운로드
-    @GetMapping("/{clubId}/download")
-    public ResponseEntity<Resource> downloadFile(@RequestParam("fileUrl") String fileUrl) {
-        try {
-            InputStream fileStream = s3Uploader.downloadFile(fileUrl);
-            InputStreamResource resource = new InputStreamResource(fileStream);
-
-            // 파일명 추출
-            String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-
-            return ResponseEntity.ok()
-                    .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
-                    .body(resource);
-        } catch (Exception e) {
-            throw new RuntimeException("파일 다운로드 중 에러가 발생했습니다.", e);
-        }
-    }
+//    // 파일 다운로드
+//    @GetMapping("/{clubId}/download")
+//    public ResponseEntity<Resource> downloadFile(@RequestParam("fileUrl") String fileUrl) {
+//        try {
+//            InputStream fileStream = s3Uploader.downloadFile(fileUrl);
+//            InputStreamResource resource = new InputStreamResource(fileStream);
+//
+//            // 파일명 추출
+//            String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+//
+//            return ResponseEntity.ok()
+//                    .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+//                    .body(resource);
+//        } catch (Exception e) {
+//            throw new RuntimeException("파일 다운로드 중 에러가 발생했습니다.", e);
+//        }
+//    }
 
 
 
