@@ -51,7 +51,7 @@ public class ClubController {
     private static final Logger log = LoggerFactory.getLogger(ClubController.class);
 
     @Autowired
-    private final ClubService clubService;
+    private ClubService clubService;
     @Autowired
     private JwtProvider jwtProvider;
     @Autowired
@@ -271,8 +271,7 @@ public class ClubController {
 //    }
 
 
-
-
+//
 
 //    @GetMapping("/{clubId}/download")
 //    public ResponseEntity<Resource> downloadFile(@PathVariable Long clubId, @PathVariable String fileName) {

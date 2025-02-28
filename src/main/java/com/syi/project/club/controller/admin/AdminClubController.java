@@ -13,16 +13,12 @@ import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
-import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CourseResponseDTO;
 import com.syi.project.course.service.CourseService;
-import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,8 +43,6 @@ public class AdminClubController {
     private JwtProvider jwtProvider;
     @Autowired
     private CourseService courseService;
-    @Autowired
-    private S3Uploader s3Uploader;
 
     public AdminClubController(ClubService clubService) {
         this.clubService = clubService;
@@ -174,24 +168,6 @@ public class AdminClubController {
 
         return ResponseEntity.ok(response);
     }
-
-//    // 파일 다운로드
-//    @GetMapping("/{clubId}/download")
-//    public ResponseEntity<Resource> downloadFile(@RequestParam("fileUrl") String fileUrl) {
-//        try {
-//            InputStream fileStream = s3Uploader.downloadFile(fileUrl);
-//            InputStreamResource resource = new InputStreamResource(fileStream);
-//
-//            // 파일명 추출
-//            String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-//
-//            return ResponseEntity.ok()
-//              .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
-//              .body(resource);
-//        } catch (Exception e) {
-//            throw new RuntimeException("파일 다운로드 중 에러가 발생했습니다.", e);
-//        }
-//    }
 
 
 
