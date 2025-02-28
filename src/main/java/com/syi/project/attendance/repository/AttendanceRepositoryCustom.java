@@ -1,7 +1,7 @@
 package com.syi.project.attendance.repository;
 
+import com.querydsl.core.Tuple;
 import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
-import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
@@ -37,4 +37,8 @@ public interface AttendanceRepositoryCustom {
   List<AttendanceDailyStats> findAttendanceStatsByMemberAndCourse(Long memberId, Long courseId);
 
   List<AttendanceDailyStats> findAttendanceStatsByCourse(Long courseId);
+
+  List<Tuple> findAttendanceStatusByStudentIdAndCourseIdAndDate(Long id, Long courseId, LocalDate date);
+
+  List<AttendanceDailyStats> findAttendanceStatsByStudentIdAndCourseIdAndDates(Long id, Long courseId, LocalDate startDate, LocalDate endDate);
 }
