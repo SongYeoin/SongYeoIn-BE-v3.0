@@ -74,6 +74,7 @@ public class ClubService {
     }
 
     //리스트(페이징)
+    @Transactional
     public Page<ClubResponseDTO.ClubList> getClubListWithPaging(Criteria cri, Long courseId) {
         // Pageable 객체 생성 (cri에서 pageNum과 amount 가져오기)
         Pageable pageable = cri.getPageable();
@@ -105,6 +106,7 @@ public class ClubService {
     }
 
     //페이징DTO변환
+    @Transactional
     private ClubResponseDTO.ClubList toClubListDTO(Club club) {
         ClubFile clubFile = clubFileRepository.findByClubId(club.getId()).stream().findFirst().orElse(null);
         FileResponseDTO savedFile = null;
