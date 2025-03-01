@@ -188,9 +188,22 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
    * 학생 출석 데이터 조회 (기간 기준)
    */
   private Page<AttendListResponseDTO> findStudentAttendanceData(Long courseId, AllAttendancesRequestDTO dto, List<Period> periods, List<String> periodNames, Pageable pageable) {
+
+    log.info("(학생) 페이지 요청 정보: page={}, size={}, offset={}",
+        pageable.getPageNumber(), pageable.getPageSize(), pageable.getOffset());
+    log.debug("(학생) courseId: {}, dto: {}, periods: {}, periodNames: {}", courseId, dto, periods, periodNames);
+
     BooleanBuilder predicate = buildStudentPredicate(courseId, dto);
 
-    log.debug("(학생) courseId: {}, dto: {}, periods: {}, periodNames: {}", courseId, dto, periods, periodNames);
+    // 1. 먼저 전체 고유 날짜 수를 계산 (페이지네이션 전)
+    Long totalDates = queryFactory
+        .select(attendance.date.countDistinct())
+        .from(attendance)
+        .where(predicate)
+        .fetchOne();
+
+    long safeTotal = totalDates != null ? totalDates : 0L;
+    log.info("(학생) 페이지네이션 전 전체 날짜 수: {}", safeTotal);
 
     // 1. 먼저 고유한 날짜를 가져와서 페이지네이션 적용
     List<LocalDate> dates = queryFactory
@@ -204,8 +217,12 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .fetch();
 
     if (dates.isEmpty()) {
+      log.debug("(학생) 조건에 맞는 데이터가 없습니다.");
       return new PageImpl<>(Collections.emptyList(), pageable, 0);
     }
+
+    log.info("(학생) 현재 페이지에 선택된 날짜 수: {}", dates.size());
+    log.debug("(학생) 선택된 날짜 목록: {}", dates);
 
     // 2. 이제 가져온 날짜에 해당하는 모든 출석 데이터 조회
     BooleanExpression dateInList = attendance.date.in(dates);
@@ -221,18 +238,25 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .where(predicate.and(dateInList))
         .fetch();
 
-    log.info("학생이 조회한 출석 데이터");
-    log.debug("학생-조회된 데이터: {}", tuples);
+    log.info("(학생) 조회된 원시 데이터(튜플) 개수: {}", tuples.size());
+    log.debug("(학생) 조회된 데이터: {}", tuples);
 
     List<AttendListResponseDTO> content = mapTuplesToDTO(tuples, periods, periodNames, false);
 
-    Long total = queryFactory
-        .select(attendance.id.count())
-        .from(attendance)
-        .where(predicate)
-        .fetchOne();
+    log.info("(학생) DTO 변환 후 실제 반환될 데이터 개수: {}", content.size());
 
-    return new PageImpl<>(content, pageable, total != null ? total : 0);
+    // 5. 반환되는 날짜 목록 로깅 (DTO 변환 후)
+    List<LocalDate> returnedDates = content.stream()
+        .map(AttendListResponseDTO::getDate)
+        .collect(Collectors.toList());
+    log.debug("(학생) 반환될 데이터의 날짜 목록: {}", returnedDates);
+
+    // 6. 전체 페이지 수 계산 및 로깅
+    int totalPages = (int) Math.ceil((double) safeTotal / pageable.getPageSize());
+    log.info("(학생) 계산된 전체 페이지 수: {}", totalPages);
+
+    // 7. 페이지 객체 반환 (중요: total에 페이지네이션 전 전체 날짜 수 사용)
+    return new PageImpl<>(content, pageable, safeTotal);
   }
 
   /**
@@ -252,9 +276,9 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .fetchOne();
 
     long safeTotal = totalCount != null ? totalCount : 0L;
-    log.info("페이지네이션 전 전체 학생 수: {}", safeTotal);
+    log.info("(관리자) 페이지네이션 전 전체 학생 수: {}", safeTotal);
 
-    log.info("페이지 요청 정보: page={}, size={}, offset={}",
+    log.info("(관리자) 페이지 요청 정보: page={}, size={}, offset={}",
         pageable.getPageNumber(), pageable.getPageSize(), pageable.getOffset());
 
 
@@ -269,13 +293,13 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .fetch();
 
     if (studentIds.isEmpty()) {
-      log.debug("조건에 맞는 데이터가 없습니다.");
+      log.debug("(관리자) 조건에 맞는 데이터가 없습니다.");
       return new PageImpl<>(Collections.emptyList(), pageable, 0);
     }
 
     // 디버그 로그 2: 페이지네이션 적용 후 선택된 학생 수
-    log.info("현재 페이지에 선택된 학생 수: {}", studentIds.size());
-    log.debug("선택된 학생 ID 목록: {}", studentIds);
+    log.info("(관리자) 현재 페이지에 선택된 학생 수: {}", studentIds.size());
+    log.debug("(관리자) 선택된 학생 ID 목록: {}", studentIds);
 
     // 2. 선택된 학생들의 출석 데이터를 조회합니다
     BooleanExpression studentInList = attendance.memberId.in(studentIds);
@@ -291,26 +315,26 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .fetch();
 
     // 디버그 로그 3: 조회된 원시 데이터(튜플) 개수
-    log.info("조회된 원시 데이터(튜플) 개수: {}", tuples.size());
+    log.info("(관리자) 조회된 원시 데이터(튜플) 개수: {}", tuples.size());
 
     List<AttendListResponseDTO> content = mapTuplesToDTO(tuples, periods, periodNames, true);
 
     // 디버그 로그 4: DTO 변환 후 실제 반환될 데이터 개수
-    log.info("DTO 변환 후 실제 반환될 데이터 개수: {}", content.size());
+    log.info("(관리자) DTO 변환 후 실제 반환될 데이터 개수: {}", content.size());
 
     // 디버그 로그 5: 반환될 데이터의 학생 ID 목록 (중복 확인)
     List<Long> returnedStudentIds = content.stream()
         .map(AttendListResponseDTO::getStudentId)
         .collect(Collectors.toList());
-    log.debug("반환될 데이터의 학생 ID 목록: {}", returnedStudentIds);
+    log.debug("(관리자) 반환될 데이터의 학생 ID 목록: {}", returnedStudentIds);
 
 
     // 디버그 로그 6: 계산된 전체 학생 수
-    log.info("계산된 전체 학생 수(total): {}", safeTotal);
+    log.info("(관리자) 계산된 전체 학생 수(total): {}", safeTotal);
 
     // 디버그 로그 7: 전체 페이지 수 계산
     int totalPages = (int) Math.ceil((double) safeTotal / pageable.getPageSize());
-    log.info("계산된 전체 페이지 수: {}", totalPages);
+    log.info("(관리자) 계산된 전체 페이지 수: {}", totalPages);
 
     return new PageImpl<>(content, pageable, safeTotal);
   }
