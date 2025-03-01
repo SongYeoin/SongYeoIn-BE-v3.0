@@ -61,12 +61,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     String accessToken = getTokenFromRequest(request, "Authorization");
     String refreshToken = getTokenFromRequest(request, "Refresh-Token");
+    String deviceFingerprint = request.getHeader("X-Device-Fingerprint");
 
     // Access Token 처리
     if (accessToken != null) {
       if (isTokenBlacklisted(accessToken, "ACCESS")) {
         log.warn("블랙리스트에 등록된 Access Token 요청 차단 - Token: {}, URL: {}", accessToken, request.getRequestURI());
         setUnauthorizedResponse(response, "로그아웃된 Access Token입니다.");
+        return;
+      }
+
+      // 디바이스 지문 검증
+      if (deviceFingerprint != null && !validateDeviceFingerprint(accessToken, deviceFingerprint)) {
+        log.warn("디바이스 지문 불일치 - Token: {}, URL: {}", accessToken, request.getRequestURI());
+        setUnauthorizedResponse(response, "인증 정보가 일치하지 않습니다.");
         return;
       }
 
@@ -117,6 +125,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         });
       });
     });
+  }
+
+  /**
+   * 디바이스 지문 검증
+   */
+  private boolean validateDeviceFingerprint(String token, String deviceFingerprint) {
+    try {
+      String tokenDeviceFingerprint = jwtProvider.getDeviceFingerprint(token).orElse(null);
+
+      // 토큰에 디바이스 지문이 없는 경우 검증 스킵 (이전 버전 호환성)
+      if (tokenDeviceFingerprint == null) {
+        return true;
+      }
+
+      return tokenDeviceFingerprint.equals(deviceFingerprint);
+    } catch (Exception e) {
+      log.error("디바이스 지문 검증 실패: {}", e.getMessage());
+      return false;
+    }
   }
 
   /**

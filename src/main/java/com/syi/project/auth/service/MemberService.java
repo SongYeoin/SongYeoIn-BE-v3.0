@@ -106,7 +106,7 @@ public class MemberService {
 
   // 로그인
   @Transactional
-  public MemberLoginResponseDTO login(MemberLoginRequestDTO requestDTO, Role requiredRole) {
+  public MemberLoginResponseDTO login(MemberLoginRequestDTO requestDTO, Role requiredRole, String userAgent, String ipAddress, String deviceFingerprint) {
     log.info("로그인 검증 시작 - 사용자 Username: {}", requestDTO.getUsername());
 
     Member member = memberRepository.findByUsernameAndDeletedByIsNull(requestDTO.getUsername())
@@ -139,7 +139,7 @@ public class MemberService {
     log.info("기존 Refresh Token 삭제 완료 - 사용자 ID: {}", member.getId());
 
     String accessToken = jwtProvider.createAccessToken(member.getId(), member.getName(),
-        member.getRole().name());
+        member.getRole().name(), deviceFingerprint);
     String refreshToken = jwtProvider.createRefreshToken(member.getId());
 
     // 새 Refresh Token DB에 저장
@@ -155,7 +155,22 @@ public class MemberService {
   @Transactional
   public void logout(HttpServletRequest request) {
     String accessToken = extractToken(request.getHeader(HttpHeaders.AUTHORIZATION));
-    String refreshToken = extractToken(request.getHeader("Refresh-Token"));
+    String refreshToken = null;
+
+    // HTTP Only 쿠키에서 Refresh Token 가져오기
+    if (request.getCookies() != null) {
+      for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+        if ("refresh_token".equals(cookie.getName())) {
+          refreshToken = cookie.getValue();
+          break;
+        }
+      }
+    }
+
+    // 쿠키에서 찾지 못한 경우 헤더에서 확인
+    if (refreshToken == null) {
+      refreshToken = extractToken(request.getHeader("Refresh-Token"));
+    }
 
     // Access Token 처리
     if (accessToken != null && jwtProvider.validateAccessToken(accessToken)) {
@@ -411,31 +426,5 @@ public class MemberService {
     log.info("관리자에 의한 회원 탈퇴 처리 완료 - 회원 ID: {}, 관리자 ID: {}", memberId, adminId);
   }
 
-  // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드
-  public String refreshToken(String refreshToken) {
-    log.info("Refresh Token 검증 시작");
-
-    // Refresh Token 유효성 검사
-    if (!jwtProvider.validateRefreshToken(refreshToken)) {
-      log.warn("유효하지 않은 Refresh Token: {}", refreshToken);
-      throw new InvalidRequestException(ErrorCode.INVALID_REFRESH_TOKEN);
-    }
-
-    // Refresh Token에서 사용자 ID 추출
-    Optional<Long> idOpt = jwtProvider.getMemberPrimaryKeyId(refreshToken);
-    if (idOpt.isEmpty()) {
-      log.error("Refresh Token에서 사용자 ID 추출 실패");
-      throw new InvalidRequestException(ErrorCode.INVALID_REFRESH_TOKEN);
-    }
-
-    Long id = idOpt.get();
-    Member member = memberRepository.findById(id)
-        .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
-
-    String newAccessToken = jwtProvider.createAccessToken(member.getId(), member.getName(),
-        member.getRole().name());
-    log.info("새로운 Access Token 발급 완료 - 사용자 ID: {}", id);
-    return newAccessToken;
-  }
 }
 

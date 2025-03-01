@@ -20,7 +20,7 @@ public class JwtBlacklistService {
   public void cleanupExpiredTokens() {
     LocalDateTime nowKST = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
     log.info("만료된 Access Token 삭제 작업 시작 - 현재 시각: {}", nowKST);
-    int deletedCount = jwtBlacklistRepository.deleteAllByExpirationBefore(nowKST);
+    int deletedCount = jwtBlacklistRepository.deleteByExpiryDateBefore(nowKST);
     log.info("만료된 Access Token {}개 삭제 완료", deletedCount);
   }
 

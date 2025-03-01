@@ -6,6 +6,7 @@ import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
 import com.syi.project.auth.dto.PasswordResetResponseDTO;
 import com.syi.project.auth.dto.WithdrawRequestDTO;
+import com.syi.project.auth.service.JwtService;
 import com.syi.project.auth.service.MemberService;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
@@ -16,6 +17,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +34,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,6 +47,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminController {
 
   private final MemberService memberService;
+  private final JwtService jwtService;
 
   @PostMapping("/login")
   @Operation(summary = "관리자 로그인", description = "관리자 로그인 기능입니다. 로그인 후 JWT 토큰을 발급받습니다.")
@@ -54,11 +60,37 @@ public class AdminController {
   })
   public ResponseEntity<MemberLoginResponseDTO> login(
       @Parameter(description = "관리자 로그인 요청 정보", required = true)
-      @Valid @RequestBody MemberLoginRequestDTO requestDTO) {
+      @Valid @RequestBody MemberLoginRequestDTO requestDTO,
+      @RequestHeader(value = "X-Device-Fingerprint", required = false) String deviceFingerprint,
+      HttpServletRequest request,
+      HttpServletResponse response) {
     log.info("관리자 로그인 요청 - 로그인 ID: {}", requestDTO.getUsername());
-    MemberLoginResponseDTO responseDTO = memberService.login(requestDTO, Role.ADMIN);
+
+    // 클라이언트 정보 추출
+    String userAgent = request.getHeader("User-Agent");
+    String ipAddress = jwtService.getClientIp(request);
+    MemberLoginResponseDTO responseDTO = memberService.login(requestDTO, Role.ADMIN, userAgent, ipAddress, deviceFingerprint);
+
+    // Refresh Token을 HTTP Only 쿠키로 설정
+    Cookie refreshTokenCookie = new Cookie("refresh_token", responseDTO.getRefreshToken());
+    refreshTokenCookie.setHttpOnly(true); // 자바스크립트에서 접근 불가능하게 설정
+    refreshTokenCookie.setSecure(true); // HTTPS에서만 전송되도록 설정
+    refreshTokenCookie.setPath("/"); // 모든 경로에서 쿠키에 접근 가능하게 설정
+    refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7일 유효 (초 단위)
+    refreshTokenCookie.setAttribute("SameSite", "Strict"); // SameSite=Strict 설정
+    response.addCookie(refreshTokenCookie);
+
+    // 보안 헤더 추가
+    response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    response.setHeader("Pragma", "no-cache");
+    response.setHeader("Expires", "0");
+
     log.info("관리자 로그인 성공 - 로그인 ID: {}", requestDTO.getUsername());
-    return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    // 응답에는 Access Token만 포함
+    return new ResponseEntity<>(
+        new MemberLoginResponseDTO(responseDTO.getAccessToken(), null),
+        HttpStatus.OK
+    );
   }
 
   @GetMapping

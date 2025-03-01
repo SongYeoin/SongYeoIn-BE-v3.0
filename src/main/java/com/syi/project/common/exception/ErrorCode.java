@@ -24,6 +24,9 @@ public enum ErrorCode {
 
   // 인증/인가 관련 에러
   INVALID_REFRESH_TOKEN("AUTH_003", "유효하지 않은 Refresh Token입니다.", HttpStatus.UNAUTHORIZED),
+  INVALID_TOKEN("AUTH_004", "유효하지 않은 토큰입니다.", HttpStatus.UNAUTHORIZED),
+  SECURITY_RISK_DETECTED("AUTH_005", "보안 위험이 감지되었습니다. 계정을 보호하기 위해 모든 토큰이 무효화되었습니다.", HttpStatus.UNAUTHORIZED),
+
   // 강의 관련 에러
   COURSE_NOT_FOUND("COURSE_001", "요청한 교육과정을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
