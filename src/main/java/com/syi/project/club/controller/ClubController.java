@@ -129,9 +129,10 @@ public class ClubController {
         Criteria cri = new Criteria();
         cri.setPageNum(pageNum);
         cri.setType(type);
+        cri.setKeyword(keyword);
 
         // 승인 상태 키워드 변환
-        cri.setKeywordFromTypeAndKeyword(type, keyword);
+        //cri.setKeywordFromTypeAndKeyword(type, keyword);
 //        if ("C".equals(type)) {
 //            cri.setKeyword("대기".equals(keyword) ? "W" : "승인".equals(keyword) ? "Y" : "미승인".equals(keyword) ? "N" : "");
 //        } else {

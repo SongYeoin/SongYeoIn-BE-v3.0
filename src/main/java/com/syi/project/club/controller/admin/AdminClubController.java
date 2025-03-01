@@ -68,8 +68,7 @@ public class AdminClubController {
     @GetMapping("/{courseId}/list")
     public ResponseEntity<Map<String, Object>> getClubListByCourseId(@PathVariable(value = "courseId", required = false) Long courseId,
                                                                      @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
-                                                                     @RequestParam(value = "type", required = false) String type,
-                                                                     @RequestParam(value = "keyword", required = false) String keyword) {
+                                                                     @RequestParam(value = "status", required = false) String status) {
         if (courseId == null) {
             return ResponseEntity.ok(Collections.emptyMap());
         }
@@ -77,15 +76,15 @@ public class AdminClubController {
         // Criteria 설정
         Criteria cri = new Criteria();
         cri.setPageNum(pageNum);
-        cri.setType(type);
 
         // 승인 상태 키워드 변환
-        cri.setKeywordFromTypeAndKeyword(type, keyword);
-//        if ("C".equals(type)) {
-//            cri.setKeyword("대기".equals(keyword) ? "W" : "승인".equals(keyword) ? "Y" : "미승인".equals(keyword) ? "N" : "");
-//        } else {
-//            cri.setKeyword(keyword);
-//        }
+        //cri.setKeywordFromTypeAndKeyword(type, keyword);
+        // status 파라미터를 type과 keyword로 변환
+        if (status != null && !status.equals("ALL")) {
+            cri.setType("C");
+            cri.setKeyword(status); // Y, N, W 값을 그대로 전달
+        }
+
 
         // 페이징된 결과 조회
         Page<ClubResponseDTO.ClubList> clubPage = clubService.getClubListWithPaging(cri, courseId);
