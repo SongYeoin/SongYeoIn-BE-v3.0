@@ -75,16 +75,17 @@ public enum ErrorCode {
   ATTENDANCE_NOT_IN_RANGE("ATTENDANCE_001", "학원 네트워크에서만 출석이 가능합니다.", HttpStatus.FORBIDDEN),
   ATTENDANCE_FAILED("ATTENDANCE_002", "출석에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
   // 입실
-  ATTENDANCE_ENTRY_NOT_ALLOWED("ATTENDANCE_ENTRY_001", "입실이 가능한 시간이 아닙니다", HttpStatus.FORBIDDEN),
-  ATTENDANCE_ENTRY_TOO_EARLY("ATTENDANCE_ENTRY_002", "입실 가능한 시간이 아닙니다. 교시 시작 40분 전부터 가능합니다.", HttpStatus.FORBIDDEN),
-  ATTENDANCE_ENTRY_TOO_LATE("ATTENDANCE_ENTRY_003", "입실 가능한 시간이 아닙니다. 마지막 교시 시작 후 20분 전까지 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_ENTRY_NOT_ALLOWED("ATTENDANCE_ENTRY_001", "입실이 가능한 시간이 아닙니다", HttpStatus.BAD_REQUEST),
+  ATTENDANCE_ENTRY_TOO_EARLY("ATTENDANCE_ENTRY_002", "입실 가능한 시간이 아닙니다. 교시 시작 40분 전부터 가능합니다.", HttpStatus.BAD_REQUEST),
+  ATTENDANCE_ENTRY_TOO_LATE("ATTENDANCE_ENTRY_003", "입실 가능한 시간이 아닙니다. 마지막 교시 시작 후 20분 전까지 가능합니다.", HttpStatus.BAD_REQUEST),
   ATTENDANCE_ALREADY_ENTERED("ATTENDANCE_ENTRY_004","이미 입실했습니다.", HttpStatus.BAD_REQUEST),
   ATTENDANCE_ENTRY_NOT_FIND_PERIOD("ATTENDANCE_ENTRY_005","입실 가능한 교시가 없습니다.",HttpStatus.BAD_REQUEST),
+  ATTENDANCE_ENTRY_INVALID_DATE("ATTENDANCE_ENTRY_006","공휴일이나 주말에는 출석 체크가 불가능합니다.",HttpStatus.BAD_REQUEST),
 
   // 퇴실
-  ATTENDANCE_EXIT_NOT_ALLOWED("ATTENDANCE_EXIT_001", "퇴실 가능 시간이 아닙니다. 마지막 교시 종료 전 20분부터 가능합니다.", HttpStatus.FORBIDDEN),
-  ATTENDANCE_EXIT_TOO_EARLY("ATTENDANCE_EXIT_002", "퇴실 시간이 너무 이릅니다. 교시 종료 10분 전부터 가능합니다.", HttpStatus.FORBIDDEN),
-  ATTENDANCE_EXIT_TOO_LATE("ATTENDANCE_EXIT_003", "퇴실 시간이 너무 늦었습니다. 교시 종료 후 10분 후까지 가능합니다.", HttpStatus.FORBIDDEN),
+  ATTENDANCE_EXIT_NOT_ALLOWED("ATTENDANCE_EXIT_001", "퇴실 가능 시간이 아닙니다. 마지막 교시 종료 전 20분부터 가능합니다.", HttpStatus.BAD_REQUEST),
+  ATTENDANCE_EXIT_TOO_EARLY("ATTENDANCE_EXIT_002", "퇴실 시간이 너무 이릅니다. 교시 종료 10분 전부터 가능합니다.", HttpStatus.BAD_REQUEST),
+  ATTENDANCE_EXIT_TOO_LATE("ATTENDANCE_EXIT_003", "퇴실 시간이 너무 늦었습니다. 교시 종료 후 10분 후까지 가능합니다.", HttpStatus.BAD_REQUEST),
   ATTENDANCE_ALREADY_EXITED("ATTENDANCE_EXIT_004","이미 퇴실했습니다.", HttpStatus.BAD_REQUEST),
   ATTENDANCE_ENTRY_NOT_FOUND("ATTENDANCE_EXIT_005","입실한 기록이 없습니다.",HttpStatus.BAD_REQUEST),
   ATTENDANCE_EXIT_NOT_FIND_PERIOD("ATTENDANCE_EXIT_006","퇴실 가능한 교시가 없습니다.",HttpStatus.BAD_REQUEST),
