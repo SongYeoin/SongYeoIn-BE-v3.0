@@ -192,102 +192,103 @@ public class ClubService {
         // 작성자와 로그인 사용자가 동일한지 확인
         verifyWriter(club.getWriterId(), loggedInUserId);
 
-        // 파일 유효성 검사
-        validateFile(file, clubId);
-
-        FileResponseDTO fileDto = null;
+        if (file != null) {
+            // 파일 유효성 검사
+            validateFile(file, clubId);
+        }
 
         // 승인 상태에 따른 수정 처리
         if (club.getCheckStatus() == CheckStatus.W) {
-            // 대기 상태일 때는 파일 수정 불가
-//            if (file != null) {
-//                throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_FILE_IN_WAITING);
-//            }
-//
-            // 대기 상태: 활동날, 내용, 참여자 수정 가능
-            if (clubUpdate != null) {
-                club.updateDetails(
-                        clubUpdate.getParticipants(),
-                        clubUpdate.getContent(),
-                        clubUpdate.getStudyDate(),
-                        LocalDate.now(),
-                        clubUpdate.getClubName(),
-                        clubUpdate.getContactNumber(),
-                        clubUpdate.getStartTime(),
-                        clubUpdate.getEndTime(),
-                        clubUpdate.getParticipantCount()
-                );
+            // 대기 상태: 클럽 정보 업데이트
+            updateClubDetails(club, clubUpdate);
+
+            // 필요시 파일도 업데이트
+            if (file != null) {
+                updateClubFile(club, file, loggedInUserId);
             }
         } else if (club.getCheckStatus() == CheckStatus.Y) {
-            // 승인 상태: 파일만 수정 가능
+//            // 승인 상태: 필요한 경우 클럽 정보 업데이트
 //            if (clubUpdate != null) {
-//                throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_APPROVED);
+//                updateClubDetails(club, clubUpdate);
 //            }
 
-            Member member = memberRepository.findById(loggedInUserId)
-                    .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
-
-            // 파일 처리
+            // 파일 업데이트
             if (file != null) {
-                String dirName = "club";
-
-                // 기존 파일이 있는 경우 삭제하고 새 파일로 교체
-                ClubFile clubFile = clubFileRepository.findByClubId(clubId).stream().findFirst().orElse(null);
-
-                if (clubFile != null) {
-                    // 기존 파일 삭제
-                    File existingFile = clubFile.getFile();
-                    if (existingFile != null) {
-                        fileService.deleteFile(existingFile.getId(), member); // 기존 파일 삭제
-                    }
-
-                    // 새 파일 업로드
-                    File uploadedFile = fileService.uploadFile(file, dirName, member);
-                    log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
-                    clubFile.updateFile(uploadedFile);
-
-                    // 파일 DTO 생성
-                    fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
-
-                    // Club 객체에 ClubFile을 반영
-                    clubFile.updateClub(club);
-                    //club.setFile(clubFile); // 중요: ClubFile을 Club에 반영
-
-                    // ClubFile 저장
-                    //clubFileRepository.save(clubFile);  // ClubFile을 명시적으로 저장
-                } else {
-                    // 기존 파일이 없는 경우 새 파일 업로드
-                    File uploadedFile = fileService.uploadFile(file, dirName, member);
-                    log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
-                    ClubFile newClubFile = ClubFile.builder()
-                            .club(club)
-                            .file(uploadedFile)
-                            .build();
-                    clubFileRepository.save(newClubFile);
-
-                    // 파일 DTO 생성
-                    fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
-
-                    // Club 객체에 ClubFile을 반영
-                    newClubFile.updateClub(club);
-                    //club.setFile(newClubFile); // 중요: ClubFile을 Club에 반영
-
-                }
+                updateClubFile(club, file, loggedInUserId);
             }
         } else {
             throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_PENDING);
         }
 
-        log.info("클럽 저장 전: club={}", club);
         // 클럽 저장
         Club updatedClub = clubRepository.save(club);
-        //clubRepository.saveAndFlush(club); // saveAndFlush()로 영속성 컨텍스트 반영
-        log.info("클럽 저장 후: updatedClub={}", updatedClub);
+        log.info("클럽 업데이트 완료: clubId={}", updatedClub.getId());
+
+        // 파일 정보 가져오기
+        FileResponseDTO fileDto = getClubFileInfo(clubId);
 
         String writer = getMemberName(club.getWriterId());
 
         // 응답 DTO로 변환
         return ClubResponseDTO.ClubList.toListDTO(updatedClub, writer, null, fileDto);
+    }
+
+    // 클럽 상세 정보 업데이트 메서드
+    private void updateClubDetails(Club club, ClubRequestDTO.ClubUpdate update) {
+        club.updateDetails(
+          update.getParticipants(),
+          update.getContent(),
+          update.getStudyDate(),
+          LocalDate.now(),
+          update.getClubName(),
+          update.getContactNumber(),
+          update.getStartTime(),
+          update.getEndTime(),
+          update.getParticipantCount()
+        );
+    }
+
+    // 클럽 파일 업데이트 메서드
+    private FileResponseDTO updateClubFile(Club club, MultipartFile file, Long loggedInUserId) {
+        String dirName = "club";
+        Member member = memberRepository.findById(loggedInUserId)
+          .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+        // 기존 파일 찾기
+        ClubFile clubFile = clubFileRepository.findByClubId(club.getId()).stream().findFirst().orElse(null);
+
+        if (clubFile != null) {
+            // 기존 파일이 있는 경우 삭제하고 새 파일로 교체
+            File existingFile = clubFile.getFile();
+            if (existingFile != null) {
+                fileService.deleteFile(existingFile.getId(), member);
+            }
+
+            // 새 파일 업로드
+            File uploadedFile = fileService.uploadFile(file, dirName, member);
+            clubFile.updateFile(uploadedFile);
+            clubFileRepository.save(clubFile);
+
+            return FileResponseDTO.from(uploadedFile, s3Uploader);
+        } else {
+            // 기존 파일이 없는 경우 새 파일 업로드
+            File uploadedFile = fileService.uploadFile(file, dirName, member);
+            ClubFile newClubFile = ClubFile.builder()
+              .club(club)
+              .file(uploadedFile)
+              .build();
+            clubFileRepository.save(newClubFile);
+
+            return FileResponseDTO.from(uploadedFile, s3Uploader);
+        }
+    }
+
+    // 클럽 파일 정보 조회 메서드
+    private FileResponseDTO getClubFileInfo(Long clubId) {
+        return clubFileRepository.findByClubId(clubId).stream()
+          .findFirst()
+          .map(clubFile -> FileResponseDTO.from(clubFile.getFile(), s3Uploader))
+          .orElse(null);
     }
 
     //관리자 수정
