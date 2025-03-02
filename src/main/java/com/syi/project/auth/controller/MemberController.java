@@ -188,9 +188,6 @@ public class MemberController {
       Long memberId = jwtProvider.getMemberPrimaryKeyId(token)
           .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 토큰입니다."));
 
-      // Access Token 블랙리스트에 추가
-      jwtService.revokeToken(token, memberId, userAgent, ipAddress);
-
       // 서비스에 로그아웃 처리 요청 (RefreshToken 제거)
       memberService.logout(request);
 
