@@ -21,6 +21,7 @@ import com.syi.project.course.dto.CourseResponseDTO;
 import com.syi.project.course.service.CourseService;
 import com.syi.project.enroll.dto.EnrollResponseDTO;
 import com.syi.project.enroll.service.EnrollService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -255,51 +256,16 @@ public class ClubController {
         return ResponseEntity.ok(members);
     }
 
-//    // 파일 다운로드
-//    @GetMapping("/{clubId}/download")
-//    public ResponseEntity<Resource> downloadFile(@RequestParam("fileUrl") String fileUrl) {
-//        try {
-//            InputStream fileStream = s3Uploader.downloadFile(fileUrl);
-//            InputStreamResource resource = new InputStreamResource(fileStream);
-//
-//            // 파일명 추출
-//            String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-//
-//            return ResponseEntity.ok()
-//                    .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
-//                    .body(resource);
-//        } catch (Exception e) {
-//            throw new RuntimeException("파일 다운로드 중 에러가 발생했습니다.", e);
-//        }
-//    }
+    @Operation(summary = "클럽 파일 다운로드")
+    @GetMapping("/{clubId}/download")
+    public ResponseEntity<Resource> downloadClubFile(
+      @PathVariable Long clubId,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        log.info("클럽 파일 다운로드 요청 - clubId: {}, memberId: {}, 역할: {}",
+          clubId, userDetails.getId(), userDetails.getRole());
 
-
-
-
-
-//    @GetMapping("/{clubId}/download")
-//    public ResponseEntity<Resource> downloadFile(@PathVariable Long clubId, @PathVariable String fileName) {
-//        log.info("동아리일지 파일 다운로드 요청 - clubId: {}", clubId);
-//        try {
-//            // Get file content from S3
-//            InputStream fileStream = s3Uploader.downloadFile(fileName);
-//            InputStreamResource resource = new InputStreamResource(fileStream);
-//
-//            // Set content type and attachment header
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-//            headers.setContentDispositionFormData("attachment", fileName);
-//
-//            return ResponseEntity.ok()
-//              .headers(headers)
-//              .body(resource);
-//        } catch (Exception e) {
-//            return ResponseEntity.notFound().build();
-//        }
-//    }
-
-
-
-
+        return clubService.downloadClubFile(clubId, userDetails.getId());
+    }
 }
 
