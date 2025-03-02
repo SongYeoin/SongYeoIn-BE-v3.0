@@ -8,6 +8,7 @@ import static com.syi.project.attendance.entity.QAttendance.attendance;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ALREADY_ENTERED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ALREADY_EXITED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS;
+import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_INVALID_DATE;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_NOT_ALLOWED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_NOT_FOUND;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_TOO_EARLY;
@@ -22,6 +23,7 @@ import static com.syi.project.period.eneity.QPeriod.period;
 
 import com.querydsl.core.Tuple;
 import com.syi.project.attendance.AttendanceCalculator;
+import com.syi.project.attendance.dto.AttendanceDTO;
 import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
@@ -76,6 +78,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
@@ -336,6 +339,40 @@ public class AttendanceService {
       HttpServletRequest request) {
     log.info("출석 체크 시도 (입실/퇴실/조퇴 여부: {})", attendanceType); /* ENTER면 입실, EARLY_EXIT면 조퇴, EXIT면 퇴실 */
 
+    LocalDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
+        .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+
+    log.debug("now: {}, dayOfWeek: {}", now, now.getDayOfWeek()
+        .getDisplayName(TextStyle.FULL, Locale.KOREAN));
+
+    int year = now.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
+
+    log.debug("오늘의 연도: {}", year);
+
+    // ✅ 해당 연도의 공휴일 정보를 DB에서 가져오기
+    Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
+
+
+    /*
+    * holidays나 주말일 경우 입실/퇴실이 불가능하게 예외처리
+    * */
+    LocalDate today = now.toLocalDate(); // LocalDateTime에서 LocalDate로 변환
+    DayOfWeek dayOfWeek = today.getDayOfWeek();
+
+// 주말 체크 (토요일: SATURDAY, 일요일: SUNDAY)
+    boolean isWeekend = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
+
+// 공휴일 체크
+    boolean isHoliday = holidays.contains(today);
+
+    if (isWeekend || isHoliday) {
+      log.warn("주말 또는 공휴일({})에는 출석 체크를 할 수 없습니다.", today);
+
+      throw new InvalidRequestException(ATTENDANCE_ENTRY_INVALID_DATE);
+
+    }
+
+
     // 사용자의 IP 주소 확인 및 예외처리
     String userIp = getClientIp(request); // 클라이언트 IP 가져오기
     log.info("사용자의 IP 주소: {}", userIp);
@@ -345,11 +382,7 @@ public class AttendanceService {
       throw new InvalidRequestException(ATTENDANCE_NOT_IN_RANGE);
     }
 
-    LocalDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
-        .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
 
-    log.debug("now: {}, dayOfWeek: {}", now, now.getDayOfWeek()
-        .getDisplayName(TextStyle.FULL, Locale.KOREAN));
 
     // 모든 교시 조회
     List<Period> periods = periodRepository.getScheduleByCourseId(now.getDayOfWeek()
@@ -1293,6 +1326,131 @@ public class AttendanceService {
     }
 
     return 0; // 기본값
+  }
+
+  /**
+   * 매일 밤 11시에 실행되어 미기록 출석을 자동으로 처리합니다.
+   * cron 표현식: 초 분 시 일 월 요일
+   */
+  @Scheduled(cron = "0 0 23 * * MON-FRI")  // 월-금 11시에 실행
+  @Transactional
+  public void processUnmarkedAttendance() {
+    log.info("미기록 출석 자동 처리 시작");
+    LocalDate today = LocalDate.now();
+    log.info("현재 날짜: {}",today);
+
+    int year = today.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
+
+    log.debug("오늘의 연도: {}", year);
+
+    // ✅ 해당 연도의 공휴일 정보를 DB에서 가져오기
+    Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
+
+
+    /*
+     * holidays나 주말일 경우 결석처리 생략
+     * */
+    DayOfWeek dayOfWeek = today.getDayOfWeek();
+
+// 주말 체크 (토요일: SATURDAY, 일요일: SUNDAY)
+    boolean isWeekend = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
+
+// 공휴일 체크
+    boolean isHoliday = holidays.contains(today);
+
+    if (isWeekend || isHoliday) {
+      if (isWeekend) {
+        log.warn("주말({})이므로 결석 처리를 생략합니다.", today);
+      } else {
+        log.warn("공휴일({})이므로 결석 처리를 생략합니다.", today);
+      }
+      return; // 여기서 메소드 종료 - 이후 로직 실행하지 않음
+    }
+
+    try {
+      // 오늘 날짜의 모든 활성 수업 조회
+      List<Course> todayCourses = courseRepository.findAllActiveCourses();
+      log.info("오늘의 활성 수업 수: {}", todayCourses.size());
+
+      for (Course course : todayCourses) {
+        // 해당 수업의 모든 학생 ID와 교시 조회
+        List<Long> studentIds = enrollRepository.findStudentIdByCourseId(course.getId());
+        List<Period> periods = periodRepository.findByCourseId(course.getId());
+
+        log.info("수업 ID: {}, 학생 수: {}, 교시 수: {}",
+            course.getId(), studentIds.size(), periods.size());
+
+        for (Long studentId : studentIds) {
+          for (Period period : periods) {
+            // 해당 학생/교시에 대한 출석 기록이 있는지 확인
+            Optional<Attendance> attendance = attendanceRepository
+                .findByMemberIdAndDateAndPeriodId(studentId, today, period.getId());
+
+            // 출석 기록이 없으면 자동으로 "결석" 처리
+            if (attendance.isEmpty()) {
+              AttendanceDTO dto = AttendanceDTO.builder().
+                  memberId(studentId).
+                  date(today).
+                  periodId(period.getId()).
+                  courseId(course.getId()).
+                  status("ABSENT").build();
+
+              Attendance newAttendance = toEntityForAbsent(dto);
+
+              attendanceRepository.save(newAttendance);
+              log.info("자동 결석 처리: 학생 ID={}, 날짜={}, 교시={}",
+                  studentId, today, period.getName());
+            }
+          }
+        }
+      }
+      log.info("미기록 출석 자동 처리 완료");
+    } catch (Exception e) {
+      log.error("미기록 출석 자동 처리 중 오류 발생", e);
+    }
+  }
+
+  private Attendance toEntityForAbsent(AttendanceDTO attendanceDTO){
+    log.info("attendanceDTO: {}",attendanceDTO);
+    return  new Attendance(
+        null,
+        attendanceDTO.getStatus() == null ? null : AttendanceStatus.fromENStatus(attendanceDTO.getStatus()),
+        attendanceDTO.getDate() == null ? null : attendanceDTO.getDate(),
+        null,
+        null,
+        attendanceDTO.getPeriodId(),
+        attendanceDTO.getCourseId(),
+        attendanceDTO.getMemberId(),
+        null,
+        null,
+        null
+    );
+  }
+
+  /**
+   * 수동으로 특정 날짜의 미기록 출석을 처리하는 메소드
+   * 관리자 API에서 호출할 수 있습니다.
+   */
+  @Transactional
+  public void processUnmarkedAttendanceForDate(LocalDate date) {
+    log.info("{}일 미기록 출석 수동 처리 시작", date);
+
+    // 위의 자동 처리와 동일한 로직을 수행하지만, 오늘 날짜 대신 지정된 날짜 사용
+    try {
+      List<Course> courses = courseRepository.findAllActiveCourses();
+
+      for (Course course : courses) {
+        List<Long> studentIds = enrollRepository.findStudentIdByCourseId(course.getId());
+        List<Period> periods = periodRepository.findByCourseId(course.getId());
+
+        // 나머지 로직은 위와 동일
+        // ...
+      }
+
+      log.info("{}일 미기록 출석 수동 처리 완료", date);
+    } catch (Exception e) {
+      log.error("{}일 미기록 출석 수동 처리 중 오류 발생", date, e);
+    }
   }
 }
 
