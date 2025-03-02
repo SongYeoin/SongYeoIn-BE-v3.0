@@ -261,41 +261,4 @@ public class FileService {
     return fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
   }
 
-
-  @Transactional(readOnly = true)
-  public List<File> getFilesByIds(List<Long> fileIds, Member member) {
-    // 파일 목록 조회
-    List<File> files = fileRepository.findAllById(fileIds);
-
-    // 요청한 파일 ID 목록과 실제 조회된 파일 목록의 크기 비교
-    if (files.size() != fileIds.size()) {
-      List<Long> foundIds = files.stream()
-        .map(File::getId)
-        .collect(Collectors.toList());
-
-      List<Long> notFoundIds = new ArrayList<>(fileIds);
-      notFoundIds.removeAll(foundIds);
-
-      log.warn("일부 파일을 찾을 수 없습니다. 요청된 ID: {}, 찾을 수 없는 ID: {}", fileIds, notFoundIds);
-      throw new InvalidRequestException(ErrorCode.FILE_NOT_FOUND);
-    }
-
-    // 파일 상태 검증 (모든 파일이 ACTIVE 상태인지 확인)
-    List<File> inactiveFiles = files.stream()
-      .filter(file -> file.getStatus() != FileStatus.ACTIVE)
-      .collect(Collectors.toList());
-
-    if (!inactiveFiles.isEmpty()) {
-      List<Long> inactiveFileIds = inactiveFiles.stream()
-        .map(File::getId)
-        .collect(Collectors.toList());
-
-      log.warn("일부 파일이 활성 상태가 아닙니다. 비활성 파일 ID: {}", inactiveFileIds);
-      throw new InvalidRequestException(ErrorCode.FILE_INVALID_STATE);
-    }
-
-    // 모든 검증이 통과되면 파일 목록 반환
-    return files;
-  }
-
 }
