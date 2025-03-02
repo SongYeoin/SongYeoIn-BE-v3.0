@@ -14,18 +14,23 @@ import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.common.utils.S3Uploader;
+import com.syi.project.file.dto.FileDownloadDTO;
 import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.repository.FileRepository;
 import com.syi.project.file.service.FileService;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -371,72 +376,62 @@ public class ClubService {
         }
     }
 
+    /**
+     * 클럽 파일 다운로드
+     * @param clubId 클럽 ID
+     * @param memberId 요청 회원 ID
+     * @return 파일 다운로드 응답
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> downloadClubFile(Long clubId, Long memberId) {
+        log.info("클럽 파일 다운로드 서비스 시작 - clubId: {}, memberId: {}", clubId, memberId);
 
-//    //수정
-//    @Transactional
-//    public int modify(ClubDTO clubDTO) {
-//        Club club = clubRepository.findById(clubDTO.getId()).orElse(null);
-//        if (club != null) {
-//            club.setName(clubDTO.getName());
-//            club.setWriter(clubDTO.getWriter());
-//            club.setCheckStatus(clubDTO.getCheckStatus());
-//            club.setCheckCmt(clubDTO.getCheckCmt());
-//            club.setStudyDate(clubDTO.getStudyDate());
-//            club.setParticipants(clubDTO.getParticipants());
-//            club.setContent(clubDTO.getContent());
-//            clubRepository.save(club);  // Update the club
-//            return 1;
-//        }
-//        return 0; // 실패시 0 반환
-//    }
-//
-//    // 관리자가 수정
-//    @Transactional
-//    public int modifyAdmin(ClubDTO clubDTO) {
-//        Club club = clubRepository.findById(clubDTO.getId()).orElse(null);
-//        if (club != null) {
-//            club.setName(clubDTO.getName());
-//            club.setWriter(clubDTO.getWriter());
-//            club.setCheckStatus(clubDTO.getCheckStatus());
-//            club.setCheckCmt(clubDTO.getCheckCmt());
-//            club.setStudyDate(clubDTO.getStudyDate());
-//            club.setParticipants(clubDTO.getParticipants());
-//            club.setContent(clubDTO.getContent());
-//            clubRepository.save(club);  // Update the club
-//            return 1;
-//        }
-//        return 0; // 실패시 0 반환
-//    }
+        // 멤버 정보 조회
+        Member member = memberRepository.findById(memberId)
+          .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
 
+        // 클럽 정보 조회
+        Club club = clubRepository.findById(clubId)
+          .orElseThrow(() -> new EntityNotFoundException("클럽을 찾을 수 없습니다. clubId: " + clubId));
 
-//
-//
-//
-//    // Update Club
-//    public ClubResponseDTO.ClubList updateClub(Long clubId, ClubRequestDTO.ClubUpdate dto, String url) {
-//        Club club = clubRepository.findById(clubId)
-//                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Club입니다."));
-//
-//        club = dto.toEntity(); // 업데이트할 내용 반영
-//        clubRepository.save(club);
-//        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(club.getWriterId()), null, url);
-//    }
-//
-//    // Approval
-//    public ClubResponseDTO.ClubList approveClub(Long clubId, ClubRequestDTO.ClubApproval dto, String checkerId, String url) {
-//        Club club = clubRepository.findById(clubId)
-//                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Club입니다."));
-//
-//        club = dto.toEntity(); // 승인 상태 변경 반영
-//        clubRepository.save(club);
-//        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(club.getWriterId()), checkerId, url);
-//    }
-//
-//    // Find Club
-//    public ClubResponseDTO.ClubList getClub(Long clubId, String url) {
-//        Club club = clubRepository.findById(clubId)
-//                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Club입니다."));
-//        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(club.getWriterId()), String.valueOf(club.getCheckerId()), url);
-//    }
+        // 클럽 파일 존재 여부 확인
+        if (club.getClubFile().getId() == null || club.getClubFile().getFile().getId() == null) {
+            log.warn("다운로드할 파일이 없습니다. clubId: {}", clubId);
+            throw new InvalidRequestException(ErrorCode.FILE_NOT_FOUND);
+        }
+
+        // 회원의 클럽 접근 권한 확인
+        validateMemberClubAccess(member, club);
+
+        // 파일 서비스를 통해 파일 다운로드 정보 조회
+        log.debug("파일 다운로드 요청 - fileId: {}", club.getClubFile().getFile().getId());
+        FileDownloadDTO downloadDTO = fileService.downloadFile(club.getClubFile().getFile().getId(), member);
+
+        // 파일 서비스를 통해 다운로드 응답 생성
+        return fileService.getDownloadResponseEntity(downloadDTO);
+    }
+
+    /**
+     * 회원의 클럽 접근 권한 확인
+     * @param member 회원
+     * @param club 클럽
+     */
+    private void validateMemberClubAccess(Member member, Club club) {
+        // 관리자 역할인 경우 항상 접근 허용
+        if (member.getRole().name().equals("ADMIN")) {
+            return;
+        }
+
+        // 클럽 관리자인지 확인
+        boolean isAdmin = club.getCheckerId().equals(member.getId());
+
+        // 클럽 회원인지 확인
+        boolean isMember = club.getWriterId().equals(member.getId());
+
+        if (!isAdmin && !isMember) {
+            log.warn("클럽 파일 접근 권한 없음 - memberId: {}, clubId: {}", member.getId(), club.getId());
+            throw new AccessDeniedException("클럽 파일에 접근할 권한이 없습니다.");
+        }
+    }
 }
 

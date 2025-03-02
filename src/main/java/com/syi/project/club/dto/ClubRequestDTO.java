@@ -57,7 +57,6 @@ public class ClubRequestDTO {
 
     @Getter
     @NoArgsConstructor
-    //@JsonIgnoreProperties(ignoreUnknown = true)
     public static class ClubUpdate{
         private String participants;
         private String content;
