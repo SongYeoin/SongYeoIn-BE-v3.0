@@ -94,11 +94,15 @@ public enum ErrorCode {
   // 프린트 관련
   ATTENDANCE_PRINT_DATA_NOT_FOUND("ATTENDANCE_PRINT_001","해당 차수에 대한 프린트 데이터가 없습니다",HttpStatus.NOT_FOUND),
 
-
-
   // 수강신청 관련 에러
   ENROLL_NOT_FOUND("ENROLL_001", "수강 이력을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-  ENROLL_ACCESS_DENIED("ENROLL_002", "수강 이력에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN);
+  ENROLL_ACCESS_DENIED("ENROLL_002", "수강 이력에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
+
+  // 고객센터 관련 에러
+  SUPPORT_NOT_FOUND("SUPPORT_001", "요청한 문의를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  SUPPORT_ACCESS_DENIED("SUPPORT_002", "문의에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
+  SUPPORT_DELETE_DENIED("SUPPORT_003", "문의 삭제 권한이 없습니다.", HttpStatus.FORBIDDEN);
+
 
   private final String code;
   private final String message;

@@ -71,7 +71,7 @@ public class SecurityConfig {
             // 해당 경로는 인증 필요
             .requestMatchers("/jwt/test","/enrollments/my").authenticated()
             // student, admin 모두 접근
-            .requestMatchers("/member/info", "/member/update", "/member/delete").hasAnyRole("STUDENT", "ADMIN")
+            .requestMatchers("/member/info", "/member/update", "/member/delete", "/support/**").hasAnyRole("STUDENT", "ADMIN")
             // 관리자 전용 엔드포인트 접근 설정
             .requestMatchers("/admin/**", "/enrollments/**").hasRole("ADMIN")
             .requestMatchers("/**").hasRole("STUDENT")

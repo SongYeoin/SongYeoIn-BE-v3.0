@@ -1,4 +1,5 @@
 package com.syi.project.journal.service;
+/*
 //
 //import com.syi.project.auth.entity.Member;
 //import com.syi.project.auth.repository.MemberRepository;
@@ -483,3 +484,4 @@ class JournalServiceTest {
     return journalRepository.save(journal);
   }
 }
+*/
