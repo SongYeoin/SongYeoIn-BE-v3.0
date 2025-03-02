@@ -35,9 +35,11 @@ public class AttendanceCalculator {
       LocalDate startDate, LocalDate endDate, Set<LocalDate> holidays) {
 
     log.info("출석률 계산 시작");
+    log.info("dailyStats size: {}, startDate: {}, endDate: {}, holidays: {}", dailyStats.size(),
+        startDate, endDate, holidays);
 
     // 첫 날 제외하고 유효한 전체 출석일 (115일)
-    List<LocalDate> validDays = getValidDays(startDate.plusDays(1), endDate, holidays);
+    List<LocalDate> validDays = getValidDays(startDate, endDate, holidays);
     // 20일 단위 차수 계산
     List<Map<String, Object>> segments = calculateTwentyDaySegments(validDays);
     //log.debug("20일 단위 차수: {}", segments);
@@ -85,7 +87,7 @@ public class AttendanceCalculator {
       LocalDate date = stats.getDate();
 
       // 유효한 출석일만 고려
-      if (!validDays.contains(date)) {
+      if (!validDays.contains(date) || date.isEqual(startDate)) {
         continue;
       }
 
@@ -121,8 +123,7 @@ public class AttendanceCalculator {
 
     log.debug("최종 전체 실제 출석일 수: {}", totalAttendanceDays);
 
-
-    return roundToTwoDecimalPlaces((totalAttendanceDays / (double) validDays.size()) * 100);
+    return roundToTwoDecimalPlaces((totalAttendanceDays / ((double) validDays.size()) - 1) * 100);
   }
 
   /**
@@ -173,12 +174,20 @@ public class AttendanceCalculator {
       boolean containsLastDate = periodDays.stream()
           .anyMatch(date -> date.isEqual(lastRecordedDate) || date.isAfter(lastRecordedDate));
 
+      // 첫 번째 차수(1차)면서 21일인 경우, 계산할 때는 첫째 날을 제외
+      boolean isFirstPeriod = segment.containsKey("첫차여부") && (boolean) segment.get("첫차여부");
+      List<LocalDate> calculationDays = periodDays;
+
+      if (isFirstPeriod && periodDays.size() > 1) {
+        calculationDays = periodDays.subList(1, periodDays.size()); // 첫째 날 제외한 리스트
+      }
+
 
       currentSegmentDays = 0;
       currentSegmentAttendance = 0;
       currentSegmentIncidents = 0;
 
-      for (LocalDate date : periodDays) {
+      for (LocalDate date : calculationDays) {
 
         // 마지막 기록된 날짜 이후의 날짜는 건너뜀
         if (date.isAfter(lastRecordedDate)) {
@@ -331,6 +340,7 @@ public class AttendanceCalculator {
   public static List<LocalDate> getValidDays(LocalDate startDate, LocalDate endDate,
       Set<LocalDate> holidays) {
     log.info("주말 및 공휴일, 대체 공휴일을 제외한 유효 출석일 계산 시작");
+    log.info("startDate: {}, endDate: {}, holidays: {}", startDate, endDate, holidays);
     List<LocalDate> validDays = new ArrayList<>();
     LocalDate currentDate = startDate;
 
@@ -369,16 +379,21 @@ public class AttendanceCalculator {
     }
 
     while (!workingDays.isEmpty()) {
-      //int daysInSegment = (periodIndex == 1) ? 21 : SEGMENT_DAYS;   // 1차는 21일 이후는 20일
-      List<LocalDate> periodDays = workingDays.subList(0, Math.min(SEGMENT_DAYS, workingDays.size()));
+      int daysInSegment = (periodIndex == 1) ? 21 : SEGMENT_DAYS;   // 1차는 21일 이후는 20일
+      int segmentSize = Math.min(daysInSegment, workingDays.size());
+
+      List<LocalDate> periodDays = workingDays.subList(0, segmentSize);
+//      List<LocalDate> periodDays = workingDays.subList(0, Math.min(daysInSegment, workingDays.size()));
       segments.add(Map.of(
           "차수", periodIndex + "차",
           "시작일", periodDays.get(0),
           "종료일", periodDays.get(periodDays.size()-1),
           "일수", periodDays.size(),
-          "날짜들", periodDays
+          "날짜들", periodDays,
+          "첫차여부", periodIndex == 1
       ));
-      workingDays = workingDays.subList(Math.min(SEGMENT_DAYS, workingDays.size()), workingDays.size());
+//      workingDays = workingDays.subList(Math.min(SEGMENT_DAYS, workingDays.size()), workingDays.size());
+      workingDays = workingDays.subList(segmentSize, workingDays.size());
       periodIndex++;
     }
 
