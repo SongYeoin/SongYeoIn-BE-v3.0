@@ -104,19 +104,18 @@ public class AttendanceService {
       Long courseId, AttendanceRequestDTO.AllAttendancesRequestDTO dto, Pageable pageable) {
     /* 담당자는 courseId, studentId, date, member_name, attendance_status */
 
-    log.info("관리자 전체 출석 조회");
+    log.info("관리자 전체 출석 조회합니다.");
     Long adminId = userDetails.getId();
-    log.debug("관리자 Id: {}", adminId);
-    log.debug("courseId: {}, date: {}", courseId, dto.getDate());
+    log.info("관리자 Id: {}, courseId: {}, date: {} filter(studentName={}, status ={})", adminId,courseId, dto.getDate(),dto.getStudentName(), dto.getStatus());
     log.debug("필터링 조건 : studentName={}, status ={}", dto.getStudentName(), dto.getStatus());
 
     // 1교시, 2교시... 교시명 모음
     // 해당 날짜의 요일 (한국어로)
     String dayOfWeek = dto.getDate().getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.KOREAN)+"요일";
-    log.debug("해당하는 요일: {}",dayOfWeek);
+    log.info("해당하는 요일: {}",dayOfWeek);
 
     List<String> periods = periodRepository.findPeriodsByDayOfWeek(courseId, dayOfWeek);
-    log.debug("{} 의"
+    log.info("{} 의"
         + " 교시명 모음: {}",dayOfWeek, periods);
 
     return attendanceRepository.findPagedAttendListByCourseId(courseId, dto, periods,
@@ -130,13 +129,11 @@ public class AttendanceService {
   public Page<AttendListResponseDTO> getAllAttendancesForStudent(CustomUserDetails userDetails,
       Long courseId, StudentAllAttendRequestDTO dto, Pageable pageable) {
 
-    log.info("수강생 전체 출석 조회");
-    log.debug("courseId: {}, startDate: {}, endDate: {}", courseId, dto.getStartDate(),
-        dto.getEndDate());
-    log.debug("필터링 조건 : status ={}", dto.getStatus());
-
+    log.info("수강생 전체 출석 조회합니다.");
     Long studentId = userDetails.getId();
-    log.debug("수강생 Id: {}", studentId);
+    log.info("수강생ID: {},courseId: {}, startDate: {}, endDate: {}, filter(status ={})",studentId, courseId, dto.getStartDate(),
+        dto.getEndDate(),dto.getStatus());
+    log.debug("필터링 조건 : status ={}", dto.getStatus());
 
     // 1교시, 2교시... 교시명 모음
     List<String> periods = List.of("1교시", "2교시", "3교시", "4교시", "5교시", "6교시", "7교시", "8교시");
@@ -144,8 +141,9 @@ public class AttendanceService {
     /*List<String> periods = periodRepository.findPeriodsInRange(courseId,dto.getStartDate(),
         dto.getEndDate());*/
     log.debug("조회된 교시 모음: {}", periods);
+    log.info("조회된 교시 사이즈: {}",periods.size());
 
-    log.info("dto 변환");
+
     AllAttendancesRequestDTO requestDTO = AllAttendancesRequestDTO.builder()
         .date(null)
         .studentId(studentId)
@@ -153,9 +151,14 @@ public class AttendanceService {
         .endDate(dto.getEndDate())
         .status(dto.getStatus())
         .build();
+    log.info("dto 변환 {}",requestDTO);
 
-    return attendanceRepository.findPagedAttendListByCourseId(courseId, requestDTO, periods,
+    Page<AttendListResponseDTO> responseDTOS = attendanceRepository.findPagedAttendListByCourseId(courseId, requestDTO, periods,
         pageable);
+    log.info("수강생 전체 출석 조회 완료 responseDTOS: {}",responseDTOS);
+
+
+    return responseDTOS;
 
   }
 
@@ -167,26 +170,26 @@ public class AttendanceService {
   }*/
 
   /* 교시번호와 수강생 번호로 단일 출석 조회하기 */
-  public AttendanceResponseDTO getAttendanceByPeriodAndMember(AttendanceRequestDTO dto) {
-    log.info("PeriodID와 MemberID 로 단일 출석 조회를 시도합니다.");
-    log.debug("단일 출석 조회 요청된 정보: {}", dto);
-
-    log.info("요청된 정보로 출석 조회");
-    /*List<Attendance> results = attendanceRepository.findAllAttendance(dto);
-
-    if (results.isEmpty()) {
-      log.warn("경고 : PeriodID {} 와 MemberID {} 로 조회한 결과가 없습니다.", dto.getPeriodId(),
-          dto.getMemberId());
-      throw new NoSuchElementException("조회된 출석이 없습니다.");
-    }
-
-    log.info("{} 개의 시간표 조회 중", results.size());
-
-    // 조회한 결과 dto로 변환
-    return fromEntity(results.get(0));*/
-    return null;
-
-  }
+//  public AttendanceResponseDTO getAttendanceByPeriodAndMember(AttendanceRequestDTO dto) {
+//    log.info("PeriodID와 MemberID 로 단일 출석 조회를 시도합니다.");
+//    log.debug("단일 출석 조회 요청된 정보: {}", dto);
+//
+//    log.info("요청된 정보로 출석 조회");
+//    /*List<Attendance> results = attendanceRepository.findAllAttendance(dto);
+//
+//    if (results.isEmpty()) {
+//      log.warn("경고 : PeriodID {} 와 MemberID {} 로 조회한 결과가 없습니다.", dto.getPeriodId(),
+//          dto.getMemberId());
+//      throw new NoSuchElementException("조회된 출석이 없습니다.");
+//    }
+//
+//    log.info("{} 개의 시간표 조회 중", results.size());
+//
+//    // 조회한 결과 dto로 변환
+//    return fromEntity(results.get(0));*/
+//    return null;
+//
+//  }
 
   //  관리자
   /* 출석 수정 */
@@ -194,7 +197,7 @@ public class AttendanceService {
   public AttendanceResponseDTO updateAttendance(Long attendanceId, String status) {
     /* attendanceId status */
     log.info("{}에 대한 출석 상태를 수정합니다.", attendanceId);
-    log.debug("출석 상태 수정 요청된 정보: {}", status);
+    log.info("출석 상태 수정 요청된 정보: {}", status);
 
     Attendance attendance = attendanceRepository.findById(attendanceId)
         .orElseThrow(() -> {
@@ -307,14 +310,14 @@ public class AttendanceService {
       Long periodId) {
     /* 교시당 출석은 하나만 존재하므로 periodId로 검증 */
     log.info("결석 처리 하는 메소드 진입 (enrollAbsentAttendance)");
-    log.debug("yesterday={}, courseId={}, studentId={}, periodId={}",yesterday,courseId,student.getId(),periodId);
+    log.info("yesterday={}, courseId={}, studentId={}, periodId={}",yesterday,courseId,student.getId(),periodId);
     Attendance attendance = new Attendance(null, AttendanceStatus.ABSENT, yesterday, null, null,
         periodId, courseId,
         student.getId(), null, null, null);
-    log.debug("결석상태로 저장하려는 출석의 정보: attendance={}",attendance);
+    log.info("결석상태로 저장하려는 출석의 정보: attendance={}",attendance);
     Attendance savedAttendance = attendanceRepository.save(attendance);
     log.info("성공적으로 결석 상태를 처리했습니다.");
-    log.debug("결석 처리한 출석의 정보: savedAttendance={}",savedAttendance);
+    log.info("결석 처리한 출석의 정보: savedAttendance={}",savedAttendance);
   }
 
   private String convertDayOfWeekToString(DayOfWeek dayOfWeek) {
@@ -342,12 +345,11 @@ public class AttendanceService {
     LocalDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
         .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
 
-    log.debug("now: {}, dayOfWeek: {}", now, now.getDayOfWeek()
-        .getDisplayName(TextStyle.FULL, Locale.KOREAN));
-
     int year = now.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
 
-    log.debug("오늘의 연도: {}", year);
+    log.info("now: {}, dayOfWeek: {}, 오늘의 연도: {}", now, now.getDayOfWeek()
+        .getDisplayName(TextStyle.FULL, Locale.KOREAN),year);
+
 
     // ✅ 해당 연도의 공휴일 정보를 DB에서 가져오기
     Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
