@@ -44,13 +44,11 @@ public class Attendance {
   @NotNull(message = "등록일은 필수입니다.")
   @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
-  private LocalDateTime enrollDate = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
-      .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+  private LocalDateTime enrollDate;
 
   @DateTimeFormat(pattern = "HH:mm:ss yyyy-MM-dd")
   @Column(nullable = false)
-  private LocalDateTime modifiedDate = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
-      .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+  private LocalDateTime modifiedDate;
 
   @NotNull(message = "교시 ID는 필수입니다.")
   @Column(nullable = false)
@@ -80,16 +78,14 @@ public class Attendance {
     this.id = id;
     this.status = status;
     this.date = date != null ? date : LocalDate.now(ZoneId.of("Asia/Seoul"));
-    this.enrollDate = enrollDate != null ? enrollDate : ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
-        .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();;
-    this.modifiedDate = modifiedDate != null ? modifiedDate : ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
-        .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+    this.enrollDate = enrollDate != null ? enrollDate : LocalDateTime.now();
+    this.modifiedDate = modifiedDate != null ? modifiedDate : LocalDateTime.now();
     this.periodId = periodId;
     this.courseId = courseId;
     this.memberId = memberId;
     this.memo = memo;
-    this.enterTime = enterTime;
-    this.exitTime = exitTime;
+    this.enterTime = enterTime != null ? enterTime : LocalDateTime.now();
+    this.exitTime = exitTime != null ? exitTime : LocalDateTime.now();
   }
 
   public void updateStatus(AttendanceStatus status){
