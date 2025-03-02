@@ -1,5 +1,7 @@
 package com.syi.project.club.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.syi.project.auth.dto.AuthUserDTO;
 import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.service.CustomUserDetails;
@@ -196,7 +198,7 @@ public class ClubController {
             @PathVariable Long clubId,
             @RequestPart(value = "club", required = false) ClubRequestDTO.ClubUpdate clubRequest,
             @RequestPart(value = "file", required = false) MultipartFile file,
-            @AuthenticationPrincipal CustomUserDetails customUserDetails){
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
         Long loggedInUserId = customUserDetails.getId();
 

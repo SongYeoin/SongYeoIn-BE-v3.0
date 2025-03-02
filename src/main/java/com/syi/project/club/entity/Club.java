@@ -106,7 +106,7 @@ public class Club{
 
     public ClubRequestDTO.ClubUpdate toUpdateDTO(MultipartFile file) {
         return new ClubRequestDTO.ClubUpdate(
-                this.participants, this.content, this.studyDate, file, this.clubName, this.contactNumber, this.startTime, this.endTime, this.participantCount);
+                this.participants, this.content, this.studyDate, this.clubName, this.contactNumber, this.startTime, this.endTime, this.participantCount);
     }
 
     public ClubRequestDTO.ClubApproval toApprovalDTO() {

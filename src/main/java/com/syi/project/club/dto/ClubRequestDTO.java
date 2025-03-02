@@ -1,5 +1,6 @@
 package com.syi.project.club.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.syi.project.club.entity.Club;
 import com.syi.project.common.enums.CheckStatus;
 import java.time.LocalTime;
@@ -56,23 +57,22 @@ public class ClubRequestDTO {
 
     @Getter
     @NoArgsConstructor
+    //@JsonIgnoreProperties(ignoreUnknown = true)
     public static class ClubUpdate{
         private String participants;
         private String content;
         private LocalDate studyDate;
-        private MultipartFile file;
         private int participantCount;   //총 인원
         private String clubName;    //동아리명
         private String contactNumber;   //대표연락처
         private LocalTime startTime;    //시작시간
         private LocalTime endTime;    //종료시간
 
-        public ClubUpdate(String participants, String content, LocalDate studyDate, MultipartFile file,
+        public ClubUpdate(String participants, String content, LocalDate studyDate,
             String clubName, String contactNumber, LocalTime startTime, LocalTime endTime, int participantCount){
             this.participants = participants;
             this.content = content;
             this.studyDate = studyDate;
-            this.file = file;
             this.clubName = clubName;
             this.contactNumber = contactNumber;
             this.startTime = startTime;
