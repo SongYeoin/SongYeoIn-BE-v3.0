@@ -24,4 +24,6 @@ public interface HolidayRepository extends JpaRepository<Holiday, Long> {
 
   // ✅ 특정 날짜가 존재하는지 확인
   boolean existsByDate(LocalDate date);
+
+  long countByDateBetween(LocalDate startDate, LocalDate endDate);
 }
