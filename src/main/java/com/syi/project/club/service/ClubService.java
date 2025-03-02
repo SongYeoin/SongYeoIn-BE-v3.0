@@ -20,6 +20,8 @@ import com.syi.project.file.entity.File;
 import com.syi.project.file.repository.FileRepository;
 import com.syi.project.file.service.FileService;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -432,6 +436,63 @@ public class ClubService {
             log.warn("클럽 파일 접근 권한 없음 - memberId: {}, clubId: {}", member.getId(), club.getId());
             throw new AccessDeniedException("클럽 파일에 접근할 권한이 없습니다.");
         }
+    }
+
+    /**
+     * 클럽 파일 일괄 다운로드
+     * @param clubIds 클럽 ID 목록
+     * @param memberId 요청 회원 ID
+     * @return 압축 파일 다운로드 응답
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> downloadClubFilesBatch(List<Long> clubIds, Long memberId) {
+        log.info("클럽 파일 일괄 다운로드 서비스 시작 - clubIds: {}, memberId: {}", clubIds, memberId);
+
+        // 멤버 정보 조회
+        Member member = memberRepository.findById(memberId)
+          .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
+
+        // 클럽 정보 일괄 조회
+        List<Club> clubs = clubRepository.findAllById(clubIds);
+        if (clubs.isEmpty()) {
+            throw new InvalidRequestException(ErrorCode.CLUB_NOT_FOUND);
+        }
+
+        // 다운로드할 파일 목록 생성
+        List<File> files = new ArrayList<>();
+        for (Club club : clubs) {
+            // 클럽 파일 존재 여부 확인
+            if (club.getClubFile() == null || club.getClubFile().getFile() == null || club.getClubFile().getFile().getId() == null) {
+                log.warn("다운로드할 파일이 없습니다. clubId: {}", club.getId());
+                continue; // 파일이 없는 클럽은 건너뜀
+            }
+
+            // 회원의 클럽 접근 권한 확인
+            try {
+                validateMemberClubAccess(member, club);
+                files.add(club.getClubFile().getFile());
+            } catch (AccessDeniedException e) {
+                log.warn("일부 클럽 파일 접근 권한 없음 - memberId: {}, clubId: {}", member.getId(), club.getId());
+                // 권한이 없는 클럽은 건너뜀
+            }
+        }
+
+        // 다운로드할 파일이 없는 경우
+        if (files.isEmpty()) {
+            throw new InvalidRequestException(ErrorCode.FILE_NOT_FOUND);
+        }
+
+        // zip 파일명 생성 (현재 시간 포함)
+        String zipFileName = "club_files_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".zip";
+
+        // 파일 서비스를 통해 zip 파일 생성
+        Resource zipResource = fileService.downloadFilesAsZip(files, zipFileName);
+
+        // 응답 생성
+        return ResponseEntity.ok()
+          .contentType(MediaType.APPLICATION_OCTET_STREAM)
+          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
+          .body(zipResource);
     }
 }
 

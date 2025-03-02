@@ -17,6 +17,7 @@ import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CourseResponseDTO;
 import com.syi.project.course.service.CourseService;
+import io.swagger.v3.oas.annotations.Operation;
 import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -174,49 +175,27 @@ public class AdminClubController {
         return ResponseEntity.ok(response);
     }
 
-//    // 파일 다운로드
-//    @GetMapping("/{clubId}/download")
-//    public ResponseEntity<Resource> downloadFile(@RequestParam("fileUrl") String fileUrl) {
-//        try {
-//            InputStream fileStream = s3Uploader.downloadFile(fileUrl);
-//            InputStreamResource resource = new InputStreamResource(fileStream);
-//
-//            // 파일명 추출
-//            String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-//
-//            return ResponseEntity.ok()
-//              .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
-//              .body(resource);
-//        } catch (Exception e) {
-//            throw new RuntimeException("파일 다운로드 중 에러가 발생했습니다.", e);
-//        }
-//    }
+    @Operation(summary = "클럽 파일 다운로드")
+    @GetMapping("/{clubId}/download")
+    public ResponseEntity<Resource> downloadClubFile(
+      @PathVariable Long clubId,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        log.info("클럽 파일 다운로드 요청 - clubId: {}, memberId: {}, 역할: {}",
+          clubId, userDetails.getId(), userDetails.getRole());
 
+        return clubService.downloadClubFile(clubId, userDetails.getId());
+    }
 
+    @Operation(summary = "클럽 파일 일괄 다운로드")
+    @PostMapping("/download-batch")
+    public ResponseEntity<Resource> downloadClubFilesBatch(
+      @RequestBody List<Long> clubIds,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        log.info("클럽 파일 일괄 다운로드 요청 - clubIds: {}, memberId: {}, 역할: {}",
+          clubIds, userDetails.getId(), userDetails.getRole());
 
-//    // 수정 (비동기 처리)
-//    @PostMapping("/club/modify")
-//    public ResponseEntity<String> clubModifyAdminPOST(@RequestBody ClubResponseDTO club) {
-//        boolean success = clubService.modifyAdmin(club);
-//        if (success) {
-//            return new ResponseEntity<>("modify success", HttpStatus.OK);
-//        } else {
-//            return new ResponseEntity<>("modify fail", HttpStatus.BAD_REQUEST);
-//        }
-//    }
-
-//    // 삭제 (비동기 처리)
-//    @PostMapping("/club/delete")
-//    public ResponseEntity<String> clubDeletePOST(@RequestParam("clubNo") int clubNo) {
-//        boolean success = clubService.delete(clubNo);
-//        if (success) {
-//            return new ResponseEntity<>("delete success", HttpStatus.OK);
-//        } else {
-//            return new ResponseEntity<>("delete fail", HttpStatus.BAD_REQUEST);
-//        }
-//    }
-
-
-
-
+        return clubService.downloadClubFilesBatch(clubIds, userDetails.getId());
+    }
 }

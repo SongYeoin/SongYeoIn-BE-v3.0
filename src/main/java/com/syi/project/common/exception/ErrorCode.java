@@ -58,6 +58,7 @@ public enum ErrorCode {
   CANNOT_MODIFY_PENDING("CLUB_002", "미승인된 상태에서는 수정할 수 없습니다.", HttpStatus.FORBIDDEN),
   CANNOT_DELETE_APPROVED("CLUB_003", "대기상태에서만 삭제할 수 있습니다.", HttpStatus.FORBIDDEN),
   INVALID_REQUEST("CLUB_004", "잘못된 요청입니다.", HttpStatus.BAD_REQUEST),
+  CLUB_NOT_FOUND("CLUB_005", "동아리를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
   // 교육일지 관련 에러
   JOURNAL_NOT_FOUND("JOURNAL_001", "요청한 교육일지를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
