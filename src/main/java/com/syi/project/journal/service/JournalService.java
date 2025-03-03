@@ -319,11 +319,28 @@ public class JournalService {
     }
 
     List<Journal> journals = journalRepository.findAllByIdsWithFiles(journalIds);
+
+    // 교육일자와 파일 정보를 매핑한 Map 생성
+    java.util.Map<Long, LocalDate> fileIdToDateMap = journals.stream()
+        .collect(Collectors.toMap(
+            j -> j.getJournalFile().getFile().getId(),
+            Journal::getEducationDate
+        ));
+
     List<File> files = journals.stream()
         .map(j -> j.getJournalFile().getFile())
         .collect(Collectors.toList());
 
-    Resource zipResource = fileService.downloadFilesAsZip(files, "교육일지_일괄다운로드.zip");
+    // 교육일자를 활용한 파일명 생성 로직 전달
+    Resource zipResource = fileService.downloadFilesAsZip(
+        files,
+        "교육일지_일괄다운로드.zip",
+        file -> {
+          LocalDate date = fileIdToDateMap.get(file.getId());
+          String datePrefix = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+          return datePrefix + "_" + file.getOriginalName();
+        }
+    );
 
     return ResponseEntity.ok()
         .contentType(MediaType.APPLICATION_OCTET_STREAM)

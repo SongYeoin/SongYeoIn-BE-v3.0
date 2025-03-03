@@ -216,8 +216,18 @@ public class FileService {
   }
 
   // 일괄 다운로드 zip파일
+  // 기존 메서드 대체 (하위호환을 위해 유지)
   @Transactional(readOnly = true)
   public Resource downloadFilesAsZip(List<File> files, String zipFileName) {
+    // 기본 파일명 생성 로직 (파일 ID 추가)
+    return downloadFilesAsZip(files, zipFileName,
+        file -> file.getId() + "_" + file.getOriginalName());
+  }
+
+  // 새로운 오버로드 메서드 추가
+  @Transactional(readOnly = true)
+  public Resource downloadFilesAsZip(List<File> files, String zipFileName,
+      java.util.function.Function<File, String> fileNameGenerator) {
     try {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       ZipOutputStream zos = new ZipOutputStream(baos);
@@ -225,7 +235,11 @@ public class FileService {
       for (File file : files) {
         try {
           InputStream inputStream = s3Uploader.downloadFile(file.getPath());
-          ZipEntry entry = new ZipEntry(file.getOriginalName());
+
+          // 파일명 생성 로직을 외부에서 주입받음
+          String entryName = fileNameGenerator.apply(file);
+
+          ZipEntry entry = new ZipEntry(entryName);
           zos.putNextEntry(entry);
           IOUtils.copy(inputStream, zos);
           zos.closeEntry();
