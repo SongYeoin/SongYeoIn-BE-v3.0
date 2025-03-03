@@ -57,7 +57,8 @@ public class AttendanceCalculator {
         twentyDayRateDetails.size() - 1); // 현재 진행중인 회차 MAP
     double currentTwentyDayRate = (double) twentyDayRateDetail.get("twentyDayRate");
 
-
+    log.info("(최종)출석 가능일 수: {}, 전체 출석률: {}, 20일 단위 출석률 리스트: {}, 해당 20일 단위 출석률: {}",
+        validDays.size(), overallAttendanceRate, twentyDayRateDetails, currentTwentyDayRate);
     log.debug("최종 출석 가능일 수: {}", validDays.size());
     log.debug("최종 전체 출석률:{}",overallAttendanceRate);
     log.debug("최종 20일 단위 출석률 리스트: {}", twentyDayRateDetails);
@@ -91,6 +92,9 @@ public class AttendanceCalculator {
         continue;
       }
 
+      log.info("해당 날짜: {}, totalSessions: {}, lateCount: {}, absentCount: {}, earlyLeaveCount: {}",
+          date, stats.getTotalSessions(), stats.getLateCount(), stats.getAbsentCount(),
+          stats.getEarlyLeaveCount());
       log.debug("학생 ID: {}",stats.getStudentId() == null ? "학생거라 null" : stats.getStudentId());
       log.debug("totalSessions(출석 데이처가 있는 총 교시 수): {}", stats.getTotalSessions());
       log.debug("lateCount(8교시 중 지각 횟수): {}", stats.getLateCount());
@@ -103,7 +107,7 @@ public class AttendanceCalculator {
 
       if (!isAbsent) {
         totalAttendanceDays++;
-        log.debug("출석일 증가: {}", totalAttendanceDays);
+        log.info("출석일 증가: {}", totalAttendanceDays);
 
 
         if (isLate || isEarlyLeave) {
@@ -119,12 +123,14 @@ public class AttendanceCalculator {
           }
         }
       }
+      log.info("지각과 조퇴 합한 값 근황: {}, 실제 출석일 근황: {}", accumulatedIncidents, totalAttendanceDays);
     }
 
     log.debug("최종 전체 실제 출석일 수: {}", totalAttendanceDays);
     double realValidDaysSize = (double) validDays.size() - 1;
     log.debug("(double) validDays.size()) - 1: {}",realValidDaysSize);
 
+    log.info("(최종) 전체 실제 출석일 수: {}, 1일 감소된 유효일 수: {}", totalAttendanceDays, realValidDaysSize);
     return roundToTwoDecimalPlaces((totalAttendanceDays / realValidDaysSize) * 100);
   }
 
@@ -134,6 +140,7 @@ public class AttendanceCalculator {
   private static List<Map<String, Object>> calculateTwentyDayAttendanceRates(List<AttendanceDailyStats> dailyStats,
       List<Map<String, Object>> segments) {
 
+    log.info("20일 단위 출석률 구하기 요청");
     List<Map<String, Object>> twentyDayRateDetails = new ArrayList<>();
     int periodIndex = 0;
     int currentSegmentDays = 0;
@@ -147,6 +154,7 @@ public class AttendanceCalculator {
         .orElse(null);
 
     if (lastRecordedDate == null) {
+      log.warn("dailyStats에 데이터가 없어서 빈 리스트를 반환합니다.");
       return twentyDayRateDetails; // 데이터가 없으면 빈 리스트 반환
     }
 
@@ -180,8 +188,11 @@ public class AttendanceCalculator {
       boolean isFirstPeriod = segment.containsKey("첫차여부") && (boolean) segment.get("첫차여부");
       List<LocalDate> calculationDays = periodDays;
 
+      log.info("calculationDays 의 크기: {}", calculationDays.size());
       if (isFirstPeriod && periodDays.size() > 1) {
+        log.info("1차이므로 첫재날을 제외합니다.");
         calculationDays = periodDays.subList(1, periodDays.size()); // 첫째 날 제외한 리스트
+        log.info("(변화) calculationDays 의 크기: {}", calculationDays.size());
       }
 
 
@@ -201,7 +212,10 @@ public class AttendanceCalculator {
             .findFirst()
             .orElse(null);
 
-        if (stats == null) continue; // 출석 데이터가 없으면 건너뜀
+        if (stats == null) {
+          log.info("출석 데이터가 없어서 건너뜁니다.");
+          continue;
+        } // 출석 데이터가 없으면 건너뜀
 
         boolean isAbsent = stats.getAbsentCount() == TOTAL_SESSIONS_PER_DAY;
         boolean isLate = !isAbsent && (stats.getAbsentCount() > 0 || stats.getLateCount() > 0);
@@ -221,6 +235,8 @@ public class AttendanceCalculator {
             }
           }
         }
+        log.info("소정출석일 근황: {},실제 출석일 근황: {}, 축적된 지각과 조퇴합 근황: {}",
+            currentSegmentDays, currentSegmentAttendance, currentSegmentIncidents);
       }
 
       if (currentSegmentDays > 0) {
@@ -238,6 +254,7 @@ public class AttendanceCalculator {
         rateInfo.put("currentDay", currentSegmentDays);
         rateInfo.put("incidentCount", currentSegmentIncidents);
         rateInfo.put("attendanceDays", currentSegmentAttendance);
+        log.info("차수별 정보 저장: {}", rateInfo);
 
         if (twentyDayRateDetails.size() > periodIndex) {
           twentyDayRateDetails.set(periodIndex, rateInfo);
@@ -248,6 +265,7 @@ public class AttendanceCalculator {
 
       // 이 세그먼트가 마지막 기록 날짜를 포함하면 여기서 종료
       if (containsLastDate) {
+        log.info("stats의 마지막 날짜이므로 20일 출석률 계산 과정을 종료합니다.");
         processedLastSegment = true;
         break;
       }
@@ -259,6 +277,8 @@ public class AttendanceCalculator {
     Map<String, Object> twentyDayRateDetail = twentyDayRateDetails.get(
         twentyDayRateDetails.size() - 1);
     log.debug("(20일 출석률)해당하는 20일 단위 출석률: {}", twentyDayRateDetail);
+    log.info("(최종)20일 단위 출석률 리스트: {}, 해당하는 20일 단위 출석률: {}", twentyDayRateDetails,
+        twentyDayRateDetail);
 
     return twentyDayRateDetails;
   }
@@ -268,6 +288,8 @@ public class AttendanceCalculator {
    */
   public static Map<String,Object> calculateTwentyDayAttendanceRatesForPrint(List<AttendanceDailyStats> dailyStats,List<LocalDate> courseDates){
     Map<String, Object> twentyDayRateDetails = new HashMap<>();
+
+    log.info("프린트를 위해 20일 출석률 계산을 시작합니다.");
 
     int currentSegmentDays = 0;
     int currentSegmentAttendance = 0;
@@ -282,8 +304,10 @@ public class AttendanceCalculator {
           .findFirst()
           .orElse(null);
 
-      if (stats == null)
-        continue; // 출석 데이터가 없으면 건너뜀
+      if (stats == null) {
+        log.info("(프린트) 출석 데이터가 없어서 건너뜁니다.");
+        continue;
+      } // 출석 데이터가 없으면 건너뜀
 
 
       boolean isAbsent = stats.getAbsentCount() == TOTAL_SESSIONS_PER_DAY;
@@ -312,6 +336,10 @@ public class AttendanceCalculator {
       }else{
         absent++;
       }
+
+      log.info("(프린트) 결석: {}, 지각: {}, 조퇴: {}",absent,late,earlyLeave);
+      log.info("(프린트) 소정출석일 근황: {},실제 출석일 근황: {}, 축적된 지각과 조퇴합 근황: {}",
+          currentSegmentDays, currentSegmentAttendance, currentSegmentIncidents);
     }
 
     log.info("(프린트)소정 출석일: {}",currentSegmentDays);
@@ -328,6 +356,7 @@ public class AttendanceCalculator {
     twentyDayRateDetails.put("earlyLeaveDays",earlyLeave);
     twentyDayRateDetails.put("absentDays",absent);
     twentyDayRateDetails.put("attendanceRate",twentyDayRate);
+    log.info("(프린트-최종) 20일 출석룰 Map: {}",twentyDayRateDetails);
 
     return twentyDayRateDetails;
 
@@ -357,6 +386,7 @@ public class AttendanceCalculator {
 
     log.debug("유효한 출석일 수 validDays: {}", validDays);
     log.debug("유효한 출석일 수: {}", validDays.size());
+    log.info("유효한 출석일 수: {}", validDays);
     log.info("유효 출석일 계산 종료");
     return validDays;
   }
@@ -367,7 +397,7 @@ public class AttendanceCalculator {
    */
 
   public static List<Map<String, Object>> calculateTwentyDaySegments(List<LocalDate> validDays) {
-    log.info("20일 단위 차수 계산 시작");
+    log.info("20일 단위로 차수를 나누는 계산 시작");
     List<Map<String, Object>> segments = new ArrayList<>();
     int periodIndex = 1;
 
@@ -377,11 +407,13 @@ public class AttendanceCalculator {
     // 현장실습 기간
     // 마지막 20일 제거 (리스트 크기가 20일 이상인 경우에만)
     if (workingDays.size() >= SEGMENT_DAYS) {
+      log.info("현장실습 날짜를 제외합니다 (20일)");
       workingDays = workingDays.subList(0, workingDays.size() - SEGMENT_DAYS);
     }
 
     while (!workingDays.isEmpty()) {
       int daysInSegment = (periodIndex == 1) ? 21 : SEGMENT_DAYS;   // 1차는 21일 이후는 20일
+      log.info("이번 차수의 크기: {}",daysInSegment);
       int segmentSize = Math.min(daysInSegment, workingDays.size());
 
       List<LocalDate> periodDays = workingDays.subList(0, segmentSize);
@@ -399,8 +431,8 @@ public class AttendanceCalculator {
       periodIndex++;
     }
 
+    log.info("20일 단위 차수 리스트: {}", segments);
     log.info("20일 단위 차수 계산 종료");
-    log.debug("20일 단위 차수 리스트: {}", segments);
     return segments;
   }
 
