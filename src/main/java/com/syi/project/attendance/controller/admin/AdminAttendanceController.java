@@ -1,12 +1,16 @@
 package com.syi.project.attendance.controller.admin;
 
+import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_PRINT_DATA_NOT_FOUND;
+
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendancePrintResponseDto;
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
+import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.course.dto.CourseDTO.CourseListDTO;
 import com.syi.project.course.service.CourseService;
 import com.syi.project.schedule.service.ScheduleService;
@@ -146,6 +150,43 @@ public class AdminAttendanceController {
     log.debug("ratesMap: {}", ratesMap);
 
     return ResponseEntity.ok(ratesMap);
+  }
+
+  @GetMapping("/course/{courseId}/terms")
+  public ResponseEntity<List<Map<String, Object>>> getTwentyTermsByCourseId(@PathVariable Long courseId) {
+
+    log.info("관리자 20일 단위 기간 조회 요청 - Course ID: {}", courseId);
+
+    List<Map<String, Object>> termsByCourseId = attendanceService.getTwentyTermsByCourseId(
+        courseId);
+
+    log.debug("termsByCourseId: {}", termsByCourseId);
+
+    return ResponseEntity.ok(termsByCourseId);
+  }
+
+  @GetMapping("/course/{courseId}/print")
+  public ResponseEntity<AttendancePrintResponseDto> getAttendancePrintDataByCourseId(@PathVariable Long courseId,
+      @RequestParam String term) {
+
+    log.info("관리자 {}차수에 대한 프린트 데이터 조회 요청 - Course ID: {}", term ,courseId);
+
+    AttendancePrintResponseDto attendancePrintDataByCourseId = attendanceService.getAttendancePrintDataByCourseId(
+        courseId, term);
+
+    if(attendancePrintDataByCourseId == null){
+      throw new InvalidRequestException(ATTENDANCE_PRINT_DATA_NOT_FOUND);
+    }
+
+    log.info("조회된 프린트 데이터 목록: {}",attendancePrintDataByCourseId);
+    log.debug("교육과정명: {}", attendancePrintDataByCourseId.getCourseName());
+    log.debug("차수명: {}", attendancePrintDataByCourseId.getTermLabel());
+    log.debug("교육과정 시작날짜: {}", attendancePrintDataByCourseId.getStartDate());
+    log.debug("교육과정 종료날짜: {}", attendancePrintDataByCourseId.getEndDate());
+    log.debug("미리보기용 데이터: {}", attendancePrintDataByCourseId.getPages());
+    log.debug("요약용 데이터(출석률 포함): {}", attendancePrintDataByCourseId.getSummaryPage());
+
+    return ResponseEntity.ok(attendancePrintDataByCourseId);
   }
 
 

@@ -4,11 +4,11 @@ import com.syi.project.auth.repository.JwtBlacklistRepository;
 import com.syi.project.auth.service.CustomUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.util.Arrays;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -67,11 +67,13 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             // 인증 없이 접근 가능한 경로 설정
             .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/favicon.ico",
-                "/webjars/**", "/", "/admin/member/login", "/member/login", "/member/check-username", "/member/check-email", "/member/register", "/member/logout", "/refresh").permitAll()
+                "/webjars/**", "/", "/admin/member/login", "/member/login", "/member/check-username",
+                "/member/check-email", "/member/register", "/member/logout", "/member/refresh",
+                "/member/token-expiry", "/token/**").permitAll()
             // 해당 경로는 인증 필요
             .requestMatchers("/jwt/test","/enrollments/my").authenticated()
             // student, admin 모두 접근
-            .requestMatchers("/member/info", "/member/update", "/member/delete").hasAnyRole("STUDENT", "ADMIN")
+            .requestMatchers("/member/info", "/member/update", "/member/delete", "/support/**").hasAnyRole("STUDENT", "ADMIN")
             // 관리자 전용 엔드포인트 접근 설정
             .requestMatchers("/admin/**", "/enrollments/**").hasRole("ADMIN")
             .requestMatchers("/**").hasRole("STUDENT")
@@ -79,10 +81,18 @@ public class SecurityConfig {
             .anyRequest().authenticated()
         )
         .exceptionHandling(exceptions -> exceptions
-            .authenticationEntryPoint((request, response, authException) -> response.sendError(
-                HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
-            .accessDeniedHandler((request, response, accessDeniedException) -> response.sendError(
-                HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
+            .authenticationEntryPoint((request, response, authException) -> {
+              response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+              response.setContentType("application/json");
+              response.setCharacterEncoding("UTF-8");
+              response.getWriter().write("{\"message\":\"인증이 필요합니다. 로그인 후 다시 시도하세요.\"}");
+            })
+            .accessDeniedHandler((request, response, accessDeniedException) -> {
+              response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+              response.setContentType("application/json");
+              response.setCharacterEncoding("UTF-8");
+              response.getWriter().write("{\"message\":\"해당 리소스에 접근할 권한이 없습니다.\"}");
+            })
         )
         .addFilterBefore(jwtAuthenticationFilter(),
             UsernamePasswordAuthenticationFilter.class);
@@ -100,8 +110,13 @@ public class SecurityConfig {
         "https://www.songyeoin.site"
     )); // 프론트엔드 주소
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-    configuration.setAllowedHeaders(List.of("*"));
-    configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+    configuration.setAllowedHeaders(Arrays.asList(
+        "Authorization", "Refresh-Token", "Content-Type",
+        "Cache-Control", "Pragma", "Expires", "*",
+        "X-Device-Fingerprint", "X-Requested-With"
+    ));    configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+    configuration.setAllowCredentials(true); // 쿠키 허용
+    configuration.setMaxAge(3600L); // preflight 캐시 시간
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

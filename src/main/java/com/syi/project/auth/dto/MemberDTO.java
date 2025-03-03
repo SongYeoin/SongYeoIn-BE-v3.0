@@ -1,10 +1,12 @@
 package com.syi.project.auth.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.syi.project.auth.entity.Member;
 import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -29,7 +31,8 @@ public class MemberDTO {
   private final String email;
 
   @Schema(description = "회원 가입일", example = "2024.11.20")
-  private final LocalDate enrollDate;
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+  private final LocalDateTime enrollDate;
 
   @Schema(description = "회원 승인 상태", example = "Y", allowableValues = {"Y", "N", "W"})
   private final CheckStatus checkStatus;
@@ -39,6 +42,9 @@ public class MemberDTO {
 
   @Schema(description = "회원 프로필 이미지 URL", example = "https://example.com/profiles/user1234.jpg")
   private final String profileUrl;
+
+  @Schema(description = "탈퇴를 진행한 사용자 ID (null이면 탈퇴되지 않음)", example = "3")
+  private Long deletedBy;
 
   public static MemberDTO fromEntity(Member member) {
     return MemberDTO.builder()
@@ -51,6 +57,7 @@ public class MemberDTO {
         .checkStatus(member.getCheckStatus())
         .role(member.getRole())
         .profileUrl(member.getProfileUrl())
+        .deletedBy(member.getDeletedBy())
         .build();
   }
 

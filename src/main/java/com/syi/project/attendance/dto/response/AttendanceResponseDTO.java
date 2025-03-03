@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.data.domain.Page;
 
@@ -139,6 +140,157 @@ public class AttendanceResponseDTO {
       this.periodId = periodId;
       this.enterTime = enterTime;
       this.exitTime = exitTime;
+    }
+  }
+//----------------------------------
+  @Getter
+  @NoArgsConstructor
+  @ToString
+  public static class AttendancePrintResponseDto {
+    private String courseName;
+    private String termLabel;   // 차수 (ex.1차, 2차,,,,)
+    private LocalDate startDate;  // 과정 시작일
+    private LocalDate endDate;    // 과정 종료일
+    private LocalDate termStartDate;  // 차수 시작일
+    private LocalDate termEndDate; // 차수 종료일
+    private List<PrintAttendancePageDto> pages;  // 일반 데이터
+    private SummaryPageDto summaryPage;     // 요약 페이지
+
+    @Builder(toBuilder = true)
+    public AttendancePrintResponseDto(String courseName, String termLabel, LocalDate startDate,
+        LocalDate endDate,LocalDate termStartDate,LocalDate termEndDate, List<PrintAttendancePageDto> pages, SummaryPageDto summaryPage) {
+      this.courseName = courseName;
+      this.termLabel = termLabel;
+      this.startDate = startDate;
+      this.termStartDate = termStartDate;
+      this.termEndDate = termEndDate;
+      this.endDate = endDate;
+      this.pages = pages;
+      this.summaryPage = summaryPage;
+    }
+
+    //-----------------------------
+    @Getter
+    @NoArgsConstructor
+    @ToString
+    public static class PrintAttendancePageDto {
+      private int pageNumber;             // 페이지 번호
+      private LocalDate pageStartDate;    // 페이지 시작일
+      private LocalDate pageEndDate;      // 페이지 종료일
+      private List<PrintStudentAttendanceDto> students;  // 해당 페이지의 학생 출석 정보
+
+      @Builder(toBuilder = true)
+      public PrintAttendancePageDto(int pageNumber, LocalDate pageStartDate, LocalDate pageEndDate,
+          List<PrintStudentAttendanceDto> students) {
+        this.pageNumber = pageNumber;
+        this.pageStartDate = pageStartDate;
+        this.pageEndDate = pageEndDate;
+        this.students = students;
+      }
+    }
+    //------------------------------------
+    @Getter
+    @NoArgsConstructor
+    @ToString
+    public static class PrintStudentAttendanceDto {
+      private Long studentId;
+      private String studentName;
+      private int processedDays;          // 5일 단위 (소정출석일)
+      private int realAttendDays;        // 실제 출석일
+      private int absentCount;            // 이 페이지(5일)의 결석 횟수
+      private int lateCount;              // 이 페이지(5일)의 지각 횟수
+      private int earlyLeaveCount;         // 이 페이지(5일)의 조퇴 횟수
+      private List<PrintDailyAttendanceDto> dailyAttendance;  // 5일치 출석 정보
+
+      @Builder(toBuilder = true)
+      public PrintStudentAttendanceDto(Long studentId, String studentName, int processedDays,
+          int realAttendDays, int absentCount, int lateCount, int earlyLeaveCount,
+          List<PrintDailyAttendanceDto> dailyAttendance) {
+        this.studentId = studentId;
+        this.studentName = studentName;
+        this.processedDays = processedDays;
+        this.realAttendDays = realAttendDays;
+        this.absentCount = absentCount;
+        this.lateCount = lateCount;
+        this.earlyLeaveCount = earlyLeaveCount;
+        this.dailyAttendance = dailyAttendance;
+      }
+    }
+
+    //-----------------------------------------
+    @Getter
+    @NoArgsConstructor
+    @ToString
+    public static class PrintDailyAttendanceDto {
+      private LocalDate date;
+      private List<PeriodAttendanceDto> periods; // 8개 교시별 출석 상태
+      private String dailySummary;        // 하루 종합 상태 (예: "출석", "결석", "지각")
+
+      @Builder(toBuilder = true)
+      public PrintDailyAttendanceDto(LocalDate date, List<PeriodAttendanceDto> periods,
+          String dailySummary) {
+        this.date = date;
+        this.periods = periods;
+        this.dailySummary = dailySummary;
+      }
+    }
+
+    //---------------------------------------
+    @Getter
+    @NoArgsConstructor
+    @ToString
+    public static class PeriodAttendanceDto {
+      private int period;                 // 교시 (1~8)
+      private String status;              // 상태 ("출석", "결석", "지각", "조퇴" 등)
+
+      @Builder(toBuilder = true)
+      public PeriodAttendanceDto(int period, String status) {
+        this.period = period;
+        this.status = status;
+      }
+    }
+
+    //----------------------------------------
+    // 요약 페이지를 위한 DTO
+    @Getter
+    @NoArgsConstructor
+    @ToString
+    public static class SummaryPageDto {
+      private List<StudentSummaryDto> studentSummaries;
+
+      @Builder(toBuilder = true)
+      public SummaryPageDto(List<StudentSummaryDto> studentSummaries) {
+        this.studentSummaries = studentSummaries;
+      }
+    }
+
+    //-------------------------------------------
+    @Getter
+    @NoArgsConstructor
+    @ToString
+    public static class StudentSummaryDto {
+      private Long studentId;
+      private String studentName;
+      private int totalWorkingDays;      // 소정출석일수
+      private int attendanceDays;        // 실제출석일수
+      private int lateDays;              // 총 지각 횟수
+      private int earlyLeaveDays;        // 총 조퇴 횟수
+      private int absentDays;            // 총 결석 횟수
+      private double attendanceRate;     // 출석률 (%)
+
+      @Builder(toBuilder = true)
+      public StudentSummaryDto(Long studentId, String studentName, int totalWorkingDays,
+          int attendanceDays, int lateDays, int earlyLeaveDays, int absentDays,
+          double attendanceRate) {
+        this.studentId = studentId;
+        this.studentName = studentName;
+        this.totalWorkingDays = totalWorkingDays;
+        this.attendanceDays = attendanceDays;
+        this.lateDays = lateDays;
+        this.earlyLeaveDays = earlyLeaveDays;
+        this.absentDays = absentDays;
+        this.attendanceRate = attendanceRate;
+      }
     }
   }
 

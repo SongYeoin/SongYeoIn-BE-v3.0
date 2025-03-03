@@ -1,6 +1,9 @@
 package com.syi.project.club.repository;
 
+import static com.syi.project.auth.entity.QMember.member;
+
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.club.entity.Club;
 import com.syi.project.club.entity.QClub;
@@ -45,28 +48,33 @@ public class ClubRepositoryCustomImpl implements ClubRepositoryCustom {
         }
 
         // 검색 조건 처리
-        if (cri.getType() != null && cri.getKeyword() != null) {
+        if (cri.getType() != null && cri.getKeyword() != null && !cri.getKeyword().isEmpty()) {
             switch (cri.getType()) {
                 case "C": // 승인 상태 필터링
-                    if ("대기".equals(cri.getKeyword())) {
+                    if ("W".equals(cri.getKeyword())) {
                         builder.and(club.checkStatus.eq(CheckStatus.W)); // '대기' -> "W"
-                    } else if ("승인".equals(cri.getKeyword())) {
+                    } else if ("Y".equals(cri.getKeyword())) {
                         builder.and(club.checkStatus.eq(CheckStatus.Y)); // '승인' -> "Y"
-                    } else if ("미승인".equals(cri.getKeyword())) {
+                    } else if ("N".equals(cri.getKeyword())) {
                         builder.and(club.checkStatus.eq(CheckStatus.N)); // '미승인' -> "N"
                     }
                     break;
 
                 case "W": // 작성자 필터링 (작성자 ID로 검색)
-                    if (cri.getKeyword() != null) {
-                        builder.and(club.writerId.eq(Long.valueOf(cri.getKeyword()))); // 작성자 ID로 검색
-                    }
+                        //builder.and(club.writerId.eq(Long.valueOf(cri.getKeyword()))); // 작성자 ID로 검색
+                    builder.and(club.writerId.in(
+                      JPAExpressions.select(member.id)
+                        .from(member)
+                        .where(member.name.contains(cri.getKeyword()))
+                    ));
                     break;
 
                 case "P": // 참여자 필터링 (참여자 이름으로 검색)
-                    if (cri.getKeyword() != null) {
                         builder.and(club.participants.contains(cri.getKeyword())); // 참여자 이름으로 검색
-                    }
+                    break;
+
+                case "CN": // 동아리명 필터링 (동아리 이름으로 검색)
+                        builder.and(club.clubName.contains(cri.getKeyword())); // 동아리 이름으로 검색
                     break;
 
                 default:
@@ -75,8 +83,13 @@ public class ClubRepositoryCustomImpl implements ClubRepositoryCustom {
         }
 
         // 동아리 목록을 쿼리하고 페이징 처리
+        // 작성일 내림차순, 활동일 내림차순으로 정렬
         List<Club> clubs = queryFactory.selectFrom(club)
                 .where(builder) // 조건을 BooleanBuilder로 설정
+                .orderBy(
+                    club.regDate.desc(), // 작성일 내림차순
+                    club.studyDate.desc() // 활동일 내림차순
+                )
                 .offset(pageable.getOffset()) // 페이징 처리
                 .limit(pageable.getPageSize()) // 페이지 크기
                 .fetch(); // 결과 가져오기

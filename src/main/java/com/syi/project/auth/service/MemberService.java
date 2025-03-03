@@ -1,6 +1,7 @@
 package com.syi.project.auth.service;
 
 import com.syi.project.auth.dto.DuplicateCheckDTO;
+import com.syi.project.auth.dto.MemberAdminUpdateRequestDTO;
 import com.syi.project.auth.dto.MemberDTO;
 import com.syi.project.auth.dto.MemberLoginRequestDTO;
 import com.syi.project.auth.dto.MemberLoginResponseDTO;
@@ -105,7 +106,7 @@ public class MemberService {
 
   // 로그인
   @Transactional
-  public MemberLoginResponseDTO login(MemberLoginRequestDTO requestDTO, Role requiredRole) {
+  public MemberLoginResponseDTO login(MemberLoginRequestDTO requestDTO, Role requiredRole, String userAgent, String ipAddress, String deviceFingerprint) {
     log.info("로그인 검증 시작 - 사용자 Username: {}", requestDTO.getUsername());
 
     Member member = memberRepository.findByUsernameAndDeletedByIsNull(requestDTO.getUsername())
@@ -138,7 +139,7 @@ public class MemberService {
     log.info("기존 Refresh Token 삭제 완료 - 사용자 ID: {}", member.getId());
 
     String accessToken = jwtProvider.createAccessToken(member.getId(), member.getName(),
-        member.getRole().name());
+        member.getRole().name(), deviceFingerprint);
     String refreshToken = jwtProvider.createRefreshToken(member.getId());
 
     // 새 Refresh Token DB에 저장
@@ -154,7 +155,22 @@ public class MemberService {
   @Transactional
   public void logout(HttpServletRequest request) {
     String accessToken = extractToken(request.getHeader(HttpHeaders.AUTHORIZATION));
-    String refreshToken = extractToken(request.getHeader("Refresh-Token"));
+    String refreshToken = null;
+
+    // HTTP Only 쿠키에서 Refresh Token 가져오기
+    if (request.getCookies() != null) {
+      for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+        if ("refresh_token".equals(cookie.getName())) {
+          refreshToken = cookie.getValue();
+          break;
+        }
+      }
+    }
+
+    // 쿠키에서 찾지 못한 경우 헤더에서 확인
+    if (refreshToken == null) {
+      refreshToken = extractToken(request.getHeader("Refresh-Token"));
+    }
 
     // Access Token 처리
     if (accessToken != null && jwtProvider.validateAccessToken(accessToken)) {
@@ -274,6 +290,43 @@ public class MemberService {
 
     return MemberDTO.fromEntity(member);
   }
+
+  // 관리자의 회원정보 수정
+  @Transactional
+  public MemberDTO updateMemberByAdmin(Long memberId, MemberAdminUpdateRequestDTO requestDTO) {
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
+        .orElseThrow(() -> {
+          log.warn("회원 정보 수정 실패 - 존재하지 않는 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    // 이메일 중복 검사
+    if (!member.getEmail().equals(requestDTO.getEmail())) {
+      if (memberRepository.existsByEmail(requestDTO.getEmail())) {
+        throw new InvalidRequestException(ErrorCode.EMAIL_ALREADY_EXISTS);
+      }
+    }
+
+    // 아이디 중복 검사
+    if (!member.getUsername().equals(requestDTO.getUsername())) {
+      if (memberRepository.existsByUsername(requestDTO.getUsername())) {
+        throw new InvalidRequestException(ErrorCode.USER_ALREADY_EXISTS);
+      }
+    }
+
+    // 각 필드 업데이트
+    member.updateByAdmin(
+        requestDTO.getName(),
+        requestDTO.getUsername(),
+        requestDTO.getBirthday(),
+        requestDTO.getEmail(),
+        requestDTO.getRole(),
+        requestDTO.getCheckStatus()
+    );
+
+    log.info("관리자에 의한 회원 정보 수정 완료 - 회원 ID: {}", memberId);
+    return MemberDTO.fromEntity(member);
+  }
   
   // 비밀번호 초기화
   @Transactional
@@ -334,38 +387,44 @@ public class MemberService {
   // 회원 탈퇴
   @Transactional
   public void deleteMember(Long memberId) {
-    // 회원 조회
+    log.info("회원 자체 탈퇴 처리 시작 - 회원 ID: {}", memberId);
+
     Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
-        .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> {
+          log.warn("회원 탈퇴 처리 실패 - 존재하지 않는 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    if (member.getDeletedBy() != null) {
+      log.warn("이미 탈퇴 처리된 회원입니다 - 회원 ID: {}", memberId);
+      throw new InvalidRequestException(ErrorCode.ALREADY_WITHDRAWN);
+    }
 
     member.deactivate(memberId);
+    log.info("회원 자체 탈퇴 처리 완료 - 회원 ID: {}", memberId);
   }
 
-  // Refresh Token 을 이용하여 새로운 Access Token 을 발급하는 메서드
-  public String refreshToken(String refreshToken) {
-    log.info("Refresh Token 검증 시작");
+  // 관리자의 회원 탈퇴
+  @Transactional
+  public void withdrawMember(Long memberId, Long adminId) {
+    log.info("관리자에 의한 회원 탈퇴 처리 시작 - 회원 ID: {}, 관리자 ID: {}", memberId, adminId);
 
-    // Refresh Token 유효성 검사
-    if (!jwtProvider.validateRefreshToken(refreshToken)) {
-      log.warn("유효하지 않은 Refresh Token: {}", refreshToken);
-      throw new InvalidRequestException(ErrorCode.INVALID_REFRESH_TOKEN);
+    Member member = memberRepository.findByIdAndDeletedByIsNull(memberId)
+        .orElseThrow(() -> {
+          log.warn("회원 탈퇴 처리 실패 - 존재하지 않는 회원 ID: {}", memberId);
+          return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+        });
+
+    if (member.getDeletedBy() != null) {
+      log.warn("이미 탈퇴 처리된 회원입니다 - 회원 ID: {}", memberId);
+      throw new InvalidRequestException(ErrorCode.ALREADY_WITHDRAWN);
     }
 
-    // Refresh Token에서 사용자 ID 추출
-    Optional<Long> idOpt = jwtProvider.getMemberPrimaryKeyId(refreshToken);
-    if (idOpt.isEmpty()) {
-      log.error("Refresh Token에서 사용자 ID 추출 실패");
-      throw new InvalidRequestException(ErrorCode.INVALID_REFRESH_TOKEN);
-    }
+    member.updateCheckStatus(CheckStatus.N);
+    member.deactivate(adminId);
 
-    Long id = idOpt.get();
-    Member member = memberRepository.findById(id)
-        .orElseThrow(() -> new InvalidRequestException(ErrorCode.USER_NOT_FOUND));
-
-    String newAccessToken = jwtProvider.createAccessToken(member.getId(), member.getName(),
-        member.getRole().name());
-    log.info("새로운 Access Token 발급 완료 - 사용자 ID: {}", id);
-    return newAccessToken;
+    log.info("관리자에 의한 회원 탈퇴 처리 완료 - 회원 ID: {}, 관리자 ID: {}", memberId, adminId);
   }
+
 }
 

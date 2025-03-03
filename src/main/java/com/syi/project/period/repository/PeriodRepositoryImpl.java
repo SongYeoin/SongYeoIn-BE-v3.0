@@ -89,6 +89,7 @@ public class PeriodRepositoryImpl implements PeriodRepositoryCustom {
     return queryFactory.selectFrom(period)
         .where(period.courseId.eq(courseId)
             .and(period.deletedBy.isNull()))
+        .orderBy(period.startTime.asc())
         .fetch();
   }
 

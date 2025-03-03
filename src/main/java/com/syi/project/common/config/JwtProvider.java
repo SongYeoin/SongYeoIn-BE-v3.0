@@ -45,9 +45,10 @@ public class JwtProvider {
    *
    * @param id   사용자  기본키 ID
    * @param role 사용자 역할
+   * @param deviceFingerprint 디바이스 지문 (선택적)
    * @return 생성된 Access Token 문자열
    */
-  public String createAccessToken(Long id, String name, String role) {
+  public String createAccessToken(Long id, String name, String role, String deviceFingerprint) {
     Date now = new Date();
     Date validity = new Date(now.getTime() + accessTokenValidity);
     String tokenId = UUID.randomUUID().toString();
@@ -60,6 +61,7 @@ public class JwtProvider {
         .setSubject(String.valueOf(id))          // 주체 설정
         .claim("name", name)                  // 사용자 이름
         .claim("role", role)                  // 사용자 역할
+        .claim("device", deviceFingerprint)   // 디바이스 지문
         .setIssuedAt(now)                        // 발급 시간 설정
         .setExpiration(validity)                // 만료 시간 설정
         .signWith(key, SignatureAlgorithm.HS256)  // 서명 알고리즘 및 키 설정
@@ -163,6 +165,22 @@ public class JwtProvider {
   }
 
   /**
+   * 토큰에서 디바이스 지문 추출
+   *
+   * @param token JWT 토큰
+   * @return Optional 로 감싼 디바이스 지문 (추출 실패 시 Optional.empty)
+   */
+  public Optional<String> getDeviceFingerprint(String token) {
+    try {
+      String device = getClaims(token).map(claims -> claims.get("device", String.class)).orElse(null);
+      return Optional.ofNullable(device);
+    } catch (Exception e) {
+      log.error("토큰에서 디바이스 지문 추출 실패 - 원인: {}", e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  /**
    * Access Token의 유효성 검증
    *
    * @param token 검증할 Access Token 문자열
@@ -254,6 +272,19 @@ public class JwtProvider {
     return getClaims(token)
         .map(Claims::getExpiration)
         .map(exp -> exp.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime())
+        .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 토큰입니다."));
+  }
+
+  /**
+   * JWT 발급 시간 반환 (LocalDateTime)
+   *
+   * @param token JWT 토큰
+   * @return 발급 시간 (LocalDateTime)
+   */
+  public LocalDateTime getIssuedAt(String token) {
+    return getClaims(token)
+        .map(Claims::getIssuedAt)
+        .map(iat -> iat.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime())
         .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 토큰입니다."));
   }
 

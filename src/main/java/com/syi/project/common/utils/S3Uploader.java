@@ -45,10 +45,10 @@ public class S3Uploader {
   // 파일 업로드 (단일/다중 처리 통합)
   @Operation(summary = "파일 업로드 (단일/다중)")
   @PostMapping("/upload")
-  public String uploadFile(MultipartFile file, String dirName) throws IOException {
-    // Member 엔티티에서 ID를 가져오도록 수정 필요
+  public String uploadFile(MultipartFile file, String dirName, LocalDate date) throws IOException {
+    // Member 엔티티에서 ID를 가져오도록 수정
     Long memberId = ((CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
-    String dateFolder = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+    String dateFolder = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     String fileName = createFileName(file.getOriginalFilename());
 
     // dirName/memberId/dateFolder/fileName 형태로 경로 구성
@@ -67,7 +67,7 @@ public class S3Uploader {
   }
 
   // 파일 수정
-  public String updateFile(MultipartFile newFile, String dirName, String oldFileUrl) throws IOException {
+  public String updateFile(MultipartFile newFile, String dirName, String oldFileUrl, LocalDate date) throws IOException {
     try {
       // 1. 기존 파일 삭제
       if (oldFileUrl != null && !oldFileUrl.isEmpty()) {
@@ -76,7 +76,7 @@ public class S3Uploader {
       }
 
       // 2. 새 파일 업로드
-      String newFileUrl = uploadFile(newFile, dirName);
+      String newFileUrl = uploadFile(newFile, dirName, date);
       log.info("새 파일 업로드 완료: {}", newFileUrl);
 
       return newFileUrl;

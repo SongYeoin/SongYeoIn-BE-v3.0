@@ -10,7 +10,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.Getter;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
@@ -36,8 +38,9 @@ public class Member {
   @Column(nullable = false, unique = true)
   private String email;
 
-  @DateTimeFormat(pattern = "yyyy-MM-dd")
-  private LocalDate enrollDate = LocalDate.now();
+  @CreatedDate
+  @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+  private LocalDateTime enrollDate;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 1)
@@ -68,7 +71,7 @@ public class Member {
     this.birthday = birthday;
     this.email = email;
     this.role = role;
-    this.enrollDate = LocalDate.now();
+    this.enrollDate = LocalDateTime.now();
     this.checkStatus = CheckStatus.W;
   }
 
@@ -94,5 +97,14 @@ public class Member {
 
   public void setPasswordChangeRequired(boolean required) {
     this.passwordChangeRequired = required;
+  }
+
+  public void updateByAdmin(String name, String username, String birthday, String email, Role role, CheckStatus checkStatus) {
+    this.name = name;
+    this.username = username;
+    this.birthday = birthday;
+    this.email = email;
+    this.role = role;
+    this.checkStatus = checkStatus;
   }
 }

@@ -13,12 +13,17 @@ import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.enums.Role;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
+import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.course.dto.CourseDTO;
 import com.syi.project.course.dto.CourseResponseDTO;
 import com.syi.project.course.service.CourseService;
+import io.swagger.v3.oas.annotations.Operation;
+import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +48,8 @@ public class AdminClubController {
     private JwtProvider jwtProvider;
     @Autowired
     private CourseService courseService;
+    @Autowired
+    private S3Uploader s3Uploader;
 
     public AdminClubController(ClubService clubService) {
         this.clubService = clubService;
@@ -50,7 +57,6 @@ public class AdminClubController {
 
     @GetMapping
     public ResponseEntity<List<CourseDTO>> getAvailableCourses(){
-        log.info("교육 과정 조회 요청");
         List<CourseDTO> availableCourses = courseService.getAvailableCourses();
         log.info("성공적으로 {} 개의 교육 과정을 조회했습니다.", availableCourses.size());
 
@@ -62,8 +68,7 @@ public class AdminClubController {
     @GetMapping("/{courseId}/list")
     public ResponseEntity<Map<String, Object>> getClubListByCourseId(@PathVariable(value = "courseId", required = false) Long courseId,
                                                                      @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
-                                                                     @RequestParam(value = "type", required = false) String type,
-                                                                     @RequestParam(value = "keyword", required = false) String keyword) {
+                                                                     @RequestParam(value = "status", required = false) String status) {
         if (courseId == null) {
             return ResponseEntity.ok(Collections.emptyMap());
         }
@@ -71,15 +76,15 @@ public class AdminClubController {
         // Criteria 설정
         Criteria cri = new Criteria();
         cri.setPageNum(pageNum);
-        cri.setType(type);
 
         // 승인 상태 키워드 변환
-        cri.setKeywordFromTypeAndKeyword(type, keyword);
-//        if ("C".equals(type)) {
-//            cri.setKeyword("대기".equals(keyword) ? "W" : "승인".equals(keyword) ? "Y" : "미승인".equals(keyword) ? "N" : "");
-//        } else {
-//            cri.setKeyword(keyword);
-//        }
+        //cri.setKeywordFromTypeAndKeyword(type, keyword);
+        // status 파라미터를 type과 keyword로 변환
+        if (status != null && !status.equals("ALL")) {
+            cri.setType("C");
+            cri.setKeyword(status); // Y, N, W 값을 그대로 전달
+        }
+
 
         // 페이징된 결과 조회
         Page<ClubResponseDTO.ClubList> clubPage = clubService.getClubListWithPaging(cri, courseId);
@@ -169,36 +174,27 @@ public class AdminClubController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "클럽 파일 다운로드")
+    @GetMapping("/{clubId}/download")
+    public ResponseEntity<Resource> downloadClubFile(
+      @PathVariable Long clubId,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        log.info("클럽 파일 다운로드 요청 - clubId: {}, memberId: {}, 역할: {}",
+          clubId, userDetails.getId(), userDetails.getRole());
 
+        return clubService.downloadClubFile(clubId, userDetails.getId());
+    }
 
+    @Operation(summary = "클럽 파일 일괄 다운로드")
+    @PostMapping("/download-batch")
+    public ResponseEntity<Resource> downloadClubFilesBatch(
+      @RequestBody List<Long> clubIds,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        log.info("클럽 파일 일괄 다운로드 요청 - clubIds: {}, memberId: {}, 역할: {}",
+          clubIds, userDetails.getId(), userDetails.getRole());
 
-
-
-
-
-//    // 수정 (비동기 처리)
-//    @PostMapping("/club/modify")
-//    public ResponseEntity<String> clubModifyAdminPOST(@RequestBody ClubResponseDTO club) {
-//        boolean success = clubService.modifyAdmin(club);
-//        if (success) {
-//            return new ResponseEntity<>("modify success", HttpStatus.OK);
-//        } else {
-//            return new ResponseEntity<>("modify fail", HttpStatus.BAD_REQUEST);
-//        }
-//    }
-
-//    // 삭제 (비동기 처리)
-//    @PostMapping("/club/delete")
-//    public ResponseEntity<String> clubDeletePOST(@RequestParam("clubNo") int clubNo) {
-//        boolean success = clubService.delete(clubNo);
-//        if (success) {
-//            return new ResponseEntity<>("delete success", HttpStatus.OK);
-//        } else {
-//            return new ResponseEntity<>("delete fail", HttpStatus.BAD_REQUEST);
-//        }
-//    }
-
-
-
-
+        return clubService.downloadClubFilesBatch(clubIds, userDetails.getId());
+    }
 }

@@ -14,15 +14,27 @@ import com.syi.project.common.enums.CheckStatus;
 import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.common.utils.S3Uploader;
+import com.syi.project.file.dto.FileDownloadDTO;
 import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.file.entity.File;
 import com.syi.project.file.repository.FileRepository;
 import com.syi.project.file.service.FileService;
+import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,22 +47,25 @@ import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ClubService {
 
     @Autowired
-    private ClubRepository clubRepository;
+    private final ClubRepository clubRepository;
     @Autowired
-    private ClubFileRepository clubFileRepository;
+    private final ClubFileRepository clubFileRepository;
     @Autowired
-    private FileRepository fileRepository;
+    private final FileRepository fileRepository;
     @Autowired
-    private MemberRepository memberRepository;
+    private final MemberRepository memberRepository;
     @Autowired
-    private FileService fileService;
+    private final FileService fileService;
     @Autowired
-    private S3Uploader s3Uploader;
+    private final S3Uploader s3Uploader;
 
     private static final Logger log = LoggerFactory.getLogger(ClubController.class);
+    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("hwp", "hwpx", "docx", "doc");
 
     //등록
     @Transactional
@@ -68,6 +83,7 @@ public class ClubService {
     }
 
     //리스트(페이징)
+    @Transactional
     public Page<ClubResponseDTO.ClubList> getClubListWithPaging(Criteria cri, Long courseId) {
         // Pageable 객체 생성 (cri에서 pageNum과 amount 가져오기)
         Pageable pageable = cri.getPageable();
@@ -99,6 +115,7 @@ public class ClubService {
     }
 
     //페이징DTO변환
+    @Transactional
     private ClubResponseDTO.ClubList toClubListDTO(Club club) {
         ClubFile clubFile = clubFileRepository.findByClubId(club.getId()).stream().findFirst().orElse(null);
         FileResponseDTO savedFile = null;
@@ -184,89 +201,40 @@ public class ClubService {
         // 작성자와 로그인 사용자가 동일한지 확인
         verifyWriter(club.getWriterId(), loggedInUserId);
 
-        FileResponseDTO fileDto = null;
+        if (file != null) {
+            // 파일 유효성 검사
+            validateFile(file, clubId);
+        }
 
         // 승인 상태에 따른 수정 처리
         if (club.getCheckStatus() == CheckStatus.W) {
-            // 대기 상태일 때는 파일 수정 불가
-//            if (file != null) {
-//                throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_FILE_IN_WAITING);
-//            }
-//
-            // 대기 상태: 활동날, 내용, 참여자 수정 가능
-            if (clubUpdate != null) {
-                club.updateDetails(
-                        clubUpdate.getParticipants(),
-                        clubUpdate.getContent(),
-                        clubUpdate.getStudyDate(),
-                        LocalDate.now()
-                );
+            // 대기 상태: 클럽 정보 업데이트
+            updateClubDetails(club, clubUpdate);
+
+            // 필요시 파일도 업데이트
+            if (file != null) {
+                updateClubFile(club, file, loggedInUserId);
             }
         } else if (club.getCheckStatus() == CheckStatus.Y) {
-            // 승인 상태: 파일만 수정 가능
+//            // 승인 상태: 필요한 경우 클럽 정보 업데이트
 //            if (clubUpdate != null) {
-//                throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_APPROVED);
+//                updateClubDetails(club, clubUpdate);
 //            }
 
-            Member member = memberRepository.findById(loggedInUserId)
-                    .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
-
-            // 파일 처리
+            // 파일 업데이트
             if (file != null) {
-                String dirName = "club";
-
-                // 기존 파일이 있는 경우 삭제하고 새 파일로 교체
-                ClubFile clubFile = clubFileRepository.findByClubId(clubId).stream().findFirst().orElse(null);
-
-                if (clubFile != null) {
-                    // 기존 파일 삭제
-                    File existingFile = clubFile.getFile();
-                    if (existingFile != null) {
-                        fileService.deleteFile(existingFile.getId(), member); // 기존 파일 삭제
-                    }
-
-                    // 새 파일 업로드
-                    File uploadedFile = fileService.uploadFile(file, dirName, member);
-                    log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
-                    clubFile.updateFile(uploadedFile);
-
-                    // 파일 DTO 생성
-                    fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
-
-                    // Club 객체에 ClubFile을 반영
-                    clubFile.updateClub(club);
-                    //club.setFile(clubFile); // 중요: ClubFile을 Club에 반영
-
-                    // ClubFile 저장
-                    //clubFileRepository.save(clubFile);  // ClubFile을 명시적으로 저장
-                } else {
-                    // 기존 파일이 없는 경우 새 파일 업로드
-                    File uploadedFile = fileService.uploadFile(file, dirName, member);
-                    log.info("파일 업로드 완료: fileName={}, fileId={}", uploadedFile.getOriginalName(), uploadedFile.getId());
-                    ClubFile newClubFile = ClubFile.builder()
-                            .club(club)
-                            .file(uploadedFile)
-                            .build();
-                    clubFileRepository.save(newClubFile);
-
-                    // 파일 DTO 생성
-                    fileDto = FileResponseDTO.from(uploadedFile, s3Uploader);
-
-                    // Club 객체에 ClubFile을 반영
-                    newClubFile.updateClub(club);
-                    //club.setFile(newClubFile); // 중요: ClubFile을 Club에 반영
-
-                }
+                updateClubFile(club, file, loggedInUserId);
             }
         } else {
             throw new InvalidRequestException(ErrorCode.CANNOT_MODIFY_PENDING);
         }
 
-        log.info("클럽 저장 전: club={}", club);
         // 클럽 저장
         Club updatedClub = clubRepository.save(club);
-        //clubRepository.saveAndFlush(club); // saveAndFlush()로 영속성 컨텍스트 반영
-        log.info("클럽 저장 후: updatedClub={}", updatedClub);
+        log.info("클럽 업데이트 완료: clubId={}", updatedClub.getId());
+
+        // 파일 정보 가져오기
+        FileResponseDTO fileDto = getClubFileInfo(clubId);
 
         String writer = getMemberName(club.getWriterId());
 
@@ -274,7 +242,66 @@ public class ClubService {
         return ClubResponseDTO.ClubList.toListDTO(updatedClub, writer, null, fileDto);
     }
 
+    // 클럽 상세 정보 업데이트 메서드
+    private void updateClubDetails(Club club, ClubRequestDTO.ClubUpdate update) {
+        club.updateDetails(
+          update.getParticipants(),
+          update.getContent(),
+          update.getStudyDate(),
+          LocalDate.now(),
+          update.getClubName(),
+          update.getContactNumber(),
+          update.getStartTime(),
+          update.getEndTime(),
+          update.getParticipantCount()
+        );
+    }
+
+    // 클럽 파일 업데이트 메서드
+    private FileResponseDTO updateClubFile(Club club, MultipartFile file, Long loggedInUserId) {
+        String dirName = "club";
+        Member member = memberRepository.findById(loggedInUserId)
+          .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+        // 기존 파일 찾기
+        ClubFile clubFile = clubFileRepository.findByClubId(club.getId()).stream().findFirst().orElse(null);
+
+        if (clubFile != null) {
+            // 기존 파일이 있는 경우 삭제하고 새 파일로 교체
+            File existingFile = clubFile.getFile();
+            if (existingFile != null) {
+                fileService.deleteFile(existingFile.getId(), member);
+            }
+
+            // 새 파일 업로드
+            File uploadedFile = fileService.uploadFile(file, dirName, member);
+            clubFile.updateFile(uploadedFile);
+            clubFileRepository.save(clubFile);
+
+            return FileResponseDTO.from(uploadedFile, s3Uploader);
+        } else {
+            // 기존 파일이 없는 경우 새 파일 업로드
+            File uploadedFile = fileService.uploadFile(file, dirName, member);
+            ClubFile newClubFile = ClubFile.builder()
+              .club(club)
+              .file(uploadedFile)
+              .build();
+            clubFileRepository.save(newClubFile);
+
+            return FileResponseDTO.from(uploadedFile, s3Uploader);
+        }
+    }
+
+    // 클럽 파일 정보 조회 메서드
+    private FileResponseDTO getClubFileInfo(Long clubId) {
+        return clubFileRepository.findByClubId(clubId).stream()
+          .findFirst()
+          .map(clubFile -> FileResponseDTO.from(clubFile.getFile(), s3Uploader))
+          .orElse(null);
+    }
+
     //관리자 수정
+    @Transactional
     public ClubResponseDTO.ClubList approveClub(Long clubId, ClubRequestDTO.ClubApproval clubApproval,
                                                 Long adminId) {
         // 클럽 조회
@@ -318,72 +345,154 @@ public class ClubService {
         clubRepository.deleteById(clubId);
     }
 
+    // 파일확장자 및 개수 제한
+    private void validateFile(MultipartFile file, Long clubId) {
+        // 파일이 없으면 검증 생략
+        if (file == null || file.isEmpty()) {
+            return;
+        }
 
-//    //수정
-//    @Transactional
-//    public int modify(ClubDTO clubDTO) {
-//        Club club = clubRepository.findById(clubDTO.getId()).orElse(null);
-//        if (club != null) {
-//            club.setName(clubDTO.getName());
-//            club.setWriter(clubDTO.getWriter());
-//            club.setCheckStatus(clubDTO.getCheckStatus());
-//            club.setCheckCmt(clubDTO.getCheckCmt());
-//            club.setStudyDate(clubDTO.getStudyDate());
-//            club.setParticipants(clubDTO.getParticipants());
-//            club.setContent(clubDTO.getContent());
-//            clubRepository.save(club);  // Update the club
-//            return 1;
-//        }
-//        return 0; // 실패시 0 반환
-//    }
-//
-//    // 관리자가 수정
-//    @Transactional
-//    public int modifyAdmin(ClubDTO clubDTO) {
-//        Club club = clubRepository.findById(clubDTO.getId()).orElse(null);
-//        if (club != null) {
-//            club.setName(clubDTO.getName());
-//            club.setWriter(clubDTO.getWriter());
-//            club.setCheckStatus(clubDTO.getCheckStatus());
-//            club.setCheckCmt(clubDTO.getCheckCmt());
-//            club.setStudyDate(clubDTO.getStudyDate());
-//            club.setParticipants(clubDTO.getParticipants());
-//            club.setContent(clubDTO.getContent());
-//            clubRepository.save(club);  // Update the club
-//            return 1;
-//        }
-//        return 0; // 실패시 0 반환
-//    }
+        // 1. 파일 확장자 검사
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename != null) {
+            String extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
 
+            if (!ALLOWED_EXTENSIONS.contains(extension)) {
+                throw new InvalidRequestException(ErrorCode.INVALID_FILE_FORMAT,
+                  "허용되지 않는 파일 형식입니다. 허용된 확장자: " + String.join(", ", ALLOWED_EXTENSIONS));
+            }
+        }
 
-//
-//
-//
-//    // Update Club
-//    public ClubResponseDTO.ClubList updateClub(Long clubId, ClubRequestDTO.ClubUpdate dto, String url) {
-//        Club club = clubRepository.findById(clubId)
-//                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Club입니다."));
-//
-//        club = dto.toEntity(); // 업데이트할 내용 반영
-//        clubRepository.save(club);
-//        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(club.getWriterId()), null, url);
-//    }
-//
-//    // Approval
-//    public ClubResponseDTO.ClubList approveClub(Long clubId, ClubRequestDTO.ClubApproval dto, String checkerId, String url) {
-//        Club club = clubRepository.findById(clubId)
-//                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Club입니다."));
-//
-//        club = dto.toEntity(); // 승인 상태 변경 반영
-//        clubRepository.save(club);
-//        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(club.getWriterId()), checkerId, url);
-//    }
-//
-//    // Find Club
-//    public ClubResponseDTO.ClubList getClub(Long clubId, String url) {
-//        Club club = clubRepository.findById(clubId)
-//                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Club입니다."));
-//        return ClubResponseDTO.ClubList.toDTO(club, String.valueOf(club.getWriterId()), String.valueOf(club.getCheckerId()), url);
-//    }
+        // 2. 파일 개수 검사 (clubId가 null이 아닌 경우에만 수행)
+        if (clubId != null) {
+            ClubFile existingClubFile = clubFileRepository.findByClubId(clubId).stream().findFirst().orElse(null);
+
+            // 기존 파일이 없는 상태에서 새 파일 추가는 항상 가능
+            if (existingClubFile == null) {
+                return;
+            }
+
+            // 이미 파일이 존재하는데 새 파일을 추가하려는 경우
+            long fileCount = clubFileRepository.findByClubId(clubId).size();
+            if (fileCount >= 1 && existingClubFile == null) {
+                throw new InvalidRequestException(ErrorCode.FILE_COUNT_EXCEEDED, "클럽당 최대 1개의 파일만 허용됩니다.");
+            }
+        }
+    }
+
+    /**
+     * 클럽 파일 다운로드
+     * @param clubId 클럽 ID
+     * @param memberId 요청 회원 ID
+     * @return 파일 다운로드 응답
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> downloadClubFile(Long clubId, Long memberId) {
+        log.info("클럽 파일 다운로드 서비스 시작 - clubId: {}, memberId: {}", clubId, memberId);
+
+        // 멤버 정보 조회
+        Member member = memberRepository.findById(memberId)
+          .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
+
+        // 클럽 정보 조회
+        Club club = clubRepository.findById(clubId)
+          .orElseThrow(() -> new EntityNotFoundException("클럽을 찾을 수 없습니다. clubId: " + clubId));
+
+        // 클럽 파일 존재 여부 확인
+        if (club.getClubFile().getId() == null || club.getClubFile().getFile().getId() == null) {
+            log.warn("다운로드할 파일이 없습니다. clubId: {}", clubId);
+            throw new InvalidRequestException(ErrorCode.FILE_NOT_FOUND);
+        }
+
+        // 회원의 클럽 접근 권한 확인
+        validateMemberClubAccess(member, club);
+
+        // 파일 서비스를 통해 파일 다운로드 정보 조회
+        log.debug("파일 다운로드 요청 - fileId: {}", club.getClubFile().getFile().getId());
+        FileDownloadDTO downloadDTO = fileService.downloadFile(club.getClubFile().getFile().getId(), member);
+
+        // 파일 서비스를 통해 다운로드 응답 생성
+        return fileService.getDownloadResponseEntity(downloadDTO);
+    }
+
+    /**
+     * 회원의 클럽 접근 권한 확인
+     * @param member 회원
+     * @param club 클럽
+     */
+    private void validateMemberClubAccess(Member member, Club club) {
+        // 관리자 역할인 경우 항상 접근 허용
+        if (member.getRole().name().equals("ADMIN")) {
+            return;
+        }
+
+        // 클럽 관리자인지 확인
+        boolean isAdmin = club.getCheckerId().equals(member.getId());
+
+        // 클럽 회원인지 확인
+        boolean isMember = club.getWriterId().equals(member.getId());
+
+        if (!isAdmin && !isMember) {
+            log.warn("클럽 파일 접근 권한 없음 - memberId: {}, clubId: {}", member.getId(), club.getId());
+            throw new AccessDeniedException("클럽 파일에 접근할 권한이 없습니다.");
+        }
+    }
+
+    /**
+     * 클럽 파일 일괄 다운로드
+     * @param clubIds 클럽 ID 목록
+     * @param memberId 요청 회원 ID
+     * @return 압축 파일 다운로드 응답
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> downloadClubFilesBatch(List<Long> clubIds, Long memberId) {
+        log.info("클럽 파일 일괄 다운로드 서비스 시작 - clubIds: {}, memberId: {}", clubIds, memberId);
+
+        // 멤버 정보 조회
+        Member member = memberRepository.findById(memberId)
+          .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
+
+        // 클럽 정보 일괄 조회
+        List<Club> clubs = clubRepository.findAllById(clubIds);
+        if (clubs.isEmpty()) {
+            throw new InvalidRequestException(ErrorCode.CLUB_NOT_FOUND);
+        }
+
+        // 다운로드할 파일 목록 생성
+        List<File> files = new ArrayList<>();
+        for (Club club : clubs) {
+            // 클럽 파일 존재 여부 확인
+            if (club.getClubFile() == null || club.getClubFile().getFile() == null || club.getClubFile().getFile().getId() == null) {
+                log.warn("다운로드할 파일이 없습니다. clubId: {}", club.getId());
+                continue; // 파일이 없는 클럽은 건너뜀
+            }
+
+            // 회원의 클럽 접근 권한 확인
+            try {
+                validateMemberClubAccess(member, club);
+                files.add(club.getClubFile().getFile());
+            } catch (AccessDeniedException e) {
+                log.warn("일부 클럽 파일 접근 권한 없음 - memberId: {}, clubId: {}", member.getId(), club.getId());
+                // 권한이 없는 클럽은 건너뜀
+            }
+        }
+
+        // 다운로드할 파일이 없는 경우
+        if (files.isEmpty()) {
+            throw new InvalidRequestException(ErrorCode.FILE_NOT_FOUND);
+        }
+
+        // zip 파일명 생성 (현재 시간 포함)
+        String zipFileName = "club_files_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".zip";
+
+        // 파일 서비스를 통해 zip 파일 생성
+        Resource zipResource = fileService.downloadFilesAsZip(files, zipFileName);
+
+        // 응답 생성
+        return ResponseEntity.ok()
+          .contentType(MediaType.APPLICATION_OCTET_STREAM)
+          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
+          .body(zipResource);
+    }
 }
 

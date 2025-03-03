@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.syi.project.attendance.entity.Holiday;
 import com.syi.project.attendance.repository.HolidayRepository;
 import com.syi.project.common.enums.HolidayType;
-import jakarta.annotation.PostConstruct;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -25,9 +22,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.DefaultUriBuilderFactory;
-import org.springframework.web.util.DefaultUriBuilderFactory.EncodingMode;
-import org.springframework.web.util.UriBuilder;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +38,12 @@ public class HolidayService {
   // 공공데이터 API에서 특정 연도의 공휴일을 가져와 DB에 저장
   @Transactional
   public void fetchAndStoreHolidays(int year) {
+
+    // 먼저 해당 연도의 데이터가 이미 존재하는지 확인
+    if (isHolidayDataExistsForYear(year)) {
+      log.info("📢 {}년 공휴일 데이터가 이미 충분히 존재합니다. API 호출을 건너뜁니다.", year);
+      return; // API 호출 없이 종료
+    }
 
     log.info("📢 {}년 공휴일 데이터를 불러오는 중...", year);
 
@@ -82,7 +82,8 @@ public class HolidayService {
 
 
     // ✅ URI를 직접 문자열로 만들기
-    String url = API_URL + "?ServiceKey=" + serviceKey + "&solYear=" + year + "&_type=json";
+    String url =
+        API_URL + "?ServiceKey=" + serviceKey + "&solYear=" + year + "&_type=json&numOfRows=100";
 
     log.info("📢 url API 요청: {}", url);
 
@@ -156,5 +157,17 @@ public class HolidayService {
   public void scheduledHolidayUpdate() {
     fetchAndStoreHolidays(ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
         .atZone(java.time.ZoneId.systemDefault()).toLocalDate().getYear() + 1);
+  }
+
+  // 특정 연도의 공휴일 데이터가 DB에 충분히 존재하는지 확인
+  public boolean isHolidayDataExistsForYear(int year) {
+    // 해당 연도의 공휴일 개수를 조회
+    long count = holidayRepository.countByDateBetween(
+        LocalDate.of(year, 1, 1),
+        LocalDate.of(year, 12, 31)
+    );
+
+    // 일정 개수 이상이면 데이터가 충분히 있다고 판단 (예: 최소 10개 이상)
+    return count >= 10; // 한국 공휴일은 보통 15개 내외이므로 10개 정도면 충분히 있다고 판단
   }
 }

@@ -7,13 +7,14 @@ import static com.syi.project.period.eneity.QPeriod.period;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.attendance.dto.projection.AttendanceDailyStats;
 import com.syi.project.attendance.dto.projection.QAttendanceDailyStats;
-import com.syi.project.attendance.dto.request.AttendanceRequestDTO;
 import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendancesRequestDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendancePrintResponseDto;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
@@ -26,6 +27,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,7 +37,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.TextUtils;
-import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -187,9 +188,44 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
    * 학생 출석 데이터 조회 (기간 기준)
    */
   private Page<AttendListResponseDTO> findStudentAttendanceData(Long courseId, AllAttendancesRequestDTO dto, List<Period> periods, List<String> periodNames, Pageable pageable) {
+
+    log.info("(학생) 페이지 요청 정보: page={}, size={}, offset={}",
+        pageable.getPageNumber(), pageable.getPageSize(), pageable.getOffset());
+    log.debug("(학생) courseId: {}, dto: {}, periods: {}, periodNames: {}", courseId, dto, periods, periodNames);
+
     BooleanBuilder predicate = buildStudentPredicate(courseId, dto);
 
-    log.debug("courseId: {}, dto: {}, periods: {}, periodNames: {}", courseId, dto, periods, periodNames);
+    // 1. 먼저 전체 고유 날짜 수를 계산 (페이지네이션 전)
+    Long totalDates = queryFactory
+        .select(attendance.date.countDistinct())
+        .from(attendance)
+        .where(predicate)
+        .fetchOne();
+
+    long safeTotal = totalDates != null ? totalDates : 0L;
+    log.info("(학생) 페이지네이션 전 전체 날짜 수: {}", safeTotal);
+
+    // 1. 먼저 고유한 날짜를 가져와서 페이지네이션 적용
+    List<LocalDate> dates = queryFactory
+        .select(attendance.date)
+        .distinct()
+        .from(attendance)
+        .where(predicate)
+        .orderBy(attendance.date.desc()) // 최신 날짜 우선
+        .offset(pageable.getOffset())
+        .limit(pageable.getPageSize())
+        .fetch();
+
+    if (dates.isEmpty()) {
+      log.debug("(학생) 조건에 맞는 데이터가 없습니다.");
+      return new PageImpl<>(Collections.emptyList(), pageable, 0);
+    }
+
+    log.info("(학생) 현재 페이지에 선택된 날짜 수: {}", dates.size());
+    log.debug("(학생) 선택된 날짜 목록: {}", dates);
+
+    // 2. 이제 가져온 날짜에 해당하는 모든 출석 데이터 조회
+    BooleanExpression dateInList = attendance.date.in(dates);
 
     List<Tuple> tuples = queryFactory
         .select(
@@ -199,31 +235,74 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
             attendance.status
         )
         .from(attendance)
-        .where(predicate)
-        .offset(pageable.getOffset())
-        .limit(pageable.getPageSize())
+        .where(predicate.and(dateInList))
         .fetch();
 
-    log.info("학생이 조회한 출석 데이터");
-    log.debug("학생-조회된 데이터: {}", tuples);
+    log.info("(학생) 조회된 원시 데이터(튜플) 개수: {}", tuples.size());
+    log.debug("(학생) 조회된 데이터: {}", tuples);
 
     List<AttendListResponseDTO> content = mapTuplesToDTO(tuples, periods, periodNames, false);
 
-    Long total = queryFactory
-        .select(attendance.id.count())
-        .from(attendance)
-        .where(predicate)
-        .fetchOne();
+    log.info("(학생) DTO 변환 후 실제 반환될 데이터 개수: {}", content.size());
 
-    return new PageImpl<>(content, pageable, total != null ? total : 0);
+    // 5. 반환되는 날짜 목록 로깅 (DTO 변환 후)
+    List<LocalDate> returnedDates = content.stream()
+        .map(AttendListResponseDTO::getDate)
+        .collect(Collectors.toList());
+    log.debug("(학생) 반환될 데이터의 날짜 목록: {}", returnedDates);
+
+    // 6. 전체 페이지 수 계산 및 로깅
+    int totalPages = (int) Math.ceil((double) safeTotal / pageable.getPageSize());
+    log.info("(학생) 계산된 전체 페이지 수: {}", totalPages);
+
+    // 7. 페이지 객체 반환 (중요: total에 페이지네이션 전 전체 날짜 수 사용)
+    return new PageImpl<>(content, pageable, safeTotal);
   }
 
   /**
    * 관리자 출석 데이터 조회 (특정 날짜 기준)
    */
-  private Page<AttendListResponseDTO> findAdminAttendanceData(Long courseId, AllAttendancesRequestDTO dto, List<Period> periods, List<String> periodNames, Pageable pageable) {
+  private Page<AttendListResponseDTO> findAdminAttendanceData(Long courseId, AllAttendancesRequestDTO dto,
+      List<Period> periods, List<String> periodNames, Pageable pageable) {
+
+    log.debug("(관리자) courseId: {}, dto: {}, periods: {}, periodNames: {}", courseId, dto, periods, periodNames);
+
     BooleanBuilder predicate = buildAdminPredicate(courseId, dto);
 
+    Long totalCount = queryFactory
+        .select(attendance.memberId.countDistinct())
+        .from(attendance)
+        .where(predicate)
+        .fetchOne();
+
+    long safeTotal = totalCount != null ? totalCount : 0L;
+    log.info("(관리자) 페이지네이션 전 전체 학생 수: {}", safeTotal);
+
+    log.info("(관리자) 페이지 요청 정보: page={}, size={}, offset={}",
+        pageable.getPageNumber(), pageable.getPageSize(), pageable.getOffset());
+
+
+    // 1. 먼저 고유한 학생 ID를 페이지네이션하여 가져옵니다
+    List<Long> studentIds = queryFactory
+        .select(attendance.memberId)
+        .distinct()
+        .from(attendance)
+        .where(predicate)
+        .offset(pageable.getOffset())
+        .limit(pageable.getPageSize())
+        .fetch();
+
+    if (studentIds.isEmpty()) {
+      log.debug("(관리자) 조건에 맞는 데이터가 없습니다.");
+      return new PageImpl<>(Collections.emptyList(), pageable, 0);
+    }
+
+    // 디버그 로그 2: 페이지네이션 적용 후 선택된 학생 수
+    log.info("(관리자) 현재 페이지에 선택된 학생 수: {}", studentIds.size());
+    log.debug("(관리자) 선택된 학생 ID 목록: {}", studentIds);
+
+    // 2. 선택된 학생들의 출석 데이터를 조회합니다
+    BooleanExpression studentInList = attendance.memberId.in(studentIds);
     List<Tuple> tuples = queryFactory
         .select(
             member.id, member.name, course.name,
@@ -232,32 +311,33 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .from(attendance)
         .join(member).on(attendance.memberId.eq(member.id)).fetchJoin()
         .join(course).on(attendance.courseId.eq(course.id)).fetchJoin()
-        .where(predicate)
-        .offset(pageable.getOffset())
-        .limit(pageable.getPageSize())
+        .where(predicate.and(studentInList))
         .fetch();
 
-    log.info("관리자가 조회한 출석 데이터");
-    log.debug("조회된 데이터: {}", tuples);
+    // 디버그 로그 3: 조회된 원시 데이터(튜플) 개수
+    log.info("(관리자) 조회된 원시 데이터(튜플) 개수: {}", tuples.size());
 
     List<AttendListResponseDTO> content = mapTuplesToDTO(tuples, periods, periodNames, true);
 
-    // 데이터가 없어도 예외발생 하지 않도록 처리
-    if (content.isEmpty()) {
-      log.debug("조건에 맞는 데이터가 없습니다.");
-      return new PageImpl<>(Collections.emptyList(), pageable, 0);
-    }
+    // 디버그 로그 4: DTO 변환 후 실제 반환될 데이터 개수
+    log.info("(관리자) DTO 변환 후 실제 반환될 데이터 개수: {}", content.size());
 
-    Long total = queryFactory
-        .select(attendance.id.count())
-        .from(attendance)
-        //.join(member).on(attendance.memberId.eq(member.id)) // ✅ 카운트 쿼리에서도 join 추가
-        .where(predicate)
-        .fetchOne();
+    // 디버그 로그 5: 반환될 데이터의 학생 ID 목록 (중복 확인)
+    List<Long> returnedStudentIds = content.stream()
+        .map(AttendListResponseDTO::getStudentId)
+        .collect(Collectors.toList());
+    log.debug("(관리자) 반환될 데이터의 학생 ID 목록: {}", returnedStudentIds);
 
-    return new PageImpl<>(content, pageable, total != null ? total : 0);
+
+    // 디버그 로그 6: 계산된 전체 학생 수
+    log.info("(관리자) 계산된 전체 학생 수(total): {}", safeTotal);
+
+    // 디버그 로그 7: 전체 페이지 수 계산
+    int totalPages = (int) Math.ceil((double) safeTotal / pageable.getPageSize());
+    log.info("(관리자) 계산된 전체 페이지 수: {}", totalPages);
+
+    return new PageImpl<>(content, pageable, safeTotal);
   }
-
   /**
    * 학생용 BooleanBuilder 생성
    */
@@ -345,7 +425,18 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
       responseDTO.getStudents().put(periodName, status);
     }
 
-    return new ArrayList<>(attendanceMap.values());
+    List<AttendListResponseDTO> result = new ArrayList<>(attendanceMap.values());
+
+    // 관리자 뷰는 학생 이름순, 학생 뷰는 날짜순으로 정렬
+    if (isAdmin) {
+      result.sort(Comparator.comparing(AttendListResponseDTO::getStudentName));
+    } else {
+      result.sort(Comparator.comparing(AttendListResponseDTO::getDate).reversed()); // 최신 날짜 먼저
+    }
+
+    return result;
+
+
   }
 
 
@@ -483,11 +574,12 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
       Long courseId) {
     return queryFactory
         .select(new QAttendanceDailyStats(
-            Expressions.nullExpression(),
+            attendance.memberId,
             attendance.date,
             attendance.status.count().intValue(),
             attendance.status.when(AttendanceStatus.LATE).then(1).otherwise(0).sum(),
-            attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum()
+            attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum(),
+            attendance.status.when(AttendanceStatus.EARLY_LEAVE).then(1).otherwise(0).sum()
         ))
         .from(attendance)
         .where(attendance.memberId.eq(memberId)
@@ -505,7 +597,8 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
             attendance.date,
             attendance.status.count().intValue(),
             attendance.status.when(AttendanceStatus.LATE).then(1).otherwise(0).sum(),
-            attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum()
+            attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum(),
+            attendance.status.when(AttendanceStatus.EARLY_LEAVE).then(1).otherwise(0).sum()
         ))
         .from(attendance)
         .where(attendance.courseId.eq(courseId))
@@ -514,6 +607,42 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .fetch();
   }
 
+  @Override
+  public List<Tuple> findAttendanceStatusByStudentIdAndCourseIdAndDate(Long studentId, Long courseId,
+      LocalDate date) {
+    return queryFactory
+        .select(attendance.status, period.name, period.id)
+        .from(attendance)
+        .join(period).on(attendance.periodId.eq(period.id))
+        .where(
+            attendance.memberId.eq(studentId),
+            attendance.courseId.eq(courseId),
+            attendance.date.eq(date)
+        )
+        .orderBy(period.startTime.asc())
+        .fetch();
+  }
+
+  @Override
+  public List<AttendanceDailyStats> findAttendanceStatsByStudentIdAndCourseIdAndDates(Long memberId,
+      Long courseId, LocalDate startDate, LocalDate endDate) {
+    return queryFactory
+        .select(new QAttendanceDailyStats(
+            attendance.memberId,
+            attendance.date,
+            attendance.status.count().intValue(),
+            attendance.status.when(AttendanceStatus.LATE).then(1).otherwise(0).sum(),
+            attendance.status.when(AttendanceStatus.ABSENT).then(1).otherwise(0).sum(),
+            attendance.status.when(AttendanceStatus.EARLY_LEAVE).then(1).otherwise(0).sum()
+        ))
+        .from(attendance)
+        .where(attendance.memberId.eq(memberId)
+            .and(attendance.courseId.eq(courseId))
+            .and(attendance.date.between(startDate,endDate)))
+        .groupBy(attendance.memberId,attendance.date)
+        .orderBy(attendance.date.asc())
+        .fetch();
+  }
 
 
 }
