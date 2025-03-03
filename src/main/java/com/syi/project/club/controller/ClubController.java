@@ -203,9 +203,6 @@ public class ClubController {
 
         Long loggedInUserId = customUserDetails.getId();
 
-        log.info("수신된 클럽 업데이트 요청: clubId={}, 데이터={}", clubId, clubRequest);
-        log.info("수신된 파일 정보: {}", file != null ? file.getOriginalFilename() : "없음");
-
         ClubResponseDTO.ClubList clubResponse = clubService.updateClub(clubId, clubRequest, file, loggedInUserId);
         log.info("클럽 업데이트 성공: clubId={}", clubResponse.getClubId());
         return ResponseEntity.ok(clubResponse);
@@ -242,7 +239,6 @@ public class ClubController {
     @GetMapping("/course/{courseId}")
     public ResponseEntity<CourseResponseDTO.CourseDetailDTO> getCourseById(
         @Parameter(description = "상세 조회할 교육과정의 ID", required = true) @PathVariable Long courseId) {
-        log.info("Request to get course with ID: {}", courseId);
         CourseResponseDTO.CourseDetailDTO courseDetail = courseService.getCourseById(courseId);
         log.info("get course with ID: {} successfully", courseDetail.getCourse().getId());
         return ResponseEntity.ok(courseDetail);
