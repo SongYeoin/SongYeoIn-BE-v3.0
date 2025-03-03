@@ -122,8 +122,10 @@ public class AttendanceCalculator {
     }
 
     log.debug("최종 전체 실제 출석일 수: {}", totalAttendanceDays);
+    double realValidDaysSize = (double) validDays.size() - 1;
+    log.debug("(double) validDays.size()) - 1: {}",realValidDaysSize);
 
-    return roundToTwoDecimalPlaces((totalAttendanceDays / ((double) validDays.size()) - 1) * 100);
+    return roundToTwoDecimalPlaces((totalAttendanceDays / realValidDaysSize) * 100);
   }
 
   /**
