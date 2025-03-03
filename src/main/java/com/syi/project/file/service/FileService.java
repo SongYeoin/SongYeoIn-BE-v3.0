@@ -246,18 +246,18 @@ public class FileService {
           inputStream.close();
         } catch (AmazonS3Exception e) {
           log.error("저장소에서 파일을 찾을 수 없음 - fileId: {}, path: {}", file.getId(), file.getPath());
-          throw new InvalidRequestException(ErrorCode.JOURNAL_FILE_NOT_FOUND);
+          throw new InvalidRequestException(ErrorCode.FILE_NOT_IN_STORAGE);
         }
       }
 
       zos.close();
       return new ByteArrayResource(baos.toByteArray());
     } catch (InvalidRequestException e) {
-      // JOURNAL_FILE_NOT_FOUND 에러 그대로 전달
+      // File 관련 에러 그대로 전달
       throw e;
     } catch (IOException e) {
       log.error("파일 압축 실패: {}", e.getMessage());
-      throw new InvalidRequestException(ErrorCode.JOURNAL_DOWNLOAD_FAILED);
+      throw new InvalidRequestException(ErrorCode.FILE_DOWNLOAD_FAILED);
     }
   }
 

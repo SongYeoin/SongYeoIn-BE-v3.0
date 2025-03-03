@@ -112,7 +112,8 @@ public class JournalService {
       fileService.deleteFile(existingJournalFile.getFile().getId(), member);
     }
 
-    File savedFile = fileService.uploadFile(newFile, "journals", member, journal.getEducationDate());
+    // LocalDateTime을 LocalDate로 변환
+    File savedFile = fileService.uploadFile(newFile, "journals", member, journal.getCreatedAt().toLocalDate());
 
     if (existingJournalFile != null) {
       existingJournalFile.updateFile(savedFile);
@@ -200,9 +201,12 @@ public class JournalService {
         .educationDate(requestDTO.getEducationDate())
         .build();
 
-    updateJournalFile(journal, requestDTO.getFile(), member);
-
+    // 먼저 저장하여 createdAt이 설정되게 함
     Journal savedJournal = journalRepository.save(journal);
+
+    // 이제 createdAt이 설정된 상태에서 파일 처리
+    updateJournalFile(savedJournal, requestDTO.getFile(), member);
+
     log.info("교육일지 등록 완료 - journalId: {}", savedJournal.getId());
 
     return JournalResponseDTO.from(savedJournal, s3Uploader);
