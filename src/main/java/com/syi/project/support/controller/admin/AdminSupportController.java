@@ -40,8 +40,7 @@ public class AdminSupportController {
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @Parameter(description = "문의 요청 데이터", required = true) @Valid @RequestBody SupportRequestDTO requestDTO) {
     Long memberId = userDetails.getId();
-    log.info("관리자 문의 등록 요청 - memberId: {}", memberId);
-    log.info("관리자 문의 등록 요청 - Request DTO: {}", requestDTO);
+    log.info("관리자 문의 등록 - memberId: {}", memberId);
     SupportResponseDTO support = supportService.createSupport(memberId, requestDTO);
     return ResponseEntity.ok(support);
   }
@@ -57,7 +56,7 @@ public class AdminSupportController {
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @PageableDefault(size = 20) Pageable pageable,
       @RequestParam(required = false) String keyword) {
-    log.info("전체 문의 목록 조회 요청 - memberId: {}, pageable: {}, keyword: {}", userDetails.getId(), pageable, keyword);
+    log.info("전체 문의 목록 조회 - memberId: {}", userDetails.getId());
     Page<SupportResponseDTO> supports = supportService.getAllSupports(pageable, keyword);
     return ResponseEntity.ok(supports);
   }
@@ -74,7 +73,7 @@ public class AdminSupportController {
       @Parameter(description = "문의 ID", required = true) @PathVariable Long id,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     Long memberId = userDetails.getId();
-    log.info("문의 상세 조회 요청 - id: {}, memberId: {}", id, memberId);
+    log.info("문의 상세 조회 - id: {}", id);
     SupportResponseDTO support = supportService.getSupportDetail(id, memberId);
     return ResponseEntity.ok(support);
   }
@@ -91,7 +90,7 @@ public class AdminSupportController {
       @Parameter(description = "문의 ID", required = true) @PathVariable Long id,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     Long memberId = userDetails.getId();
-    log.info("문의 확인 처리 요청 - id: {}, memberId: {}", id, memberId);
+    log.info("문의 확인 처리 - id: {}", id);
     SupportResponseDTO support = supportService.confirmSupport(id, memberId);
     return ResponseEntity.ok(support);
   }
@@ -108,7 +107,7 @@ public class AdminSupportController {
       @Parameter(description = "문의 ID", required = true) @PathVariable Long id,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     Long memberId = userDetails.getId();
-    log.info("문의 확인 취소 처리 요청 - id: {}, memberId: {}", id, memberId);
+    log.info("문의 확인 취소 처리 - id: {}", id);
     SupportResponseDTO support = supportService.unconfirmSupport(id, memberId);
     return ResponseEntity.ok(support);
   }
@@ -125,7 +124,7 @@ public class AdminSupportController {
       @Parameter(description = "문의 ID", required = true) @PathVariable Long id,
       @AuthenticationPrincipal CustomUserDetails userDetails) {
     Long memberId = userDetails.getId();
-    log.info("관리자 문의 삭제 요청 - id: {}, memberId: {}", id, memberId);
+    log.info("관리자 문의 삭제 - id: {}", id);
     supportService.deleteSupport(id, memberId);
     return ResponseEntity.noContent().build();
   }

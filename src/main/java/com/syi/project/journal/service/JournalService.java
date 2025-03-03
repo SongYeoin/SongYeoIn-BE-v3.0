@@ -110,11 +110,9 @@ public class JournalService {
 
     if (existingJournalFile != null) {
       fileService.deleteFile(existingJournalFile.getFile().getId(), member);
-      log.info("기존 파일 삭제 완료 - fileId: {}", existingJournalFile.getFile().getId());
     }
 
     File savedFile = fileService.uploadFile(newFile, "journals", member, journal.getEducationDate());
-    log.info("새 파일 업로드 완료 - fileName: {}", savedFile.getOriginalName());
 
     if (existingJournalFile != null) {
       existingJournalFile.updateFile(savedFile);
@@ -134,7 +132,6 @@ public class JournalService {
       LocalDate endDate,
       Criteria criteria
   ) {
-    log.debug("수강생 교육일지 검색 시작 - memberId: {}, courseId: {}, criteria: {}", memberId, courseId, criteria);
 
     validateSearchCriteria(startDate, endDate, criteria.getPageNum());
     validateEnrollment(memberId, courseId);
@@ -146,8 +143,6 @@ public class JournalService {
         endDate,
         PageRequest.of(criteria.getPageNum() - 1, criteria.getAmount())
     );
-
-    log.info("수강생 교육일지 검색 완료 - 총 {}건 검색됨", journals.getTotalElements());
 
     return journals.map(journal -> JournalResponseDTO.from(journal, s3Uploader));
   }
@@ -161,8 +156,6 @@ public class JournalService {
       LocalDate endDate,
       Criteria criteria
   ) {
-    log.debug("관리자 교육일지 검색 시작 - courseId: {}, searchType: {}, keyword: {}, criteria: {}",
-        courseId, searchType, searchKeyword, criteria);
 
     validateSearchCriteria(startDate, endDate, criteria.getPageNum());
 
@@ -175,15 +168,12 @@ public class JournalService {
         PageRequest.of(criteria.getPageNum() - 1, criteria.getAmount())
     );
 
-    log.info("관리자 교육일지 검색 완료 - 총 {}건 검색됨", journals.getTotalElements());
-
     return journals.map(journal -> JournalResponseDTO.from(journal, s3Uploader));
   }
 
   // 수정: 검증 로직 개선
   @Transactional
   public JournalResponseDTO createJournal(Long memberId, JournalRequestDTO.Create requestDTO) {
-    log.debug("교육일지 등록 처리 시작 - memberId: {}, courseId: {}", memberId, requestDTO.getCourseId());
 
     Member member = validateAndGetMember(memberId);
     validateMemberRole(member);
@@ -220,20 +210,17 @@ public class JournalService {
 
   // 수정: 검증 로직 개선
   public JournalResponseDTO getJournal(Long journalId, Long memberId) {
-    log.debug("교육일지 상세 조회 시작 - journalId: {}, memberId: {}", journalId, memberId);
 
     Member member = validateAndGetMember(memberId);
     Journal journal = validateAndGetJournal(journalId);
     validateAccess(journal, member);
 
-    log.info("교육일지 상세 조회 완료 - journalId: {}, 제목: {}", journalId, journal.getTitle());
     return JournalResponseDTO.from(journal, s3Uploader);
   }
 
   // 수정: 검증 및 파일 처리 로직 개선
   @Transactional
   public JournalResponseDTO updateJournal(Long memberId, Long journalId, JournalRequestDTO.Update requestDTO) {
-    log.debug("교육일지 수정 시작 - journalId: {}, memberId: {}", journalId, memberId);
 
     Member member = validateAndGetMember(memberId);
     Journal journal = validateAndGetJournalWithMember(journalId, memberId);
@@ -261,14 +248,12 @@ public class JournalService {
   // 수정: 검증 로직 개선
   @Transactional
   public void deleteJournal(Long memberId, Long journalId) {
-    log.debug("교육일지 삭제 시작 - journalId: {}, memberId: {}", journalId, memberId);
 
     Member member = validateAndGetMember(memberId);
     Journal journal = validateAndGetJournalWithMember(journalId, memberId);
 
     if (journal.getJournalFile() != null) {
       fileService.deleteFile(journal.getJournalFile().getFile().getId(), member);
-      log.info("교육일지 첨부파일 삭제 완료 - fileId: {}", journal.getJournalFile().getFile().getId());
     }
 
     journalRepository.delete(journal);
@@ -277,38 +262,30 @@ public class JournalService {
 
   // 기존 메서드 유지
   private void validateSearchCriteria(LocalDate startDate, LocalDate endDate, int pageNum) {
-    log.debug("날짜 및 페이징 조건 유효성 검증 시작 - startDate: {}, endDate: {}, pageNum: {}",
-        startDate, endDate, pageNum);
 
     if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-      log.error("잘못된 날짜 범위 - startDate: {}, endDate: {}", startDate, endDate);
+      log.warn("잘못된 날짜 범위 - startDate: {}, endDate: {}", startDate, endDate);
       throw new IllegalArgumentException("시작일이 종료일보다 늦을 수 없습니다.");
     }
 
     if (pageNum <= 0) {
-      log.error("잘못된 페이지 번호 - pageNum: {}", pageNum);
+      log.warn("잘못된 페이지 번호 - pageNum: {}", pageNum);
       throw new IllegalArgumentException("페이지 번호는 1 이상이어야 합니다.");
     }
-
-    log.debug("날짜 및 페이징 조건 유효성 검증 완료");
   }
 
   // 수강생 교육과정
   private void validateEnrollment(Long memberId, Long courseId) {
-    log.debug("수강생-교육과정 매칭 검증 시작 - memberId: {}, courseId: {}", memberId, courseId);
 
     boolean isEnrolled = enrollRepository.existsByMemberIdAndCourseId(memberId, courseId);
     if (!isEnrolled) {
       log.error("수강생-교육과정 매칭 실패 - memberId: {}, courseId: {}", memberId, courseId);
       throw new IllegalArgumentException("해당 과정의 수강생이 아닙니다.");
     }
-
-    log.debug("수강생-교육과정 매칭 검증 완료");
   }
 
   // 관리자 교육과정 조회
   public List<JournalCourseResponseDTO> getActiveCourses(Long adminId) {
-    log.debug("관리자의 활성화된 교육과정 목록 조회 시작 - adminId: {}", adminId);
 
     return courseService.getAllCoursesByAdminId(adminId).stream()
         .map(courseListDTO -> JournalCourseResponseDTO.builder()
@@ -320,7 +297,6 @@ public class JournalService {
 
   // 파일 다운로드
   public ResponseEntity<Resource> downloadJournalFile(Long journalId, Long memberId) {
-    log.debug("교육일지 파일 다운로드 시작 - journalId: {}", journalId);
 
     Member member = validateAndGetMember(memberId);
 
