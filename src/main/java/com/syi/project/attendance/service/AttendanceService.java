@@ -58,8 +58,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -342,8 +340,7 @@ public class AttendanceService {
       HttpServletRequest request) {
     log.info("출석 체크 시도 (입실/퇴실/조퇴 여부: {})", attendanceType); /* ENTER면 입실, EARLY_EXIT면 조퇴, EXIT면 퇴실 */
 
-    LocalDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toInstant()
-        .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+    LocalDateTime now = LocalDateTime.now();
 
     int year = now.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
 
