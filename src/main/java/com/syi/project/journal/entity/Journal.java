@@ -35,7 +35,6 @@ public class Journal extends BaseTimeEntity {
   private String content;
 
   @OneToOne(mappedBy = "journal", cascade = CascadeType.ALL, orphanRemoval = true)
-  @NotNull(message = "교육일지에는 파일 첨부가 필수입니다")
   private JournalFile journalFile;
 
   @Column(nullable = false)

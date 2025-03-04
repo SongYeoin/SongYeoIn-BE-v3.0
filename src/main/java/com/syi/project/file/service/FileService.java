@@ -184,6 +184,7 @@ public class FileService {
     try {
       s3Uploader.deleteFile(file.getPath());
       file.delete(member); // Member 객체 전달, status를 DELETED로 변경
+      fileRepository.save(file); // 이 라인 추가: 변경된 상태를 DB에 저장
     } catch (Exception e) {
       log.error("파일 삭제 실패: {}", e.getMessage());
       throw new RuntimeException("파일 삭제에 실패했습니다.", e);
@@ -216,8 +217,18 @@ public class FileService {
   }
 
   // 일괄 다운로드 zip파일
+  // 기존 메서드 대체 (하위호환을 위해 유지)
   @Transactional(readOnly = true)
   public Resource downloadFilesAsZip(List<File> files, String zipFileName) {
+    // 기본 파일명 생성 로직 (파일 ID 추가)
+    return downloadFilesAsZip(files, zipFileName,
+        file -> file.getId() + "_" + file.getOriginalName());
+  }
+
+  // 새로운 오버로드 메서드 추가
+  @Transactional(readOnly = true)
+  public Resource downloadFilesAsZip(List<File> files, String zipFileName,
+      java.util.function.Function<File, String> fileNameGenerator) {
     try {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       ZipOutputStream zos = new ZipOutputStream(baos);
@@ -225,25 +236,29 @@ public class FileService {
       for (File file : files) {
         try {
           InputStream inputStream = s3Uploader.downloadFile(file.getPath());
-          ZipEntry entry = new ZipEntry(file.getOriginalName());
+
+          // 파일명 생성 로직을 외부에서 주입받음
+          String entryName = fileNameGenerator.apply(file);
+
+          ZipEntry entry = new ZipEntry(entryName);
           zos.putNextEntry(entry);
           IOUtils.copy(inputStream, zos);
           zos.closeEntry();
           inputStream.close();
         } catch (AmazonS3Exception e) {
           log.error("저장소에서 파일을 찾을 수 없음 - fileId: {}, path: {}", file.getId(), file.getPath());
-          throw new InvalidRequestException(ErrorCode.JOURNAL_FILE_NOT_FOUND);
+          throw new InvalidRequestException(ErrorCode.FILE_NOT_IN_STORAGE);
         }
       }
 
       zos.close();
       return new ByteArrayResource(baos.toByteArray());
     } catch (InvalidRequestException e) {
-      // JOURNAL_FILE_NOT_FOUND 에러 그대로 전달
+      // File 관련 에러 그대로 전달
       throw e;
     } catch (IOException e) {
       log.error("파일 압축 실패: {}", e.getMessage());
-      throw new InvalidRequestException(ErrorCode.JOURNAL_DOWNLOAD_FAILED);
+      throw new InvalidRequestException(ErrorCode.FILE_DOWNLOAD_FAILED);
     }
   }
 

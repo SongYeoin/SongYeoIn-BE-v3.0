@@ -29,33 +29,25 @@ public class SupportService {
   // 문의 생성
   @Transactional
   public SupportResponseDTO createSupport(Long memberId, SupportRequestDTO requestDTO) {
-    log.info("문의 생성 시작 - memberId: {}", memberId);
-
     Member member = getMember(memberId);
     Support support = requestDTO.toEntity(member);
     supportRepository.save(support);
 
-    log.info("문의 저장 완료 - id: {}", support.getId());
+    log.info("문의 저장 - id: {}", support.getId());
     return SupportResponseDTO.fromEntity(support);
   }
 
   // 문의 목록 조회 (학생용 - 자신의 문의만)
   public Page<SupportResponseDTO> getMySupports(Long memberId, Pageable pageable, String keyword) {
-    log.info("내 문의 목록 조회 시작 - memberId: {}, keyword: {}", memberId, keyword);
-
     // 새로운 QueryDSL 기반 repository 메서드 사용
     Page<Support> supports = supportRepository.searchSupports(memberId, keyword, pageable);
-
     return supports.map(SupportResponseDTO::fromEntity);
   }
 
   // 문의 목록 조회 (관리자용 - 전체)
   public Page<SupportResponseDTO> getAllSupports(Pageable pageable, String keyword) {
-    log.info("전체 문의 목록 조회 시작 - keyword: {}", keyword);
-
     // 관리자는 memberId를 null로 전달하여 모든 문의 조회
     Page<Support> supports = supportRepository.searchSupports(null, keyword, pageable);
-
     return supports.map(SupportResponseDTO::fromEntity);
   }
 
@@ -70,11 +62,9 @@ public class SupportService {
 
   // 문의 상세 조회
   public SupportResponseDTO getSupportDetail(Long id, Long memberId) {
-    log.info("문의 상세 조회 시작 - id: {}, memberId: {}", id, memberId);
-
     Support support = supportRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
-          log.error("문의를 찾을 수 없습니다 - id: {}", id);
+          log.error("문의를 찾을 수 없음 - id: {}", id);
           return new InvalidRequestException(ErrorCode.SUPPORT_NOT_FOUND);
         });
 
@@ -82,7 +72,7 @@ public class SupportService {
 
     // 관리자가 아니고 작성자도 아닌 경우 접근 불가
     if (!member.getRole().name().equals("ADMIN") && !support.getMember().getId().equals(memberId)) {
-      log.error("문의 조회 권한이 없습니다 - id: {}, memberId: {}", id, memberId);
+      log.error("문의 조회 권한 없음 - id: {}", id);
       throw new InvalidRequestException(ErrorCode.SUPPORT_ACCESS_DENIED);
     }
 
@@ -92,11 +82,9 @@ public class SupportService {
   // 문의 확인 처리 (관리자용)
   @Transactional
   public SupportResponseDTO confirmSupport(Long id, Long memberId) {
-    log.info("문의 확인 처리 시작 - id: {}, memberId: {}", id, memberId);
-
     Support support = supportRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
-          log.error("문의를 찾을 수 없습니다 - id: {}", id);
+          log.error("문의를 찾을 수 없음 - id: {}", id);
           return new InvalidRequestException(ErrorCode.SUPPORT_NOT_FOUND);
         });
 
@@ -109,16 +97,14 @@ public class SupportService {
   // 문의 확인 처리 취소 (관리자용)
   @Transactional
   public SupportResponseDTO unconfirmSupport(Long id, Long memberId) {
-    log.info("문의 확인 취소 처리 시작 - id: {}, memberId: {}", id, memberId);
-
     Support support = supportRepository.findByIdAndDeletedByIsNull(id)
         .orElseThrow(() -> {
-          log.error("문의를 찾을 수 없습니다 - id: {}", id);
+          log.error("문의를 찾을 수 없음 - id: {}", id);
           return new InvalidRequestException(ErrorCode.SUPPORT_NOT_FOUND);
         });
 
     support.unconfirm();
-    log.info("문의 확인 취소 처리 완료 - id: {}", id);
+    log.info("문의 확인 취소 완료 - id: {}", id);
 
     return SupportResponseDTO.fromEntity(support);
   }
@@ -126,11 +112,9 @@ public class SupportService {
   // 문의 삭제
   @Transactional
   public void deleteSupport(Long id, Long memberId) {
-    log.info("문의 삭제 시작 - id: {}, memberId: {}", id, memberId);
-
     Support support = supportRepository.findByIdAndMemberIdAndDeletedByIsNull(id, memberId)
         .orElseThrow(() -> {
-          log.error("문의 삭제 권한이 없습니다 - id: {}, memberId: {}", id, memberId);
+          log.error("문의 삭제 권한 없음 - id: {}", id);
           return new InvalidRequestException(ErrorCode.SUPPORT_DELETE_DENIED);
         });
 
@@ -142,7 +126,7 @@ public class SupportService {
   private Member getMember(Long memberId) {
     return memberRepository.findByIdAndDeletedByIsNull(memberId)
         .orElseThrow(() -> {
-          log.error("사용자를 찾을 수 없습니다 - memberId: {}", memberId);
+          log.error("사용자를 찾을 수 없음 - memberId: {}", memberId);
           return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
         });
   }
