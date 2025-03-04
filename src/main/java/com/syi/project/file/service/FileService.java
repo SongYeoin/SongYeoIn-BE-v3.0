@@ -184,6 +184,7 @@ public class FileService {
     try {
       s3Uploader.deleteFile(file.getPath());
       file.delete(member); // Member 객체 전달, status를 DELETED로 변경
+      fileRepository.save(file); // 이 라인 추가: 변경된 상태를 DB에 저장
     } catch (Exception e) {
       log.error("파일 삭제 실패: {}", e.getMessage());
       throw new RuntimeException("파일 삭제에 실패했습니다.", e);
