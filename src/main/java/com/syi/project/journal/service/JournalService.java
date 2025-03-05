@@ -390,6 +390,39 @@ public class JournalService {
     }
   }
 
+  // 파일이 S3에 존재하지 않는 것이 있는지 확인하는 메소드
+  public boolean checkHasMissingFiles(List<Long> journalIds, Long memberId) {
+    Member member = validateAndGetMember(memberId);
+    if (member.getRole() != Role.ADMIN) {
+      throw new InvalidRequestException(ErrorCode.ACCESS_DENIED);
+    }
+
+    List<Journal> journals = journalRepository.findAllByIdsWithFiles(journalIds);
+
+    // 파일이 없는 교육일지 필터링
+    List<Journal> validJournals = journals.stream()
+        .filter(j -> j.getJournalFile() != null && j.getJournalFile().getFile() != null)
+        .collect(Collectors.toList());
+
+    if (validJournals.isEmpty()) {
+      return true; // 모든 파일이 누락됨
+    }
+
+    // S3에 실제로 존재하지 않는 파일이 있는지 확인
+    for (Journal journal : validJournals) {
+      File file = journal.getJournalFile().getFile();
+      try {
+        InputStream is = s3Uploader.downloadFile(file.getPath());
+        is.close();
+      } catch (Exception e) {
+        // 하나라도 예외가 발생하면 누락된 파일이 있는 것
+        return true;
+      }
+    }
+
+    return false; // 모든 파일이 유효함
+  }
+
   private void validateEducationDate(LocalDate educationDate, Course course, Member member) {
     // 미래 날짜 검증
     if (educationDate.isAfter(LocalDate.now())) {
