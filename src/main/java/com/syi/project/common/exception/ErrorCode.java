@@ -71,6 +71,7 @@ public enum ErrorCode {
   JOURNAL_INVALID_FILE_TYPE("JOURNAL_008", "교육일지는 hwp, hwpx, doc, docx 형식만 첨부 가능합니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_FILE_NOT_FOUND("JOURNAL_009", "선택된 교육일지 중 파일이 없는 항목이 있습니다.", HttpStatus.BAD_REQUEST),
   JOURNAL_DOWNLOAD_FAILED("JOURNAL_010", "교육일지 일괄 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+  JOURNAL_NO_FILES_TO_DOWNLOAD("JOURNAL_011", "다운로드할 파일이 없습니다.", HttpStatus.BAD_REQUEST),
 
   // 출석 관련 에러
   // 공통
