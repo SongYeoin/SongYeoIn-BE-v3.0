@@ -16,6 +16,6 @@ public interface CourseRepository extends JpaRepository<Course, Long>, CourseRep
   /**
    * 활성 상태인 모든 수업을 조회합니다.
    */
-  @Query("SELECT c FROM Course c WHERE c.status = 'ACTIVE'")
+  @Query("SELECT c FROM Course c WHERE c.status = 'Y'")
   List<Course> findAllActiveCourses();
 }
