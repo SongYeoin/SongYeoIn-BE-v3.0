@@ -15,12 +15,4 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long>,At
 
   boolean existsByMemberIdAndDateAndEnterTimeNotNull(Long id, LocalDate localDate);
 
-  /**
-   * 특정 학생, 날짜, 교시에 대한 출석 기록을 조회합니다.
-   */
-  @Query("SELECT a FROM Attendance a WHERE a.memberId = :memberId AND a.date = :date AND a.periodId = :periodId")
-  Optional<Attendance> findByMemberIdAndDateAndPeriodId(
-      @Param("memberId") Long memberId,
-      @Param("date") LocalDate date,
-      @Param("periodId") Long periodId);
 }

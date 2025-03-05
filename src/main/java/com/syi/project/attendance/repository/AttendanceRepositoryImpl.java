@@ -644,5 +644,21 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .fetch();
   }
 
+  /**
+   * 특정 학생, 날짜, 교시에 대한 출석 기록을 조회합니다.
+   */
+  @Override
+  public Optional<Attendance> findByMemberIdAndDateAndPeriodId(Long studentId, LocalDate today,
+      Long periodId) {
+    return Optional.ofNullable(
+        queryFactory.selectFrom(attendance)
+            .where(attendance.memberId.eq(studentId)
+                .and(attendance.date.eq(today))
+                .and(attendance.periodId.eq(periodId)))
+            .select(attendance)
+            .fetchOne()
+    );
+  }
+
 
 }

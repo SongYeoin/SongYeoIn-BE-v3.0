@@ -41,4 +41,6 @@ public interface AttendanceRepositoryCustom {
   List<Tuple> findAttendanceStatusByStudentIdAndCourseIdAndDate(Long id, Long courseId, LocalDate date);
 
   List<AttendanceDailyStats> findAttendanceStatsByStudentIdAndCourseIdAndDates(Long id, Long courseId, LocalDate startDate, LocalDate endDate);
+
+  Optional<Attendance> findByMemberIdAndDateAndPeriodId(Long studentId, LocalDate today, Long id);
 }
