@@ -126,4 +126,20 @@ public class AdminJournalController {
   ) {
     return journalService.downloadJournalsAsZip(journalIds, userDetails.getId());
   }
+
+  // 파일이 S3에 존재하지 않는 것이 있는지 확인
+  @PostMapping("/check-missing-files")
+  public ResponseEntity<Map<String, Boolean>> checkMissingFiles(
+      @RequestBody List<Long> journalIds,
+      @AuthenticationPrincipal CustomUserDetails userDetails
+  ) {
+    log.info("[관리자] 교육일지 파일 존재 확인 - journalIds: {}", journalIds);
+
+    boolean hasMissingFiles = journalService.checkHasMissingFiles(journalIds, userDetails.getId());
+
+    Map<String, Boolean> response = new HashMap<>();
+    response.put("hasMissingFiles", hasMissingFiles);
+
+    return ResponseEntity.ok(response);
+  }
 }
