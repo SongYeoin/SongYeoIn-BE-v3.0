@@ -44,6 +44,17 @@ public class AttendanceCalculator {
     List<Map<String, Object>> segments = calculateTwentyDaySegments(validDays);
     //log.debug("20일 단위 차수: {}", segments);
 
+    // dailyStats가 비어있는지 확인 추가
+    if (dailyStats == null || dailyStats.isEmpty()) {
+      log.warn("dailyStats가 비어 있습니다. 기본값으로 출석률 정보를 반환합니다.");
+      return Map.of(
+          "validAttendanceDays", validDays.size(),  // 유효일 수
+          "overallAttendanceRate", 0.0, //  전체 출석률 기본값
+          "twentyDayRate", 0.0, // 현재 진행 중인 차수의 출석률 기본값
+          "twentyDayRates", new ArrayList<>()  // 빈 리스트
+      );
+    }
+
     dailyStats.sort(Comparator.comparing(AttendanceDailyStats::getDate)); // 날짜순으로 정렬
 
     // 전체 출석률 계산
@@ -53,9 +64,20 @@ public class AttendanceCalculator {
     List<Map<String, Object>> twentyDayRateDetails = calculateTwentyDayAttendanceRates(dailyStats, segments);
 
     // 현재 진행 중인 20일 단위 출석률 가져오기
-    Map<String, Object> twentyDayRateDetail = twentyDayRateDetails.get(
-        twentyDayRateDetails.size() - 1); // 현재 진행중인 회차 MAP
-    double currentTwentyDayRate = (double) twentyDayRateDetail.get("twentyDayRate");
+    double currentTwentyDayRate = 0.0; // 기본값으로 0.0 설정
+    if (!twentyDayRateDetails.isEmpty()) {
+      Map<String, Object> twentyDayRateDetail = twentyDayRateDetails.get(
+          twentyDayRateDetails.size() - 1); // 현재 진행중인 회차 MAP
+
+      // twentyDayRate가 null인지 확인
+      if (twentyDayRateDetail.containsKey("twentyDayRate")) {
+        currentTwentyDayRate = (double) twentyDayRateDetail.get("twentyDayRate");
+      } else {
+        log.warn("twentyDayRateDetail에 twentyDayRate 키가 없습니다.");
+      }
+    } else {
+      log.warn("twentyDayRateDetails가 비어 있습니다. 기본값(0.0)을 사용합니다.");
+    }
 
     log.info("(최종)출석 가능일 수: {}, 전체 출석률: {}, 20일 단위 출석률 리스트: {}, 해당 20일 단위 출석률: {}",
         validDays.size(), overallAttendanceRate, twentyDayRateDetails, currentTwentyDayRate);
@@ -147,6 +169,12 @@ public class AttendanceCalculator {
     int currentSegmentAttendance = 0;
     int currentSegmentIncidents = 0;
 
+    // dailyStats가 비어있는지 추가 확인
+    if (dailyStats == null || dailyStats.isEmpty()) {
+      log.warn("dailyStats가 비어 있어서 빈 리스트를 반환합니다.");
+      return twentyDayRateDetails;
+    }
+
     // dailyStats에서 마지막 날짜 찾기
     LocalDate lastRecordedDate = dailyStats.stream()
         .map(AttendanceDailyStats::getDate)
@@ -156,6 +184,12 @@ public class AttendanceCalculator {
     if (lastRecordedDate == null) {
       log.warn("dailyStats에 데이터가 없어서 빈 리스트를 반환합니다.");
       return twentyDayRateDetails; // 데이터가 없으면 빈 리스트 반환
+    }
+
+    // segments가 비어있는지 확인
+    if (segments == null || segments.isEmpty()) {
+      log.warn("segments가 비어 있어서 빈 리스트를 반환합니다.");
+      return twentyDayRateDetails;
     }
 
     // 마지막 날짜가 포함된 세그먼트 찾기
