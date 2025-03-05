@@ -486,6 +486,7 @@ public class ClubService {
 
         // 다운로드할 파일 목록 생성
         List<File> files = new ArrayList<>();
+        List<String> names = new ArrayList<>();
         for (Club club : clubs) {
             // 클럽 파일 존재 여부 확인
             if (club.getClubFile() == null || club.getClubFile().getFile() == null || club.getClubFile().getFile().getId() == null) {
@@ -497,6 +498,7 @@ public class ClubService {
             try {
                 validateMemberClubAccess(member, club);
                 files.add(club.getClubFile().getFile());
+                names.add(club.getClubName());
             } catch (AccessDeniedException e) {
                 log.warn("일부 클럽 파일 접근 권한 없음 - memberId: {}, clubId: {}", member.getId(), club.getId());
                 // 권한이 없는 클럽은 건너뜀
@@ -509,10 +511,16 @@ public class ClubService {
         }
 
         // zip 파일명 생성 (현재 시간 포함)
-        String zipFileName = "club_files_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".zip";
+        //String zipFileName = "club_files_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".zip";
+        String zipFileName = "동아리일지_일괄다운로드.zip";
 
         // 파일 서비스를 통해 zip 파일 생성
-        Resource zipResource = fileService.downloadFilesAsZip(files, zipFileName);
+        Resource zipResource = fileService.downloadFilesAsZip(files, zipFileName,
+          file -> {
+              int index = files.indexOf(file);
+              return file.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" +
+                names.get(index) + "_" + file.getOriginalName();
+          });
 
         // 응답 생성
         return ResponseEntity.ok()
