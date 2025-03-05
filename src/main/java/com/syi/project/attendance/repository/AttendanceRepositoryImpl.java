@@ -371,7 +371,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
       predicate.and(attendance.date.eq(dto.getDate()));
     }
     if (!TextUtils.isBlank(dto.getStudentName())) {
-      predicate.and(member.name.eq(dto.getStudentName()));
+      predicate.and(member.name.contains(dto.getStudentName()));
     }
     if (dto.getAttendanceStatus() != null) {
       predicate.and(attendance.status.eq(dto.getAttendanceStatus()));
