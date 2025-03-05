@@ -247,7 +247,7 @@ public class FileService {
           inputStream.close();
         } catch (AmazonS3Exception e) {
           log.error("저장소에서 파일을 찾을 수 없음 - fileId: {}, path: {}", file.getId(), file.getPath());
-          throw new InvalidRequestException(ErrorCode.FILE_NOT_IN_STORAGE);
+          throw new InvalidRequestException(ErrorCode.FILE_NOT_IN_STORAGE_BATCH);
         }
       }
 

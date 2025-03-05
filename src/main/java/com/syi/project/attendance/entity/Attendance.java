@@ -84,8 +84,9 @@ public class Attendance {
     this.courseId = courseId;
     this.memberId = memberId;
     this.memo = memo;
-    this.enterTime = enterTime != null ? enterTime : LocalDateTime.now();
-    this.exitTime = exitTime != null ? exitTime : LocalDateTime.now();
+    this.enterTime = enterTime;
+
+    this.exitTime = exitTime;
   }
 
   public void updateStatus(AttendanceStatus status){

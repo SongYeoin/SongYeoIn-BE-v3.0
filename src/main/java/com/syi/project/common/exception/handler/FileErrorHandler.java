@@ -34,7 +34,7 @@ public class FileErrorHandler {
   public void handleS3DownloadError(AmazonS3Exception e, Long fileId, String path) {
     if ("NoSuchKey".equals(e.getErrorCode())) {
       log.error("S3에서 파일을 찾을 수 없음 - fileId: {}, path: {}", fileId, path);
-      throw new InvalidRequestException(ErrorCode.FILE_NOT_IN_STORAGE);
+      throw new InvalidRequestException(ErrorCode.FILE_NOT_IN_STORAGE_SINGLE);
     }
     log.error("S3 파일 다운로드 실패 - fileId: {}, error: {}", fileId, e.getMessage());
     throw new InvalidRequestException(ErrorCode.FILE_DOWNLOAD_FAILED);

@@ -43,9 +43,11 @@ public enum ErrorCode {
   FILE_NOT_FOUND("FILE_005", "파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   FILE_ACCESS_DENIED("FILE_006", "파일에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
   FILE_DOWNLOAD_FAILED("FILE_007", "파일 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
-  FILE_NOT_IN_STORAGE("FILE_008", "저장소에서 파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  FILE_NOT_IN_STORAGE_SINGLE("FILE_008", "요청하신 파일을 저장소에서 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  FILE_NOT_IN_STORAGE_BATCH("FILE_011", "선택한 항목 중 저장소에서 찾을 수 없는 파일이 있습니다.", HttpStatus.NOT_FOUND),
   FILE_INVALID_STATE("FILE_009", "파일이 유효하지 않은 상태입니다.", HttpStatus.BAD_REQUEST),
   FILE_COUNT_EXCEEDED("FILE_010", "파일 개수 초과", HttpStatus.BAD_REQUEST),
+
 
   // 유효성 검증 관련 에러
   VALIDATION_FAILED("COMMON_001", "입력값이 유효하지 않습니다.", HttpStatus.BAD_REQUEST),

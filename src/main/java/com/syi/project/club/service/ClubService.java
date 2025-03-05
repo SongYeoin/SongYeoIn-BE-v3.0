@@ -20,6 +20,9 @@ import com.syi.project.file.entity.File;
 import com.syi.project.file.repository.FileRepository;
 import com.syi.project.file.service.FileService;
 import jakarta.persistence.EntityNotFoundException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -392,11 +395,11 @@ public class ClubService {
 
         // 멤버 정보 조회
         Member member = memberRepository.findById(memberId)
-          .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
+            .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
 
         // 클럽 정보 조회
         Club club = clubRepository.findById(clubId)
-          .orElseThrow(() -> new EntityNotFoundException("클럽을 찾을 수 없습니다. clubId: " + clubId));
+            .orElseThrow(() -> new EntityNotFoundException("클럽을 찾을 수 없습니다. clubId: " + clubId));
 
         // 클럽 파일 존재 여부 확인
         if (club.getClubFile().getId() == null || club.getClubFile().getFile().getId() == null) {
@@ -411,8 +414,31 @@ public class ClubService {
         log.debug("파일 다운로드 요청 - fileId: {}", club.getClubFile().getFile().getId());
         FileDownloadDTO downloadDTO = fileService.downloadFile(club.getClubFile().getFile().getId(), member);
 
-        // 파일 서비스를 통해 다운로드 응답 생성
-        return fileService.getDownloadResponseEntity(downloadDTO);
+        // 직접 다운로드 응답 생성 (utf 접두사 제거)
+        try {
+            // ASCII 문자만 사용하는 경우 인코딩 없이 처리
+            String originalFilename = downloadDTO.getOriginalName();
+            String contentDisposition;
+
+            if (originalFilename.matches("^[\\x00-\\x7F]+$")) {
+                // ASCII 문자만 있는 경우
+                contentDisposition = "attachment; filename=\"" + originalFilename + "\"";
+            } else {
+                // 비 ASCII 문자가 포함된 경우 (한글 등)
+                String encodedFilename = URLEncoder.encode(originalFilename, StandardCharsets.UTF_8.toString())
+                    .replaceAll("\\+", "%20");
+                contentDisposition = "attachment; filename=\"" + encodedFilename + "\"; filename*=UTF-8''" + encodedFilename;
+            }
+
+            return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(downloadDTO.getContentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .body(downloadDTO.getResource());
+        } catch (UnsupportedEncodingException e) {
+            log.error("파일명 인코딩 중 오류 발생", e);
+            // 오류 발생 시 기존 방식으로 폴백
+            return fileService.getDownloadResponseEntity(downloadDTO);
+        }
     }
 
     /**
@@ -450,7 +476,7 @@ public class ClubService {
 
         // 멤버 정보 조회
         Member member = memberRepository.findById(memberId)
-          .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
+            .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
 
         // 클럽 정보 일괄 조회
         List<Club> clubs = clubRepository.findAllById(clubIds);
@@ -460,6 +486,7 @@ public class ClubService {
 
         // 다운로드할 파일 목록 생성
         List<File> files = new ArrayList<>();
+        List<String> names = new ArrayList<>();
         for (Club club : clubs) {
             // 클럽 파일 존재 여부 확인
             if (club.getClubFile() == null || club.getClubFile().getFile() == null || club.getClubFile().getFile().getId() == null) {
@@ -471,6 +498,7 @@ public class ClubService {
             try {
                 validateMemberClubAccess(member, club);
                 files.add(club.getClubFile().getFile());
+                names.add(club.getClubName());
             } catch (AccessDeniedException e) {
                 log.warn("일부 클럽 파일 접근 권한 없음 - memberId: {}, clubId: {}", member.getId(), club.getId());
                 // 권한이 없는 클럽은 건너뜀
@@ -483,16 +511,22 @@ public class ClubService {
         }
 
         // zip 파일명 생성 (현재 시간 포함)
-        String zipFileName = "club_files_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".zip";
+        //String zipFileName = "club_files_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".zip";
+        String zipFileName = "동아리일지_일괄다운로드.zip";
 
         // 파일 서비스를 통해 zip 파일 생성
-        Resource zipResource = fileService.downloadFilesAsZip(files, zipFileName);
+        Resource zipResource = fileService.downloadFilesAsZip(files, zipFileName,
+          file -> {
+              int index = files.indexOf(file);
+              return file.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" +
+                names.get(index) + "_" + file.getOriginalName();
+          });
 
         // 응답 생성
         return ResponseEntity.ok()
-          .contentType(MediaType.APPLICATION_OCTET_STREAM)
-          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
-          .body(zipResource);
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
+            .body(zipResource);
     }
 }
 
