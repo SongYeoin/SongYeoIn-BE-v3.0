@@ -476,7 +476,7 @@ public class ClubService {
 
         // 멤버 정보 조회
         Member member = memberRepository.findById(memberId)
-          .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
+            .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
 
         // 클럽 정보 일괄 조회
         List<Club> clubs = clubRepository.findAllById(clubIds);
@@ -516,9 +516,9 @@ public class ClubService {
 
         // 응답 생성
         return ResponseEntity.ok()
-          .contentType(MediaType.APPLICATION_OCTET_STREAM)
-          .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
-          .body(zipResource);
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFileName + "\"")
+            .body(zipResource);
     }
 }
 
