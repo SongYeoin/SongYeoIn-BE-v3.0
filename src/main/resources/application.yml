@@ -85,3 +85,10 @@ cloud:
 public:
   api:
     service-key: ${PUBLIC_API_SERVICE_KEY}  # 공휴일 api
+
+attendance:
+  network:
+    allowed-ip-1: ${MY_IP1}  # 개인 ip1
+    allowed-ip-2: ${MY_IP2}  # 개인 ip2
+    allowed-ip-3: ${MY_IP3}  # 개인 ip3
+    allowed-ip-4: ${MY_IP4}  # 개인 ip4
