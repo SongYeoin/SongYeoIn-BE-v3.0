@@ -108,17 +108,19 @@ public class AttendanceResponseDTO {
     private String periodName;
     private LocalTime startTime;
     private LocalTime endTime;
-    private LocalDateTime enrollDate;
+    private LocalDateTime enterDateTime;
+    private LocalDateTime exitDateTime;
     private String status;
 
     @Builder
     public AttendanceStatusListDTO(Long attendanceId, String periodName, LocalTime startTime, LocalTime endTime,
-        LocalDateTime enrollDate, String status) {
+        LocalDateTime enterDateTime, LocalDateTime exitDateTime,String status) {
       this.attendanceId = attendanceId;
       this.periodName = periodName;
       this.startTime = startTime;
       this.endTime = endTime;
-      this.enrollDate = enrollDate;
+      this.enterDateTime = enterDateTime;
+      this.exitDateTime = exitDateTime;
       this.status = status;
     }
   }
