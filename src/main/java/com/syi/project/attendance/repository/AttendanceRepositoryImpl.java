@@ -90,7 +90,8 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
             period.startTime,
             period.endTime,
             attendance.id,
-            attendance.enrollDate,
+            attendance.enterTime,
+            attendance.exitTime,
             attendance.status)
         .from(attendance)
         .join(period).on(attendance.periodId.eq(period.id))
@@ -102,7 +103,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
     log.debug("Query result size: {}", tuples.size());
     log.debug("쿼리 결과 튜플: {}", tuples);
     tuples.forEach(tuple -> {
-      log.debug("Student ID: {}", tuple.get(member.id));
+      log.debug("Student ID: {}", studentId);
       log.debug("Status: {}", tuple.get(attendance.status)); // status 값 확인
     });
 
@@ -122,7 +123,8 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
             .startTime(tuple.get(period.startTime))
             .endTime(tuple.get(period.endTime))
             .attendanceId(tuple.get(attendance.id))
-            .enrollDate(tuple.get(attendance.enrollDate))
+            .enterDateTime(tuple.get(attendance.enterTime))
+            .exitDateTime(tuple.get(attendance.exitTime))
             .status(Optional.ofNullable(tuple.get(attendance.status))
                 .map(AttendanceStatus::toKorean) // null이 아닌 경우 한글 상태로 변환
                 .orElse("Unknown"))
