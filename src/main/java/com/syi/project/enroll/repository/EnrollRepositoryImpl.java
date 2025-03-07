@@ -115,7 +115,6 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
   public List<Long> findStudentIdByCourseId(Long courseId) {
     return queryFactory.select(enroll.memberId)
         .from(enroll)
-        .leftJoin(member).on()
         .where(enroll.courseId.eq(courseId)
             .and(enroll.deletedBy.isNull()))
         .fetch();

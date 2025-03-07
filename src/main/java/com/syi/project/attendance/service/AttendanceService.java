@@ -1399,7 +1399,7 @@ public class AttendanceService {
   public void processUnmarkedAttendance() {
     log.info("미기록 출석 자동 처리 시작");
     LocalDate today = LocalDate.now();
-    log.info("현재 날짜: {}",today);
+    log.info("현재 날짜: {}", today);
 
     int year = today.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
 
@@ -1408,16 +1408,15 @@ public class AttendanceService {
     // ✅ 해당 연도의 공휴일 정보를 DB에서 가져오기
     Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
 
-
     /*
      * holidays나 주말일 경우 결석처리 생략
      * */
     DayOfWeek dayOfWeek = today.getDayOfWeek();
 
-// 주말 체크 (토요일: SATURDAY, 일요일: SUNDAY)
+    // 주말 체크 (토요일: SATURDAY, 일요일: SUNDAY)
     boolean isWeekend = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
 
-// 공휴일 체크
+    // 공휴일 체크
     boolean isHoliday = holidays.contains(today);
 
     if (isWeekend || isHoliday) {
@@ -1445,23 +1444,48 @@ public class AttendanceService {
         for (Long studentId : studentIds) {
           for (Period period : periods) {
             // 해당 학생/교시에 대한 출석 기록이 있는지 확인
-            Optional<Attendance> attendance = attendanceRepository
+            Optional<Attendance> attendanceOpt = attendanceRepository
                 .findByMemberIdAndDateAndPeriodId(studentId, today, period.getId());
 
-            // 출석 기록이 없으면 자동으로 "결석" 처리
-            if (attendance.isEmpty()) {
-              AttendanceDTO dto = AttendanceDTO.builder().
-                  memberId(studentId).
-                  date(today).
-                  periodId(period.getId()).
-                  courseId(course.getId()).
-                  status("ABSENT").build();
+            if (attendanceOpt.isEmpty()) {
+              // 1. 출석 기록이 없는 경우: 결석 처리
+              AttendanceDTO dto = AttendanceDTO.builder()
+                  .memberId(studentId)
+                  .date(today)
+                  .periodId(period.getId())
+                  .courseId(course.getId())
+                  .status("ABSENT")
+                  .build();
 
-              Attendance newAttendance = toEntityForAbsent(dto);
+              Attendance attendance = toEntityForAbsent(dto);
+              attendanceRepository.save(attendance);
+              log.info("자동 결석 처리: 학생 ID={}, 날짜={}, 교시={}, 상태={}",
+                  studentId, today, period.getName(), "새 기록 생성");
 
-              attendanceRepository.save(newAttendance);
-              log.info("자동 결석 처리: 학생 ID={}, 날짜={}, 교시={}",
-                  studentId, today, period.getName());
+            } else {
+              // 기존 기록이 있는 경우
+              Attendance attendance = attendanceOpt.get();
+              boolean updated = false;
+
+              // 2. 출석 상태가 PENDING인 경우: 결석으로 변경하고 exitTime 업데이트
+              if (attendance.getStatus() == AttendanceStatus.PENDING) {
+                attendance.updateStatus(AttendanceStatus.ABSENT);
+                if (attendance.getExitTime() == null) {
+                  attendance.updateExitTime(LocalDateTime.now());
+                }
+                updated = true;
+              }
+              // 3. 출석 상태가 이미 있고(출석, 지각, 결석) exitTime이 null인 경우: exitTime만 업데이트
+              else if (attendance.getExitTime() == null) {
+                attendance.updateExitTime(LocalDateTime.now());
+                updated = true;
+              }
+
+              if (updated) {
+                attendanceRepository.save(attendance);
+                log.info("자동 출석 기록 업데이트: 학생 ID={}, 날짜={}, 교시={}, 상태={}, exitTime={}",
+                    studentId, today, period.getName(), attendance.getStatus(), attendance.getExitTime());
+              }
             }
           }
         }
@@ -1484,8 +1508,8 @@ public class AttendanceService {
         attendanceDTO.getCourseId(),
         attendanceDTO.getMemberId(),
         null,
-        null,
-        null
+        LocalDateTime.now(),
+        LocalDateTime.now()
     );
   }
 
