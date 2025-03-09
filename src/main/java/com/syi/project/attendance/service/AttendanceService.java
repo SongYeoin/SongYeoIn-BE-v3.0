@@ -7,7 +7,6 @@ import static com.syi.project.attendance.AttendanceCalculator.getValidDays;
 import static com.syi.project.attendance.entity.QAttendance.attendance;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ALREADY_ENTERED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ALREADY_EXITED;
-import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_INVALID_DATE;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_NOT_ALLOWED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_NOT_FOUND;
@@ -395,15 +394,15 @@ public class AttendanceService {
 
     switch (attendanceType) {
       case "ENTER" -> {
-        handleEnterAttendance(userDetails, periods, now);
+        handleEnterAttendance(userDetails, periods, now,courseId);
         return AttendanceResponseDTO.builder().enterTime(now).build(); // 입실
       }
       case "EARLY_EXIT" -> {
-        handleEarlyLeaveAttendance(userDetails, periods, now, earlyLeavePeriodId);
+        handleEarlyLeaveAttendance(userDetails, periods, now, earlyLeavePeriodId,courseId);
         return AttendanceResponseDTO.builder().exitTime(now).build();
       }
       case "EXIT" -> {
-        handleExitAttendance(userDetails, periods, now);
+        handleExitAttendance(userDetails, periods, now,courseId);
         return AttendanceResponseDTO.builder().exitTime(now).build();
       }
       default -> throw new InvalidRequestException(ATTENDANCE_FAILED);
@@ -411,22 +410,26 @@ public class AttendanceService {
 
   }
 
+  /**
+   * 조퇴 처리 로직 - 이미 출석 처리된 교시는 상태 유지 - 상태가 없는 교시만 조퇴 처리
+   */
+
   void handleEarlyLeaveAttendance(CustomUserDetails userDetails, List<Period> periods,
       LocalDateTime earlyLeaveTDateTime,
-      Long earlyLeavePeriodId) {
+      Long earlyLeavePeriodId, Long courseId) {
     log.info("조퇴 처리 시작");
 
     // 입실한 기록이 있는지 체크하기
-    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndEnterTimeNotNull(
-        userDetails.getId(), earlyLeaveTDateTime.toLocalDate());
+    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndCourseIdAndEnterTimeNotNull(
+        userDetails.getId(), earlyLeaveTDateTime.toLocalDate(),courseId);
     if (!hasEntryRecord) {
       log.warn("입실한 기록이 없습니다. 조퇴 처리를 할 수 없습니다.");
       throw new InvalidRequestException(ATTENDANCE_ENTRY_NOT_FOUND);
     }
 
     // 이미 퇴실한 기록이 있으면 중복 방지
-    boolean alreadyExited = attendanceRepository.existsByMemberIdAndDateAndExitTimeNotNull(
-        userDetails.getId(), earlyLeaveTDateTime.toLocalDate());
+    boolean alreadyExited = attendanceRepository.existsByMemberIdAndDateAndCourseIdAndExitTimeNotNull(
+        userDetails.getId(), earlyLeaveTDateTime.toLocalDate(),courseId);
     if (alreadyExited) {
       log.warn("조퇴 - 이미 퇴실한 기록이 있습니다. 조퇴를 할 수 없습니다.");
       throw new InvalidRequestException(ATTENDANCE_ALREADY_EXITED);
@@ -463,23 +466,25 @@ public class AttendanceService {
           .orElseGet(() -> new Attendance(null, null, null, null, null, period.getId(),
               period.getCourseId(), userDetails.getId(), null, null, null));
 
-      // ✅ 이미 출석한 교시에 대해 조퇴할 수 없도록 예외 처리
-      if (period.equals(earlyLeavePeriod) && attendance.getStatus() != null) {
-        throw new InvalidRequestException(ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS);
-      }
+//      // ✅ 이미 출석한 교시에 대해 조퇴할 수 없도록 예외 처리
+//      if (period.equals(earlyLeavePeriod) && attendance.getStatus() != null) {
+//        throw new InvalidRequestException(ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS);
+//      }
 
       // 모든 교시에 동일한 퇴실(조퇴) 시간 설정
       attendance.updateExitTime(earlyLeaveTDateTime);
 
-      if (period.getStartTime().isBefore(earlyLeavePeriod.getStartTime())) {
-        // ✅ 조퇴 교시 이전의 교시들은 정상 출석 처리
-        if (attendance.getStatus() == null) {
+      if (attendance.getStatus() == AttendanceStatus.PENDING) {
+        if (period.getStartTime().isBefore(earlyLeavePeriod.getStartTime())) {
+          // 조퇴 교시 이전의 교시들은 정상 출석처리
           attendance.updateStatus(AttendanceStatus.PRESENT);
+        } else {
+          // ✅ 조퇴 교시 이후의 교시들은 "조퇴" 처리
+          attendance.updateStatus(AttendanceStatus.EARLY_LEAVE);
         }
-      } else {
-        // ✅ 조퇴 교시 이후의 교시들은 "조퇴" 처리
-        attendance.updateStatus(AttendanceStatus.EARLY_LEAVE);
       }
+
+      // ✅ 조퇴 교시 이전의 교시들은 정상 출석 처리
 
       // ✅ 조퇴한 시간 업데이트
       /*if (period.equals(earlyLeavePeriod)) {
@@ -495,11 +500,12 @@ public class AttendanceService {
   }
 
 
-  /*
-  * 퇴실하기
-  * */
+  /**
+   * 퇴실 처리 로직
+   * - 출석 상태가 null인 교시만 정상 출석으로 처리
+   */
   void handleExitAttendance(CustomUserDetails userDetails, List<Period> periods,
-      LocalDateTime exitDateTime) {
+      LocalDateTime exitDateTime, Long courseId) {
 
     log.info("퇴실 처리 시작");
 
@@ -514,7 +520,7 @@ public class AttendanceService {
     }
 
     // 입실한 기록이 있는지 체크하기
-    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndEnterTimeNotNull(userDetails.getId(), exitDateTime.toLocalDate());
+    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndCourseIdAndEnterTimeNotNull(userDetails.getId(), exitDateTime.toLocalDate(),courseId);
     log.debug("입실 여부 체크 결과 - hasEntryRecord: {}", hasEntryRecord);
     if (!hasEntryRecord) {
       log.warn("입실한 기록이 없습니다. 퇴실 처리를 할 수 없습니다.");
@@ -523,7 +529,8 @@ public class AttendanceService {
 
 
     // 이미 퇴실한 기록이 있으면 중복 방지
-    boolean alreadyExited = attendanceRepository.existsByMemberIdAndDateAndExitTimeNotNull(userDetails.getId(), exitDateTime.toLocalDate());
+    boolean alreadyExited =
+        attendanceRepository.existsByMemberIdAndDateAndCourseIdAndExitTimeNotNull(userDetails.getId(), exitDateTime.toLocalDate(),courseId);
     if (alreadyExited) {
       log.warn("이미 퇴실한 기록이 있습니다. 중복 퇴실을 방지합니다.");
       throw new InvalidRequestException(ATTENDANCE_ALREADY_EXITED);
@@ -554,7 +561,7 @@ public class AttendanceService {
           .orElseGet(() -> new Attendance(null, null, null, null, null, period.getId(),
               period.getCourseId(), userDetails.getId(), null, null, null));
 
-      if (attendance.getStatus() == null) {
+      if (attendance.getStatus() == AttendanceStatus.PENDING) {
         // 아직 기록되지 않은 교시는 자동 출석 처리
         attendance.updateStatus(AttendanceStatus.PRESENT);
       }
@@ -570,16 +577,20 @@ public class AttendanceService {
   }
 
   // private으로 바꾸기
-  /*
-  * 입실하기
-  * */
+  /**
+   * 입실 처리 로직
+   * - 현재 교시까지만 출석 상태 기록
+   * - 이후 교시는 엔티티만 생성하고 상태는 null로 유지
+   */
   void handleEnterAttendance(CustomUserDetails userDetails, List<Period> periods,
-      LocalDateTime enterDateTime) {
+      LocalDateTime enterDateTime, Long courseId) {
     log.info("입실 처리 시작");
 
+    log.info("입실하는 날짜시간: {}", enterDateTime);
+
     // 이미 입실한 기록이 있으면 중복 방지
-    boolean alreadyEntered = attendanceRepository.existsByMemberIdAndDate(userDetails.getId(),
-        enterDateTime.toLocalDate());
+    boolean alreadyEntered = attendanceRepository.existsByMemberIdAndDateAndCourseId(userDetails.getId(),
+        enterDateTime.toLocalDate(),courseId);
     if (alreadyEntered) {
       log.warn("이미 입실한 기록이 있습니다. 중복 입실을 방지합니다.");
       throw new InvalidRequestException(ATTENDANCE_ALREADY_ENTERED);
@@ -683,7 +694,7 @@ public class AttendanceService {
           }
         } else {
           // 이후 교시들은 모두 출석 처리
-          attendance.updateStatus(AttendanceStatus.PRESENT);
+          attendance.updateStatus(AttendanceStatus.PENDING);
         }
 
        /* if (enterDateTime.isBefore(periodStart)) {
