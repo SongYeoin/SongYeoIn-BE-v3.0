@@ -271,10 +271,19 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
 
     BooleanBuilder predicate = buildAdminPredicate(courseId, dto);
 
+    // 학생 이름 검색 조건을 별도로 처리 (처음에는 없었다가 여기서 추가)
+    BooleanBuilder completeCondition = new BooleanBuilder(predicate);
+    if (!TextUtils.isBlank(dto.getStudentName())) {
+      completeCondition.and(member.name.contains(dto.getStudentName()));
+    }
+
+
+
     Long totalCount = queryFactory
         .select(attendance.memberId.countDistinct())
         .from(attendance)
-        .where(predicate)
+        .join(member).on(attendance.memberId.eq(member.id)) // member 조인 추가
+        .where(completeCondition)
         .fetchOne();
 
     long safeTotal = totalCount != null ? totalCount : 0L;
@@ -289,7 +298,8 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .select(attendance.memberId)
         .distinct()
         .from(attendance)
-        .where(predicate)
+        .join(member).on(attendance.memberId.eq(member.id))
+        .where(completeCondition)
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .fetch();
@@ -372,9 +382,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
     if (dto.getDate() != null) {
       predicate.and(attendance.date.eq(dto.getDate()));
     }
-    if (!TextUtils.isBlank(dto.getStudentName())) {
-      predicate.and(member.name.contains(dto.getStudentName()));
-    }
+
     if (dto.getAttendanceStatus() != null) {
       predicate.and(attendance.status.eq(dto.getAttendanceStatus()));
     }
