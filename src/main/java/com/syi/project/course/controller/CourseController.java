@@ -68,7 +68,7 @@ public class CourseController {
       @RequestParam(value = "type", required = false) String type,
       @Parameter(description = "검색어", required = false)
       @RequestParam(value = "word",required = false) String word,
-      @PageableDefault(size = 10) Pageable pageable
+      @PageableDefault(size = 20) Pageable pageable
       ) {
     log.info("모든 교육 과정 조회 요청");
     Long memberId = userDetails.getId();

@@ -99,11 +99,11 @@ public class AttendanceRequestDTO {
   private LocalDate date;
 
   @Schema(description = "출석 등록일", example = "")
-  @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
   private LocalDateTime enrollDate;
 
   @Schema(description = "출석 수정일", example = "")
-  @PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
   private LocalDateTime modifiedDate;
 
   @Schema(description = "교시 ID", example = "1")

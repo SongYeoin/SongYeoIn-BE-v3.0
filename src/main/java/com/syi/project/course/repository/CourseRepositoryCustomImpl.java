@@ -32,8 +32,7 @@ public class CourseRepositoryCustomImpl implements
   public Page<Course> findCoursesById(Long adminId, String type, String word, Pageable pageable) {
     log.debug("findCoursesById : adminId={}", adminId);
 
-    BooleanBuilder predicate = new BooleanBuilder(course.adminId.eq(adminId).
-        and(course.deletedBy.isNull()));
+    BooleanBuilder predicate = new BooleanBuilder(course.deletedBy.isNull());
 
     // 필터링 조건이 하나밖에 안된다는 전체
     /*if (type != null && !TextUtils.isBlank(word)) {

@@ -108,17 +108,19 @@ public class AttendanceResponseDTO {
     private String periodName;
     private LocalTime startTime;
     private LocalTime endTime;
-    private LocalDateTime enrollDate;
+    private LocalDateTime enterDateTime;
+    private LocalDateTime exitDateTime;
     private String status;
 
     @Builder
     public AttendanceStatusListDTO(Long attendanceId, String periodName, LocalTime startTime, LocalTime endTime,
-        LocalDateTime enrollDate, String status) {
+        LocalDateTime enterDateTime, LocalDateTime exitDateTime,String status) {
       this.attendanceId = attendanceId;
       this.periodName = periodName;
       this.startTime = startTime;
       this.endTime = endTime;
-      this.enrollDate = enrollDate;
+      this.enterDateTime = enterDateTime;
+      this.exitDateTime = exitDateTime;
       this.status = status;
     }
   }
@@ -305,11 +307,11 @@ public class AttendanceResponseDTO {
   private LocalDate date;
 
   @Schema(description = "출석 등록일", example = "")
-  @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
   private LocalDateTime enrollDate;
 
   @Schema(description = "출석 수정일", example = "")
-  @PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
   private LocalDateTime modifiedDate;
 
   @Schema(description = "교시 ID", example = "1")

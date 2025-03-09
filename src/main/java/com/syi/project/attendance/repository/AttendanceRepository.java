@@ -2,10 +2,7 @@ package com.syi.project.attendance.repository;
 
 import com.syi.project.attendance.entity.Attendance;
 import java.time.LocalDate;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Long>,AttendanceRepositoryCustom {
 
@@ -15,4 +12,10 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long>,At
 
   boolean existsByMemberIdAndDateAndEnterTimeNotNull(Long id, LocalDate localDate);
 
+  boolean existsByMemberIdAndDateAndCourseId(Long id, LocalDate localDate, Long courseId);
+
+  boolean existsByMemberIdAndDateAndCourseIdAndEnterTimeNotNull(Long id, LocalDate localDate, Long courseId);
+
+  boolean existsByMemberIdAndDateAndCourseIdAndExitTimeNotNull(Long id, LocalDate localDate,
+      Long courseId);
 }

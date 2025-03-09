@@ -40,6 +40,18 @@ public class AttendanceCalculator {
 
     // 첫 날 제외하고 유효한 전체 출석일 (115일)
     List<LocalDate> validDays = getValidDays(startDate, endDate, holidays);
+
+    // validDays가 비어있는 경우 처리
+    if (validDays.isEmpty()) {
+      log.warn("유효한 출석일이 없습니다. 기본값으로 출석률 정보를 반환합니다.");
+      return Map.of(
+          "validAttendanceDays", 0,
+          "overallAttendanceRate", 0.0,
+          "twentyDayRate", 0.0,
+          "twentyDayRates", new ArrayList<>()
+      );
+    }
+
     // 20일 단위 차수 계산
     List<Map<String, Object>> segments = calculateTwentyDaySegments(validDays);
     //log.debug("20일 단위 차수: {}", segments);
@@ -101,6 +113,21 @@ public class AttendanceCalculator {
   public static double calculateOverallAttendanceRate(List<AttendanceDailyStats> dailyStats,
       LocalDate startDate,
       List<LocalDate> validDays){
+
+    // 유효일 수가 0이거나 1인 경우
+    if (validDays.size() <= 1) {
+      log.warn("유효 출석일이 부족합니다. 출석률을 0.0으로 반환합니다.");
+      return 0.0;
+    }
+
+    // dailyStats가 비어있는 경우
+    if (dailyStats == null || dailyStats.isEmpty()) {
+      log.warn("출석 데이터가 없습니다. 출석률을 0.0으로 반환합니다.");
+      return 0.0;
+    }
+
+
+
     int totalAttendanceDays = 0;
     int accumulatedIncidents = 0; // 전체 기간 동안 지각+조퇴 누적 횟수
 
@@ -114,6 +141,14 @@ public class AttendanceCalculator {
         continue;
       }
 
+
+      int totalSessions = stats.getTotalSessions();
+      if (totalSessions == 0) {
+        log.warn("날짜 {}의 총 교시 수가 0입니다. 8교시로 간주합니다.", date);
+        totalSessions = TOTAL_SESSIONS_PER_DAY;
+      }
+
+
       log.info("해당 날짜: {}, totalSessions: {}, lateCount: {}, absentCount: {}, earlyLeaveCount: {}",
           date, stats.getTotalSessions(), stats.getLateCount(), stats.getAbsentCount(),
           stats.getEarlyLeaveCount());
@@ -123,7 +158,7 @@ public class AttendanceCalculator {
       log.debug("absentCount(8교시 중 결석 횟수): {}", stats.getAbsentCount());
       log.debug("earlyLeaveCount(8교시 중 조퇴 횟수): {}", stats.getEarlyLeaveCount());
 
-      boolean isAbsent = stats.getAbsentCount() == TOTAL_SESSIONS_PER_DAY;
+      boolean isAbsent = totalSessions > 0 && stats.getAbsentCount() == TOTAL_SESSIONS_PER_DAY;
       boolean isLate = !isAbsent && (stats.getAbsentCount() > 0 || stats.getLateCount() > 0);
       boolean isEarlyLeave = !isAbsent && stats.getEarlyLeaveCount() > 0;
 
@@ -150,6 +185,10 @@ public class AttendanceCalculator {
 
     log.debug("최종 전체 실제 출석일 수: {}", totalAttendanceDays);
     double realValidDaysSize = (double) validDays.size() - 1;
+    if (realValidDaysSize <= 0) {
+      log.warn("유효 출석일 수가 1 이하입니다. 출석률을 0.0으로 반환합니다.");
+      return 0.0;
+    }
     log.debug("(double) validDays.size()) - 1: {}",realValidDaysSize);
 
     log.info("(최종) 전체 실제 출석일 수: {}, 1일 감소된 유효일 수: {}", totalAttendanceDays, realValidDaysSize);
@@ -308,12 +347,16 @@ public class AttendanceCalculator {
     }
 
     log.debug("(20일 출석률)최종 20일 단위 출석률 리스트: {}", twentyDayRateDetails);
-    Map<String, Object> twentyDayRateDetail = twentyDayRateDetails.get(
-        twentyDayRateDetails.size() - 1);
-    log.debug("(20일 출석률)해당하는 20일 단위 출석률: {}", twentyDayRateDetail);
-    log.info("(최종)20일 단위 출석률 리스트: {}, 해당하는 20일 단위 출석률: {}", twentyDayRateDetails,
-        twentyDayRateDetail);
-
+    // 리스트가 비어있는지 확인하는 방어 코드 추가
+    if (!twentyDayRateDetails.isEmpty()) {
+      Map<String, Object> twentyDayRateDetail = twentyDayRateDetails.get(
+          twentyDayRateDetails.size() - 1);
+      log.debug("(20일 출석률)해당하는 20일 단위 출석률: {}", twentyDayRateDetail);
+      log.info("(최종)20일 단위 출석률 리스트: {}, 해당하는 20일 단위 출석률: {}", twentyDayRateDetails,
+          twentyDayRateDetail);
+    } else {
+      log.warn("20일 단위 출석률 계산 결과가 없습니다.");
+    }
     return twentyDayRateDetails;
   }
 

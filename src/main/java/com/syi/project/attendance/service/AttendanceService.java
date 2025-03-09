@@ -7,7 +7,6 @@ import static com.syi.project.attendance.AttendanceCalculator.getValidDays;
 import static com.syi.project.attendance.entity.QAttendance.attendance;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ALREADY_ENTERED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ALREADY_EXITED;
-import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_INVALID_DATE;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_NOT_ALLOWED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_ENTRY_NOT_FOUND;
@@ -74,6 +73,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -394,15 +394,15 @@ public class AttendanceService {
 
     switch (attendanceType) {
       case "ENTER" -> {
-        handleEnterAttendance(userDetails, periods, now);
+        handleEnterAttendance(userDetails, periods, now,courseId);
         return AttendanceResponseDTO.builder().enterTime(now).build(); // 입실
       }
       case "EARLY_EXIT" -> {
-        handleEarlyLeaveAttendance(userDetails, periods, now, earlyLeavePeriodId);
+        handleEarlyLeaveAttendance(userDetails, periods, now, earlyLeavePeriodId,courseId);
         return AttendanceResponseDTO.builder().exitTime(now).build();
       }
       case "EXIT" -> {
-        handleExitAttendance(userDetails, periods, now);
+        handleExitAttendance(userDetails, periods, now,courseId);
         return AttendanceResponseDTO.builder().exitTime(now).build();
       }
       default -> throw new InvalidRequestException(ATTENDANCE_FAILED);
@@ -410,22 +410,26 @@ public class AttendanceService {
 
   }
 
+  /**
+   * 조퇴 처리 로직 - 이미 출석 처리된 교시는 상태 유지 - 상태가 없는 교시만 조퇴 처리
+   */
+
   void handleEarlyLeaveAttendance(CustomUserDetails userDetails, List<Period> periods,
       LocalDateTime earlyLeaveTDateTime,
-      Long earlyLeavePeriodId) {
+      Long earlyLeavePeriodId, Long courseId) {
     log.info("조퇴 처리 시작");
 
     // 입실한 기록이 있는지 체크하기
-    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndEnterTimeNotNull(
-        userDetails.getId(), earlyLeaveTDateTime.toLocalDate());
+    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndCourseIdAndEnterTimeNotNull(
+        userDetails.getId(), earlyLeaveTDateTime.toLocalDate(),courseId);
     if (!hasEntryRecord) {
       log.warn("입실한 기록이 없습니다. 조퇴 처리를 할 수 없습니다.");
       throw new InvalidRequestException(ATTENDANCE_ENTRY_NOT_FOUND);
     }
 
     // 이미 퇴실한 기록이 있으면 중복 방지
-    boolean alreadyExited = attendanceRepository.existsByMemberIdAndDateAndExitTimeNotNull(
-        userDetails.getId(), earlyLeaveTDateTime.toLocalDate());
+    boolean alreadyExited = attendanceRepository.existsByMemberIdAndDateAndCourseIdAndExitTimeNotNull(
+        userDetails.getId(), earlyLeaveTDateTime.toLocalDate(),courseId);
     if (alreadyExited) {
       log.warn("조퇴 - 이미 퇴실한 기록이 있습니다. 조퇴를 할 수 없습니다.");
       throw new InvalidRequestException(ATTENDANCE_ALREADY_EXITED);
@@ -462,41 +466,46 @@ public class AttendanceService {
           .orElseGet(() -> new Attendance(null, null, null, null, null, period.getId(),
               period.getCourseId(), userDetails.getId(), null, null, null));
 
-      // ✅ 이미 출석한 교시에 대해 조퇴할 수 없도록 예외 처리
-      if (period.equals(earlyLeavePeriod) && attendance.getStatus() != null) {
-        throw new InvalidRequestException(ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS);
+//      // ✅ 이미 출석한 교시에 대해 조퇴할 수 없도록 예외 처리
+//      if (period.equals(earlyLeavePeriod) && attendance.getStatus() != null) {
+//        throw new InvalidRequestException(ATTENDANCE_EARLY_EXIT_ALREADY_HAS_STATUS);
+//      }
+
+      // 모든 교시에 동일한 퇴실(조퇴) 시간 설정
+      attendance.updateExitTime(earlyLeaveTDateTime);
+
+      if (attendance.getStatus() == AttendanceStatus.PENDING) {
+        if (period.getStartTime().isBefore(earlyLeavePeriod.getStartTime())) {
+          // 조퇴 교시 이전의 교시들은 정상 출석처리
+          attendance.updateStatus(AttendanceStatus.PRESENT);
+        } else {
+          // ✅ 조퇴 교시 이후의 교시들은 "조퇴" 처리
+          attendance.updateStatus(AttendanceStatus.EARLY_LEAVE);
+        }
       }
 
-      if (period.getStartTime().isBefore(earlyLeavePeriod.getStartTime())) {
-        // ✅ 조퇴 교시 이전의 교시들은 정상 출석 처리
-        if (attendance.getStatus() == null) {
-          attendance.updateStatus(AttendanceStatus.PRESENT);
-        }
-      } else {
-        // ✅ 조퇴 교시 이후의 교시들은 "조퇴" 처리
-        attendance.updateStatus(AttendanceStatus.EARLY_LEAVE);
-      }
+      // ✅ 조퇴 교시 이전의 교시들은 정상 출석 처리
 
       // ✅ 조퇴한 시간 업데이트
-      if (period.equals(earlyLeavePeriod)) {
+      /*if (period.equals(earlyLeavePeriod)) {
         attendance.updateExitTime(earlyLeaveTDateTime);
-      }
-
+      }*/
+      log.info("(조퇴)저장 전 Attendance 객체 확인 - ID: {}, enterTime: {}, status: {}", attendance.getId(),
+          attendance.getEnterTime(), attendance.getStatus());
       attendanceRepository.save(attendance);
     }
 
     log.info("조퇴 처리 완료");
 
-
-
   }
 
 
-  /*
-  * 퇴실하기
-  * */
+  /**
+   * 퇴실 처리 로직
+   * - 출석 상태가 null인 교시만 정상 출석으로 처리
+   */
   void handleExitAttendance(CustomUserDetails userDetails, List<Period> periods,
-      LocalDateTime exitDateTime) {
+      LocalDateTime exitDateTime, Long courseId) {
 
     log.info("퇴실 처리 시작");
 
@@ -511,7 +520,7 @@ public class AttendanceService {
     }
 
     // 입실한 기록이 있는지 체크하기
-    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndEnterTimeNotNull(userDetails.getId(), exitDateTime.toLocalDate());
+    boolean hasEntryRecord = attendanceRepository.existsByMemberIdAndDateAndCourseIdAndEnterTimeNotNull(userDetails.getId(), exitDateTime.toLocalDate(),courseId);
     log.debug("입실 여부 체크 결과 - hasEntryRecord: {}", hasEntryRecord);
     if (!hasEntryRecord) {
       log.warn("입실한 기록이 없습니다. 퇴실 처리를 할 수 없습니다.");
@@ -520,7 +529,8 @@ public class AttendanceService {
 
 
     // 이미 퇴실한 기록이 있으면 중복 방지
-    boolean alreadyExited = attendanceRepository.existsByMemberIdAndDateAndExitTimeNotNull(userDetails.getId(), exitDateTime.toLocalDate());
+    boolean alreadyExited =
+        attendanceRepository.existsByMemberIdAndDateAndCourseIdAndExitTimeNotNull(userDetails.getId(), exitDateTime.toLocalDate(),courseId);
     if (alreadyExited) {
       log.warn("이미 퇴실한 기록이 있습니다. 중복 퇴실을 방지합니다.");
       throw new InvalidRequestException(ATTENDANCE_ALREADY_EXITED);
@@ -551,12 +561,14 @@ public class AttendanceService {
           .orElseGet(() -> new Attendance(null, null, null, null, null, period.getId(),
               period.getCourseId(), userDetails.getId(), null, null, null));
 
-      if (attendance.getStatus() == null) {
+      if (attendance.getStatus() == AttendanceStatus.PENDING) {
         // 아직 기록되지 않은 교시는 자동 출석 처리
         attendance.updateStatus(AttendanceStatus.PRESENT);
       }
 
       attendance.updateExitTime(exitDateTime);
+      log.info("(퇴실)저장 전 Attendance 객체 확인 - ID: {}, enterTime: {}, status: {}", attendance.getId(),
+          attendance.getEnterTime(), attendance.getStatus());
       attendanceRepository.save(attendance);
 
 
@@ -565,16 +577,20 @@ public class AttendanceService {
   }
 
   // private으로 바꾸기
-  /*
-  * 입실하기
-  * */
+  /**
+   * 입실 처리 로직
+   * - 현재 교시까지만 출석 상태 기록
+   * - 이후 교시는 엔티티만 생성하고 상태는 null로 유지
+   */
   void handleEnterAttendance(CustomUserDetails userDetails, List<Period> periods,
-      LocalDateTime enterDateTime) {
+      LocalDateTime enterDateTime, Long courseId) {
     log.info("입실 처리 시작");
 
+    log.info("입실하는 날짜시간: {}", enterDateTime);
+
     // 이미 입실한 기록이 있으면 중복 방지
-    boolean alreadyEntered = attendanceRepository.existsByMemberIdAndDate(userDetails.getId(),
-        enterDateTime.toLocalDate());
+    boolean alreadyEntered = attendanceRepository.existsByMemberIdAndDateAndCourseId(userDetails.getId(),
+        enterDateTime.toLocalDate(),courseId);
     if (alreadyEntered) {
       log.warn("이미 입실한 기록이 있습니다. 중복 입실을 방지합니다.");
       throw new InvalidRequestException(ATTENDANCE_ALREADY_ENTERED);
@@ -642,48 +658,63 @@ public class AttendanceService {
     log.info("현재 시간: {}, 입실 교시: {}, 교시 ID: {}", enterDateTime, enterPeriod.getName(),
         enterPeriod.getId());
 
-      // 해당학생이 해당 교시에 출석을 한 적이 있는지 검증 없다면 엔티티 생성
-    Attendance attendance = attendanceRepository.findByMemberIdAndPeriodIdAndDate(
-            userDetails.getId(),
-            enterPeriod.getId(), enterDateTime.toLocalDate())
-        .orElseGet(() -> new Attendance(null, null, null, null, null, enterPeriod.getId(),
-            enterPeriod.getCourseId(), userDetails.getId(), null, null, null));
+    for(Period period: periods) {      // 해당학생이 해당 교시에 출석을 한 적이 있는지 검증 없다면 엔티티 생성
+      Attendance attendance = attendanceRepository.findByMemberIdAndPeriodIdAndDate(
+              userDetails.getId(),
+              period.getId(), enterDateTime.toLocalDate())
+          .orElseGet(() -> new Attendance(null, null, null, null, null, period.getId(),
+              period.getCourseId(), userDetails.getId(), null, null, null));
 
-    LocalDateTime periodStart = LocalDateTime.of(enterDateTime.toLocalDate(),
-        enterPeriod.getStartTime());
-    LocalDateTime periodEnd = LocalDateTime.of(enterDateTime.toLocalDate(),
-        enterPeriod.getEndTime());
-    LocalDateTime periodStartLate = periodStart.plusMinutes(20); // 교시 시작 후 20분까지 (1교시만)
+      attendance.updateEnterTime(enterDateTime);
 
-    if (enterPeriod == firstPeriod) { // 1교시 입실 규칙 적용
-      if (enterDateTime.isBefore(periodStartLate)) {
-        attendance.updateStatus(AttendanceStatus.PRESENT);
-      } else if (enterDateTime.isBefore(periodEnd)) {
-        attendance.updateStatus(AttendanceStatus.LATE);
-      } else {
-        attendance.updateStatus(AttendanceStatus.ABSENT);
+      LocalDateTime periodStart = LocalDateTime.of(enterDateTime.toLocalDate(),
+          period.getStartTime());
+      LocalDateTime periodEnd = LocalDateTime.of(enterDateTime.toLocalDate(),
+          period.getEndTime());
+      LocalDateTime periodStartLate = periodStart.plusMinutes(20); // 교시 시작 후 20분까지 (1교시만)
+
+      if (period.equals(firstPeriod)) { // 1교시 입실 규칙 적용
+        if (enterDateTime.isBefore(periodStartLate)) {
+          attendance.updateStatus(AttendanceStatus.PRESENT);
+        } else if (enterDateTime.isBefore(periodEnd)) {
+          attendance.updateStatus(AttendanceStatus.LATE);
+        } else {
+          attendance.updateStatus(AttendanceStatus.ABSENT);
+        }
+      } else { // 나머지 교시 입실 규칙 적용
+        // 이전 교시 결석 처리
+        if (period.getStartTime().isBefore(enterPeriod.getStartTime())) {
+          attendance.updateStatus(AttendanceStatus.ABSENT);
+        } else if (period.equals(enterPeriod)) {
+          // 현재 교시의 상태 판단
+          if (enterDateTime.isBefore(periodStartLate)) {
+            attendance.updateStatus(AttendanceStatus.PRESENT);
+          } else {
+            attendance.updateStatus(AttendanceStatus.LATE);
+          }
+        } else {
+          // 이후 교시들은 모두 출석 처리
+          attendance.updateStatus(AttendanceStatus.PENDING);
+        }
+
+       /* if (enterDateTime.isBefore(periodStart)) {
+          attendance.updateStatus(AttendanceStatus.PRESENT);
+        } else if (enterDateTime.isBefore(periodStartLate)) {
+          attendance.updateStatus(AttendanceStatus.PRESENT);
+        } else if (enterDateTime.isBefore(periodEnd)) {
+          attendance.updateStatus(AttendanceStatus.LATE);
+        } else {
+          attendance.updateStatus(AttendanceStatus.ABSENT);
+        }*/
       }
-    } else { // 나머지 교시 입실 규칙 적용
-      // 이전 교시 결석 처리
-      updatePreviousPeriodsToAbsent(userDetails, enterPeriod, enterDateTime,periods);
 
-      if (enterDateTime.isBefore(periodStart)) {
-        attendance.updateStatus(AttendanceStatus.PRESENT);
-      } else if (enterDateTime.isBefore(periodStartLate)) {
-        attendance.updateStatus(AttendanceStatus.PRESENT);
-      } else if (enterDateTime.isBefore(periodEnd)) {
-        attendance.updateStatus(AttendanceStatus.LATE);
-      } else {
-        attendance.updateStatus(AttendanceStatus.ABSENT);
-      }
+      log.info("(입실)저장 전 Attendance 객체 확인 - ID: {}, enterTime: {}, status: {}", attendance.getId(),
+          attendance.getEnterTime(), attendance.getStatus());
+
+      attendanceRepository.save(attendance);
     }
 
-    log.info("🚀 DEBUG: 저장 전 Attendance 객체 확인 - ID: {}, enterTime: {}", attendance.getId(), attendance.getEnterTime());
-
-    attendance.updateEnterTime(enterDateTime);
-    attendanceRepository.save(attendance);
-
-    // ✅ 저장 후 enterTime이 정상적으로 들어갔는지 확인
+/*    // ✅ 저장 후 enterTime이 정상적으로 들어갔는지 확인
     Optional<Attendance> savedAttendance = attendanceRepository.findByMemberIdAndPeriodIdAndDate(
         userDetails.getId(), enterPeriod.getId(), enterDateTime.toLocalDate());
 
@@ -692,10 +723,9 @@ public class AttendanceService {
           savedAttendance.get().getId(), savedAttendance.get().getEnterTime());
     } else {
       log.warn("🚨 WARNING: 입실 저장 후 Attendance 데이터가 존재하지 않습니다!");
-    }
+    }*/
 
     log.info("입실 처리 완료");
-
 
   }
 
@@ -726,6 +756,14 @@ public class AttendanceService {
     }
   }
 
+  @Value("${attendance.network.allowed-ip-1}")
+  private String myIp1;
+  @Value("${attendance.network.allowed-ip-1}")
+  private String myIp2;
+  @Value("${attendance.network.allowed-ip-1}")
+  private String myIp3;
+  @Value("${attendance.network.allowed-ip-1}")
+  private String myIp4;
 
   private boolean isWithinNetwork(String targetIp) {
     // 학원 와이파이 네트워크 범위를 설정
@@ -733,8 +771,13 @@ public class AttendanceService {
     String[] allowedNetworks = {
         "127.0.0.1/32", // 로컬, 추가 네트워크 범위가 있을 경우 추가 가능
         "192.168.0.0/24", // 학원 네트워크(로컬네트워크)
-        "115.93.9.236/30"  // 학원 와이파이 공인 ip
+        "115.93.9.236/30",  // 학원 와이파이 공인 ip
+        myIp1,
+        myIp2,
+        myIp3,
+        myIp4,
     };
+    log.info("myIp1: {}, myIp2: {}, myIp3: {}, myIp4: {}",myIp1,myIp2,myIp3,myIp4);
 
     try {
       InetAddress targetAddress = InetAddress.getByName(targetIp);
@@ -972,12 +1015,20 @@ public class AttendanceService {
     log.info("관리자용 출석률 조회 요청 - Course ID: {}", courseId);
 
     Course course = courseRepository.findCourseById(courseId);
+    if (course == null) {
+      log.warn("코스 ID {}에 해당하는 과정을 찾을 수 없습니다.", courseId);
+      return new HashMap<>();
+    }
     LocalDate startDate = course.getStartDate();
     LocalDate endDate = course.getEndDate();
 
     // 해당 강좌의 모든 학생별 출석 데이터 조회
     List<AttendanceDailyStats> dailyStatsList = attendanceRepository.findAttendanceStatsByCourse(courseId);
     //dailyStatsList.forEach(stat -> log.debug("관리자-AttendanceDailyStats: {}", stat));
+    if (dailyStatsList.isEmpty()) {
+      log.warn("과정 ID {}에 대한 출석 데이터가 없습니다.", courseId);
+      return new HashMap<>();
+    }
 
     // 학생별 출석률 계산 결과를 저장할 Map
     Map<Long, Map<String, Object>> studentAttendanceRates = new HashMap<>();
@@ -993,18 +1044,30 @@ public class AttendanceService {
 
       log.debug("학생 {} 출석률 계산 시작", studentId);
 
-      int year = startDate.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
+      try {
+        int year = startDate.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
+        log.debug("(관리자) - 교육과정 기간 기준 연도: {}", year);
 
-      log.debug("(관리자) - 교육과정 기간 기준 연도: {}", year);
+        // 해당 연도의 공휴일 정보를 DB에서 가져오기
+        Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
 
-      // ✅ 해당 연도의 공휴일 정보를 DB에서 가져오기
-      Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
+        Map<String, Object> attendanceRate = AttendanceCalculator.calculateAttendanceRates(
+            studentStats, startDate, endDate, holidays);
+        studentAttendanceRates.put(studentId, attendanceRate);
 
-      Map<String, Object> attendanceRate = AttendanceCalculator.calculateAttendanceRates(
-          studentStats, startDate, endDate, holidays);
-      studentAttendanceRates.put(studentId, attendanceRate);
+        log.debug("학생 {} 출석률 계산 완료: {}", studentId, attendanceRate);
+      } catch (Exception e) {
+        // 예외 발생 시 해당 학생은 기본값으로 처리하고 다음 학생으로 넘어감
+        log.error("학생 {} 출석률 계산 중 오류 발생: {}", studentId, e.getMessage(), e);
 
-      log.debug("학생 {} 출석률 계산 완료: {}", studentId, attendanceRate);
+        Map<String, Object> defaultRate = Map.of(
+            "validAttendanceDays", 0,
+            "overallAttendanceRate", 0.0,
+            "twentyDayRate", 0.0,
+            "twentyDayRates", new ArrayList<>()
+        );
+        studentAttendanceRates.put(studentId, defaultRate);
+      }
     }
 
     return studentAttendanceRates;
@@ -1336,7 +1399,7 @@ public class AttendanceService {
   public void processUnmarkedAttendance() {
     log.info("미기록 출석 자동 처리 시작");
     LocalDate today = LocalDate.now();
-    log.info("현재 날짜: {}",today);
+    log.info("현재 날짜: {}", today);
 
     int year = today.getYear(); // 교육과정의 연도를 기준으로 공휴일 가져오기
 
@@ -1345,16 +1408,15 @@ public class AttendanceService {
     // ✅ 해당 연도의 공휴일 정보를 DB에서 가져오기
     Set<LocalDate> holidays = holidayService.getHolidaysForYear(year);
 
-
     /*
      * holidays나 주말일 경우 결석처리 생략
      * */
     DayOfWeek dayOfWeek = today.getDayOfWeek();
 
-// 주말 체크 (토요일: SATURDAY, 일요일: SUNDAY)
+    // 주말 체크 (토요일: SATURDAY, 일요일: SUNDAY)
     boolean isWeekend = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
 
-// 공휴일 체크
+    // 공휴일 체크
     boolean isHoliday = holidays.contains(today);
 
     if (isWeekend || isHoliday) {
@@ -1382,23 +1444,48 @@ public class AttendanceService {
         for (Long studentId : studentIds) {
           for (Period period : periods) {
             // 해당 학생/교시에 대한 출석 기록이 있는지 확인
-            Optional<Attendance> attendance = attendanceRepository
+            Optional<Attendance> attendanceOpt = attendanceRepository
                 .findByMemberIdAndDateAndPeriodId(studentId, today, period.getId());
 
-            // 출석 기록이 없으면 자동으로 "결석" 처리
-            if (attendance.isEmpty()) {
-              AttendanceDTO dto = AttendanceDTO.builder().
-                  memberId(studentId).
-                  date(today).
-                  periodId(period.getId()).
-                  courseId(course.getId()).
-                  status("ABSENT").build();
+            if (attendanceOpt.isEmpty()) {
+              // 1. 출석 기록이 없는 경우: 결석 처리
+              AttendanceDTO dto = AttendanceDTO.builder()
+                  .memberId(studentId)
+                  .date(today)
+                  .periodId(period.getId())
+                  .courseId(course.getId())
+                  .status("ABSENT")
+                  .build();
 
-              Attendance newAttendance = toEntityForAbsent(dto);
+              Attendance attendance = toEntityForAbsent(dto);
+              attendanceRepository.save(attendance);
+              log.info("자동 결석 처리: 학생 ID={}, 날짜={}, 교시={}, 상태={}",
+                  studentId, today, period.getName(), "새 기록 생성");
 
-              attendanceRepository.save(newAttendance);
-              log.info("자동 결석 처리: 학생 ID={}, 날짜={}, 교시={}",
-                  studentId, today, period.getName());
+            } else {
+              // 기존 기록이 있는 경우
+              Attendance attendance = attendanceOpt.get();
+              boolean updated = false;
+
+              // 2. 출석 상태가 PENDING인 경우: 결석으로 변경하고 exitTime 업데이트
+              if (attendance.getStatus() == AttendanceStatus.PENDING) {
+                attendance.updateStatus(AttendanceStatus.ABSENT);
+                if (attendance.getExitTime() == null) {
+                  attendance.updateExitTime(LocalDateTime.now());
+                }
+                updated = true;
+              }
+              // 3. 출석 상태가 이미 있고(출석, 지각, 결석) exitTime이 null인 경우: exitTime만 업데이트
+              else if (attendance.getExitTime() == null) {
+                attendance.updateExitTime(LocalDateTime.now());
+                updated = true;
+              }
+
+              if (updated) {
+                attendanceRepository.save(attendance);
+                log.info("자동 출석 기록 업데이트: 학생 ID={}, 날짜={}, 교시={}, 상태={}, exitTime={}",
+                    studentId, today, period.getName(), attendance.getStatus(), attendance.getExitTime());
+              }
             }
           }
         }
@@ -1421,8 +1508,8 @@ public class AttendanceService {
         attendanceDTO.getCourseId(),
         attendanceDTO.getMemberId(),
         null,
-        null,
-        null
+        LocalDateTime.now(),
+        LocalDateTime.now()
     );
   }
 
