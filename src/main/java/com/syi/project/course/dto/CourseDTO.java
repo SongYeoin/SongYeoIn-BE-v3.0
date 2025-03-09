@@ -90,11 +90,11 @@ public class CourseDTO {
   private String roomName;
 
   @Schema(description = "등록일", example = "2024-11-11")
-  @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
   private LocalDate enrollDate;
 
   @Schema(description = "수정일", example = "2024-11-11")
-  @PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
   private LocalDate modifiedDate;
 
   @Schema(description = "과정 상태", example = "Y")

@@ -25,11 +25,11 @@ public class Schedule {
   private Long id;
 
   @NotNull
-  @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
   @Column(nullable = false)
   private LocalDate enrollDate;
 
-  @PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
   @Column(nullable = false)
   private LocalDate modifiedDate;
 

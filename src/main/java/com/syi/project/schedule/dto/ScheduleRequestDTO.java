@@ -40,11 +40,11 @@ public class ScheduleRequestDTO {
   private Long id;
 
   @Schema(description = "시간표 등록일", example = "")
-  @PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "등록일은 과거 또는 현재 날짜여야 합니다.")
   private LocalDate enrollDate;
 
   @Schema(description = "시간표 수정일", example = "")
-  @PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
+  //@PastOrPresent(message = "수정일은 과거 또는 현재 날짜여야 합니다.")
   private LocalDate modifiedDate;
 
   @Schema(description = "삭제한 memberID", example = "1")
