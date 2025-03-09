@@ -68,7 +68,7 @@ public class CourseService {
       throw new NoSuchElementException("No coursePage found");
     }*/
 
-    log.info("get {} coursePage from the database", coursePage.getTotalElements());
+    log.info("조회된 교육과정 개수: {}", coursePage.getTotalElements());
 
     // enroll에서 해당 담당자가 맡는 반마다 학생 수 조회
     List<Long> courseIds = coursePage.getContent().stream()
