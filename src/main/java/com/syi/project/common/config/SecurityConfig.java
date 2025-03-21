@@ -69,7 +69,7 @@ public class SecurityConfig {
             .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/favicon.ico",
                 "/webjars/**", "/", "/admin/member/login", "/member/login", "/member/check-username",
                 "/member/check-email", "/member/register", "/member/logout", "/member/refresh",
-                "/member/token-expiry", "/token/**", "/api/developer-responses/**").permitAll()
+                "/member/token-expiry", "/token/**", "/api/developer-responses/**","/actuator/health").permitAll()
             // 해당 경로는 인증 필요
             .requestMatchers("/jwt/test","/enrollments/my").authenticated()
             // student, admin 모두 접근
