@@ -91,7 +91,9 @@ public class SupportService {
 
   // 문의 목록 조회 (학생용 - 자신의 문의만)
   public Page<SupportResponseDTO> getMySupports(Long memberId, Pageable pageable, String keyword) {
+    log.info("내 문의 검색 - memberId: {}, keyword: '{}'", memberId, keyword);
     Page<Support> supports = supportRepository.searchSupports(memberId, keyword, pageable);
+    log.info("검색 결과 - 총 건수: {}", supports.getTotalElements());
 
     // 각 문의에 대한 개발팀 응답 조회 및 DTO 변환
     return supports.map(support -> {

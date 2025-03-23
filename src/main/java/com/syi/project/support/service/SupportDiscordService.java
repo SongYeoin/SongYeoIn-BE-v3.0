@@ -79,7 +79,11 @@ public class SupportDiscordService {
     // 임베드 제목을 "📣 새로운 문의"로 변경
     embedBuilder.setTitle("📣 새로운 문의");
 
-    // 문의 ID를 상단에 배치
+    // 문의자와 등록일을 하단에 인라인으로 배치
+    embedBuilder.addField("문의자", support.getMember().getName(), true);
+    embedBuilder.addField("등록일", support.getRegDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), true);
+
+    // 문의 ID
     embedBuilder.addField("문의 ID", support.getId().toString(), false);
 
     // 제목 필드 추가
@@ -88,12 +92,8 @@ public class SupportDiscordService {
     // 문의 내용을 별도 필드로 추가
     embedBuilder.addField("내용", support.getContent(), false);
 
-    // 문의자와 등록일을 하단에 인라인으로 배치
-    embedBuilder.addField("문의자", support.getMember().getName(), true);
-    embedBuilder.addField("등록일", support.getRegDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), true);
-
     // 임베드 색상 설정
-    embedBuilder.setColor(new Color(0, 153, 255));
+    embedBuilder.setColor(new Color(204, 153, 0));
 
     return embedBuilder.build();
   }
