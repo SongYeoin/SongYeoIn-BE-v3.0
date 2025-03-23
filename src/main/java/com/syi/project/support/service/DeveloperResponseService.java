@@ -52,7 +52,7 @@ public class DeveloperResponseService {
         .build();
 
     developerResponseRepository.save(response);
-    log.info("개발팀 응답 저장 완료 - supportId: {}", supportId);
+    log.debug("개발팀 응답 저장 완료 - supportId: {}", supportId);
 
     return DeveloperResponseDTO.fromEntity(response);
   }

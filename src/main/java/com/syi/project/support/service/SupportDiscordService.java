@@ -64,7 +64,7 @@ public class SupportDiscordService {
         sendFilesToDiscord(channel, support.getFiles());
       }
 
-      log.info("문의글이 디스코드로 성공적으로 전송되었습니다. 문의 ID: {}", support.getId());
+      log.debug("문의글이 디스코드로 성공적으로 전송되었습니다. 문의 ID: {}", support.getId());
     } catch (Exception e) {
       log.error("디스코드로 문의글 전송 중 오류 발생 - supportId: {}", support.getId(), e);
     }

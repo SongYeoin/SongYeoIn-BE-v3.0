@@ -65,7 +65,7 @@ public class SupportService {
     Support support = requestDTO.toEntity(member);
     supportRepository.save(support);
 
-    log.info("문의 저장 - id: {}", support.getId());
+    log.debug("문의 저장 - id: {}", support.getId());
 
     // 파일 업로드 처리
     if (requestDTO.getFiles() != null && !requestDTO.getFiles().isEmpty()) {
@@ -78,7 +78,7 @@ public class SupportService {
               .file(uploadedFile)
               .build();
           support.addFile(supportFile);
-          log.info("문의 파일 업로드 완료 - fileId: {}", uploadedFile.getId());
+          log.debug("문의 파일 업로드 완료 - fileId: {}", uploadedFile.getId());
         } catch (Exception e) {
           log.error("파일 업로드 실패 - filename: {}", file.getOriginalFilename(), e);
           throw new InvalidRequestException(ErrorCode.FILE_UPLOAD_FAILED);
@@ -91,9 +91,9 @@ public class SupportService {
 
   // 문의 목록 조회 (학생용 - 자신의 문의만)
   public Page<SupportResponseDTO> getMySupports(Long memberId, Pageable pageable, String keyword) {
-    log.info("내 문의 검색 - memberId: {}, keyword: '{}'", memberId, keyword);
+    log.debug("내 문의 검색 - memberId: {}, keyword: '{}'", memberId, keyword);
     Page<Support> supports = supportRepository.searchSupports(memberId, keyword, pageable);
-    log.info("검색 결과 - 총 건수: {}", supports.getTotalElements());
+    log.debug("검색 결과 - 총 건수: {}", supports.getTotalElements());
 
     // 각 문의에 대한 개발팀 응답 조회 및 DTO 변환
     return supports.map(support -> {
@@ -156,7 +156,7 @@ public class SupportService {
         });
 
     support.confirm();
-    log.info("문의 확인 처리 완료 - id: {}", id);
+    log.debug("문의 확인 처리 완료 - id: {}", id);
 
     return SupportResponseDTO.fromEntity(support, s3Uploader);
   }
@@ -171,7 +171,7 @@ public class SupportService {
         });
 
     support.unconfirm();
-    log.info("문의 확인 취소 완료 - id: {}", id);
+    log.debug("문의 확인 취소 완료 - id: {}", id);
 
     return SupportResponseDTO.fromEntity(support, s3Uploader);
   }
@@ -190,25 +190,25 @@ public class SupportService {
     support.getFiles().forEach(supportFile -> {
       try {
         fileService.deleteFile(supportFile.getFile().getId(), member);
-        log.info("문의 파일 삭제 완료 - fileId: {}", supportFile.getFile().getId());
+        log.debug("문의 파일 삭제 완료 - fileId: {}", supportFile.getFile().getId());
       } catch (Exception e) {
-        log.error("문의 파일 삭제 실패 - fileId: {}", supportFile.getFile().getId(), e);
+        log.warn("문의 파일 삭제 실패 - fileId: {}", supportFile.getFile().getId(), e);
       }
     });
 
     // DeveloperResponse 삭제 로직 추가
     developerResponseRepository.findBySupportId(id)
         .ifPresent(developerResponseRepository::delete);
-    log.info("개발자 응답 삭제 완료 - supportId: {}", id);
+    log.debug("개발자 응답 삭제 완료 - supportId: {}", id);
 
     support.markAsDeleted(memberId);
-    log.info("문의 삭제 완료 - id: {}", id);
+    log.debug("문의 삭제 완료 - id: {}", id);
   }
 
   // 파일 검증 로직
   private void validateFile(MultipartFile file) {
     if (file == null) {
-      log.error("파일이 null입니다.");
+      log.warn("파일이 null입니다.");
       throw new InvalidRequestException(ErrorCode.INVALID_FILE_FORMAT, "파일이 null입니다.");
     }
 
@@ -216,38 +216,38 @@ public class SupportService {
     String mimeType = file.getContentType();
 
     if (originalFilename == null || originalFilename.isEmpty()) {
-      log.error("파일 이름이 비어있거나 null입니다. MIME 타입: {}", mimeType);
+      log.warn("파일 이름이 비어있거나 null입니다. MIME 타입: {}", mimeType);
       throw new InvalidRequestException(ErrorCode.INVALID_FILE_FORMAT, "파일 이름이 비어있거나 null입니다.");
     }
 
     if (mimeType == null || mimeType.isEmpty()) {
-      log.error("MIME 타입이 비어있거나 null입니다. 파일 이름: {}", originalFilename);
+      log.warn("MIME 타입이 비어있거나 null입니다. 파일 이름: {}", originalFilename);
       throw new InvalidRequestException(ErrorCode.INVALID_FILE_FORMAT, "MIME 타입이 비어있거나 null입니다.");
     }
 
     // 확장자 검증
     String extension = getFileExtension(originalFilename);
     if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
-      log.error("허용되지 않은 파일 형식입니다. 파일 이름: {}, 확장자: {}", originalFilename, extension);
+      log.warn("허용되지 않은 파일 형식입니다. 파일 이름: {}, 확장자: {}", originalFilename, extension);
       throw new InvalidRequestException(ErrorCode.INVALID_FILE_FORMAT,
           String.format("허용되지 않은 파일 형식입니다: %s", extension));
     }
 
     // MIME 타입 검증
     if (!ALLOWED_MIME_TYPES.contains(mimeType)) {
-      log.error("허용되지 않은 MIME 타입입니다. 파일 이름: {}, MIME 타입: {}", originalFilename, mimeType);
+      log.warn("허용되지 않은 MIME 타입입니다. 파일 이름: {}, MIME 타입: {}", originalFilename, mimeType);
       throw new InvalidRequestException(ErrorCode.INVALID_FILE_FORMAT,
           String.format("허용되지 않은 MIME 타입입니다: %s", mimeType));
     }
 
-    log.info("파일 검증 완료 - filename: {}, mimeType: {}", originalFilename, mimeType);
+    log.debug("파일 검증 완료 - filename: {}, mimeType: {}", originalFilename, mimeType);
   }
 
   private String getFileExtension(String fileName) {
     try {
       return fileName.substring(fileName.lastIndexOf(".") + 1);
     } catch (StringIndexOutOfBoundsException e) {
-      log.error("파일 확장자를 추출할 수 없습니다. 파일 이름: {}", fileName, e);
+      log.warn("파일 확장자를 추출할 수 없습니다. 파일 이름: {}", fileName, e);
       throw new InvalidRequestException(ErrorCode.INVALID_FILE_FORMAT, "파일 확장자를 추출할 수 없습니다.");
     }
   }
@@ -284,7 +284,7 @@ public class SupportService {
     // 문의 확인 처리
     if (!support.isConfirmed()) {
       support.confirm();
-      log.info("문의 확인 처리 완료 - id: {}", id);
+      log.debug("문의 확인 처리 완료 - id: {}", id);
     }
   }
 
