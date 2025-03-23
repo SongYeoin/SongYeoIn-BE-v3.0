@@ -6,7 +6,9 @@ import com.syi.project.common.exception.ErrorCode;
 import com.syi.project.common.exception.InvalidRequestException;
 import com.syi.project.support.dto.SupportRequestDTO;
 import com.syi.project.support.dto.SupportResponseDTO;
+import com.syi.project.support.entity.DeveloperResponse;
 import com.syi.project.support.entity.Support;
+import com.syi.project.support.repository.DeveloperResponseRepository;
 import com.syi.project.support.repository.SupportRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ public class SupportService {
 
   private final SupportRepository supportRepository;
   private final MemberRepository memberRepository;
+  private final DeveloperResponseRepository developerResponseRepository; // 추가
 
   // 문의 생성
   @Transactional
@@ -39,16 +42,26 @@ public class SupportService {
 
   // 문의 목록 조회 (학생용 - 자신의 문의만)
   public Page<SupportResponseDTO> getMySupports(Long memberId, Pageable pageable, String keyword) {
-    // 새로운 QueryDSL 기반 repository 메서드 사용
     Page<Support> supports = supportRepository.searchSupports(memberId, keyword, pageable);
-    return supports.map(SupportResponseDTO::fromEntity);
+
+    // 각 문의에 대한 개발팀 응답 조회 및 DTO 변환
+    return supports.map(support -> {
+      DeveloperResponse developerResponse = developerResponseRepository.findBySupportId(support.getId())
+          .orElse(null);
+      return SupportResponseDTO.fromEntity(support, developerResponse);
+    });
   }
 
   // 문의 목록 조회 (관리자용 - 전체)
   public Page<SupportResponseDTO> getAllSupports(Pageable pageable, String keyword) {
-    // 관리자는 memberId를 null로 전달하여 모든 문의 조회
     Page<Support> supports = supportRepository.searchSupports(null, keyword, pageable);
-    return supports.map(SupportResponseDTO::fromEntity);
+
+    // 각 문의에 대한 개발팀 응답 조회 및 DTO 변환
+    return supports.map(support -> {
+      DeveloperResponse developerResponse = developerResponseRepository.findBySupportId(support.getId())
+          .orElse(null);
+      return SupportResponseDTO.fromEntity(support, developerResponse);
+    });
   }
 
   // 페이지네이션 정렬 설정 (작성일, ID 기준 내림차순)
@@ -76,7 +89,10 @@ public class SupportService {
       throw new InvalidRequestException(ErrorCode.SUPPORT_ACCESS_DENIED);
     }
 
-    return SupportResponseDTO.fromEntity(support);
+    // 개발팀 응답 조회
+    DeveloperResponse developerResponse = developerResponseRepository.findBySupportId(id).orElse(null);
+
+    return SupportResponseDTO.fromEntity(support, developerResponse);
   }
 
   // 문의 확인 처리 (관리자용)

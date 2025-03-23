@@ -2,6 +2,7 @@ package com.syi.project.support.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.syi.project.support.entity.DeveloperResponse;
 import com.syi.project.support.entity.Support;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -37,9 +38,13 @@ public class SupportResponseDTO {
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
   private final LocalDateTime modifyDate;
 
+  @Schema(description = "개발팀 응답", nullable = true)
+  private final DeveloperResponseDTO developerResponse;
+
   @Builder
   public SupportResponseDTO(Long id, String title, String content, String memberName,
-      boolean isConfirmed, LocalDateTime regDate, LocalDateTime modifyDate) {
+      boolean isConfirmed, LocalDateTime regDate, LocalDateTime modifyDate,
+      DeveloperResponseDTO developerResponse) {
     this.id = id;
     this.title = title;
     this.content = content;
@@ -47,6 +52,7 @@ public class SupportResponseDTO {
     this.isConfirmed = isConfirmed;
     this.regDate = regDate;
     this.modifyDate = modifyDate;
+    this.developerResponse = developerResponse;
   }
 
   public static SupportResponseDTO fromEntity(Support support) {
@@ -58,6 +64,19 @@ public class SupportResponseDTO {
         .isConfirmed(support.isConfirmed())
         .regDate(support.getRegDate())
         .modifyDate(support.getModifyDate())
+        .build();
+  }
+
+  public static SupportResponseDTO fromEntity(Support support, DeveloperResponse developerResponse) {
+    return SupportResponseDTO.builder()
+        .id(support.getId())
+        .title(support.getTitle())
+        .content(support.getContent())
+        .memberName(support.getMember().getName())
+        .isConfirmed(support.isConfirmed())
+        .regDate(support.getRegDate())
+        .modifyDate(support.getModifyDate())
+        .developerResponse(developerResponse != null ? DeveloperResponseDTO.fromEntity(developerResponse) : null)
         .build();
   }
 }

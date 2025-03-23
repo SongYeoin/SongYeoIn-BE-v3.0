@@ -86,6 +86,15 @@ public:
   api:
     service-key: ${PUBLIC_API_SERVICE_KEY}  # 공휴일 api
 
+app:
+  developer-api:
+    key: ${DEVELOPER_API_KEY} # 고객센터 개발팀답변 api
+
+discord:
+  bot:
+    token: ${DISCORD_TOKEN}
+    dev-channel-id: ${DEV_CHANNEL_ID} # 디스코드봇 설정
+
 attendance:
   network:
     allowed-ip-1: ${MY_IP1}  # 개인 ip1

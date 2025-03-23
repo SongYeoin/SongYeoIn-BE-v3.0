@@ -73,6 +73,10 @@ public enum ErrorCode {
   JOURNAL_DOWNLOAD_FAILED("JOURNAL_010", "교육일지 일괄 다운로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
   JOURNAL_NO_FILES_TO_DOWNLOAD("JOURNAL_011", "다운로드할 파일이 없습니다.", HttpStatus.BAD_REQUEST),
 
+  // 고객센터 개발팀답변 관련 에러
+  DEVELOPER_RESPONSE_NOT_FOUND("SUPPORT_004", "개발팀 응답을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  DEVELOPER_API_ACCESS_DENIED("SUPPORT_005", "개발팀 API 접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
+
   // 출석 관련 에러
   // 공통
   ATTENDANCE_NOT_IN_RANGE("ATTENDANCE_001", "학원 네트워크에서만 출석이 가능합니다.", HttpStatus.FORBIDDEN),
