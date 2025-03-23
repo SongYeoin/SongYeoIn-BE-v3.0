@@ -40,6 +40,9 @@ public class Journal extends BaseTimeEntity {
   @Column(nullable = false)
   private LocalDate educationDate;  // 실제 교육 진행 날짜
 
+  @Column(nullable = false)
+  private boolean isDeleted = false;  // 논리적 삭제 필드 추가
+
   @Builder
   public Journal(Member member, Course course, String title, String content, LocalDate educationDate) {
     this.member = member;
@@ -47,6 +50,7 @@ public class Journal extends BaseTimeEntity {
     this.title = title;
     this.content = content;
     this.educationDate = educationDate;
+    this.isDeleted = false;  // 생성 시 기본값
   }
 
   public boolean isOwner(Long memberId) {
@@ -72,5 +76,10 @@ public class Journal extends BaseTimeEntity {
   public boolean isValidEducationDate(LocalDate educationDate) {
     return !educationDate.isBefore(this.course.getStartDate()) &&
         !educationDate.isAfter(this.course.getEndDate());
+  }
+
+  // 논리적 삭제 메서드 추가
+  public void markAsDeleted() {
+    this.isDeleted = true;
   }
 }

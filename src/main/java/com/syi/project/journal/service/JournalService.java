@@ -19,6 +19,7 @@ import com.syi.project.journal.dto.JournalRequestDTO;
 import com.syi.project.journal.dto.JournalResponseDTO;
 import com.syi.project.journal.entity.Journal;
 import com.syi.project.journal.entity.JournalFile;
+import com.syi.project.journal.repository.JournalFileRepository;
 import com.syi.project.journal.repository.JournalRepository;
 import com.syi.project.file.entity.File;
 import java.io.InputStream;
@@ -57,6 +58,7 @@ public class JournalService {
   private final S3Uploader s3Uploader;
   private final EnrollRepository enrollRepository;
   private final JournalErrorHandler journalErrorHandler; // 생성자 주입 추가
+  private final JournalFileRepository journalFileRepository;  // 추가
 
   private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("hwp", "hwpx", "docx", "doc");
 
@@ -75,7 +77,7 @@ public class JournalService {
   }
 
   private Journal validateAndGetJournalWithMember(Long journalId, Long memberId) {
-    return journalRepository.findByIdAndMemberId(journalId, memberId)
+    return journalRepository.findByIdAndMemberIdAndIsDeletedFalse(journalId, memberId)
         .orElseThrow(() -> {
           log.error("교육일지를 찾을 수 없거나 접근 권한 없음 - journalId: {}, memberId: {}", journalId, memberId);
           return new IllegalArgumentException("존재하지 않거나 접근 권한이 없는 교육일지입니다.");
@@ -255,16 +257,30 @@ public class JournalService {
   // 수정: 검증 로직 개선
   @Transactional
   public void deleteJournal(Long memberId, Long journalId) {
-
     Member member = validateAndGetMember(memberId);
     Journal journal = validateAndGetJournalWithMember(journalId, memberId);
 
-    if (journal.getJournalFile() != null) {
-      fileService.deleteFile(journal.getJournalFile().getFile().getId(), member);
+    // 파일 정보 미리 저장
+    JournalFile journalFile = journal.getJournalFile();
+    Long fileId = null;
+
+    if (journalFile != null) {
+      fileId = journalFile.getFile().getId();
+      // 교육일지와 파일 관계를 끊어줌
+      journal.setFile(null);
     }
 
-    journalRepository.delete(journal);
-    log.info("교육일지 삭제 완료 - journalId: {}", journalId);
+    // 교육일지는 논리적 삭제
+    journal.markAsDeleted();
+    journalRepository.save(journal);
+
+    // 파일은 물리적 삭제 (관계가 끊어진 후에 수행)
+    if (fileId != null) {
+      fileService.deleteFile(fileId, member);
+      journalFileRepository.deleteById(journalFile.getId());
+    }
+
+    log.info("교육일지 논리적 삭제 및 파일 물리적 삭제 완료 - journalId: {}", journalId);
   }
 
   // 기존 메서드 유지

@@ -37,6 +37,7 @@ public class JournalRepositoryCustomImpl implements JournalRepositoryCustom {
       LocalDate endDate
   ) {
     return new BooleanExpression[] {
+        journal.isDeleted.eq(false),  // 삭제되지 않은 항목만 조회
         memberId != null ? journal.member.id.eq(memberId) : null,
         courseId != null ? journal.course.id.eq(courseId) : null,
         searchByMemberInfo(searchType, searchKeyword),
