@@ -11,7 +11,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToMany;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -52,6 +56,9 @@ public class Support {
   @LastModifiedDate
   private LocalDateTime modifyDate;
 
+  @OneToMany(mappedBy = "support", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<SupportFile> files = new ArrayList<>();
+
   @Builder
   public Support(String title, String content, Member member) {
     this.title = title;
@@ -70,5 +77,9 @@ public class Support {
 
   public void markAsDeleted(Long memberId) {
     this.deletedBy = memberId;
+  }
+
+  public void addFile(SupportFile supportFile) {
+    this.files.add(supportFile);
   }
 }

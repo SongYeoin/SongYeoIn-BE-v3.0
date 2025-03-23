@@ -2,6 +2,8 @@ package com.syi.project.support.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.syi.project.common.utils.S3Uploader;
+import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.support.entity.DeveloperResponse;
 import com.syi.project.support.entity.Support;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,6 +11,8 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Schema(description = "고객센터 문의 응답 DTO")
@@ -41,10 +45,13 @@ public class SupportResponseDTO {
   @Schema(description = "개발팀 응답", nullable = true)
   private final DeveloperResponseDTO developerResponse;
 
+  @Schema(description = "첨부 파일 목록")
+  private final List<FileResponseDTO> files;
+
   @Builder
   public SupportResponseDTO(Long id, String title, String content, String memberName,
       boolean isConfirmed, LocalDateTime regDate, LocalDateTime modifyDate,
-      DeveloperResponseDTO developerResponse) {
+      DeveloperResponseDTO developerResponse, List<FileResponseDTO> files) {
     this.id = id;
     this.title = title;
     this.content = content;
@@ -53,9 +60,14 @@ public class SupportResponseDTO {
     this.regDate = regDate;
     this.modifyDate = modifyDate;
     this.developerResponse = developerResponse;
+    this.files = files;
   }
 
-  public static SupportResponseDTO fromEntity(Support support) {
+  public static SupportResponseDTO fromEntity(Support support, S3Uploader s3Uploader) {
+    List<FileResponseDTO> fileResponseDTOs = support.getFiles().stream()
+        .map(supportFile -> FileResponseDTO.from(supportFile.getFile(), s3Uploader))
+        .collect(Collectors.toList());
+
     return SupportResponseDTO.builder()
         .id(support.getId())
         .title(support.getTitle())
@@ -64,10 +76,15 @@ public class SupportResponseDTO {
         .isConfirmed(support.isConfirmed())
         .regDate(support.getRegDate())
         .modifyDate(support.getModifyDate())
+        .files(fileResponseDTOs)
         .build();
   }
 
-  public static SupportResponseDTO fromEntity(Support support, DeveloperResponse developerResponse) {
+  public static SupportResponseDTO fromEntity(Support support, DeveloperResponse developerResponse, S3Uploader s3Uploader) {
+    List<FileResponseDTO> fileResponseDTOs = support.getFiles().stream()
+        .map(supportFile -> FileResponseDTO.from(supportFile.getFile(), s3Uploader))
+        .collect(Collectors.toList());
+
     return SupportResponseDTO.builder()
         .id(support.getId())
         .title(support.getTitle())
@@ -77,6 +94,7 @@ public class SupportResponseDTO {
         .regDate(support.getRegDate())
         .modifyDate(support.getModifyDate())
         .developerResponse(developerResponse != null ? DeveloperResponseDTO.fromEntity(developerResponse) : null)
+        .files(fileResponseDTOs)
         .build();
   }
 }

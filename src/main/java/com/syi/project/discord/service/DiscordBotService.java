@@ -44,4 +44,9 @@ public class DiscordBotService {
       log.info("디스코드 봇이 종료되었습니다.");
     }
   }
+
+  // JDA 객체를 반환하는 getter 메소드 추가
+  public JDA getJda() {
+    return jda;
+  }
 }
