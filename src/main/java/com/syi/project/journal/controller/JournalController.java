@@ -56,7 +56,6 @@ public class JournalController {
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     Long memberId = userDetails.getId();
-    log.info("교육일지 목록 조회 - courseId: {}, memberId: {}", courseId, memberId);
 
     Page<JournalResponseDTO> page = journalService.getStudentJournals(
         memberId,
@@ -91,7 +90,6 @@ public class JournalController {
       @AuthenticationPrincipal CustomUserDetails userDetails // @AuthenticationPrincipal로 사용자 정보 주입
   ){
     Long memberId = userDetails.getId(); // userDetails에서 memberId 추출
-    log.info("교육일지 상세 조회 - journalId: {}, memberId: {}", journalId, memberId);
     return ResponseEntity.ok(journalService.getJournal(journalId, memberId));
   }
 
@@ -123,7 +121,6 @@ public class JournalController {
       @PathVariable Long journalId,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
-    log.info("교육일지 파일 다운로드 - journalId: {}", journalId);
     return journalService.downloadJournalFile(journalId, userDetails.getId());
   }
 }

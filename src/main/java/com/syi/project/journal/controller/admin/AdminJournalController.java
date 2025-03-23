@@ -101,7 +101,6 @@ public class AdminJournalController {
   public ResponseEntity<List<JournalCourseResponseDTO>> getActiveCourses(
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
-    log.info("[관리자] 교육과정 목록 조회 - adminId: {}", userDetails.getId());
     return ResponseEntity.ok(journalService.getActiveCourses(userDetails.getId()));
   }
 
@@ -113,7 +112,6 @@ public class AdminJournalController {
       @PathVariable Long journalId,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
-    log.info("[관리자] 교육일지 파일 다운로드 - journalId: {}", journalId);
     return journalService.downloadJournalFile(journalId, userDetails.getId());
   }
 

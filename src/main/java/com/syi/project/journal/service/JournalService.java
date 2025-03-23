@@ -57,8 +57,8 @@ public class JournalService {
   private final CourseService courseService;
   private final S3Uploader s3Uploader;
   private final EnrollRepository enrollRepository;
-  private final JournalErrorHandler journalErrorHandler; // 생성자 주입 추가
-  private final JournalFileRepository journalFileRepository;  // 추가
+  private final JournalErrorHandler journalErrorHandler;
+  private final JournalFileRepository journalFileRepository;
 
   private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("hwp", "hwpx", "docx", "doc");
 
@@ -292,7 +292,6 @@ public class JournalService {
     }
 
     if (pageNum <= 0) {
-      log.warn("잘못된 페이지 번호 - pageNum: {}", pageNum);
       throw new IllegalArgumentException("페이지 번호는 1 이상이어야 합니다.");
     }
   }
@@ -371,8 +370,7 @@ public class JournalService {
         fileIdToDateMap.put(file.getId(), journal.getEducationDate());
       } catch (Exception e) {
         // S3에서 파일을 찾을 수 없거나 다른 문제가 있는 경우 로그만 남기고 건너뜀
-        log.warn("S3에서 파일을 찾을 수 없어 제외됨 - journalId: {}, fileId: {}, path: {}",
-            journal.getId(), file.getId(), file.getPath());
+        log.warn("S3 파일 누락 - 파일ID: {}", file.getId());
       }
     }
 
