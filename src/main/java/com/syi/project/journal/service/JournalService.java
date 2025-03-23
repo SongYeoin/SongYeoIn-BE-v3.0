@@ -212,7 +212,7 @@ public class JournalService {
     // 이제 createdAt이 설정된 상태에서 파일 처리
     updateJournalFile(savedJournal, requestDTO.getFile(), member);
 
-    log.info("교육일지 등록 완료 - journalId: {}", savedJournal.getId());
+    log.warn("교육일지 등록 완료 - journalId: {}", savedJournal.getId());
 
     return JournalResponseDTO.from(savedJournal, s3Uploader);
   }
@@ -250,7 +250,7 @@ public class JournalService {
         requestDTO.getEducationDate()  // 교육일자 추가
     );
 
-    log.info("교육일지 수정 완료 - journalId: {}", journalId);
+    log.warn("교육일지 수정 완료 - journalId: {}", journalId);
     return JournalResponseDTO.from(journal, s3Uploader);
   }
 
@@ -280,7 +280,7 @@ public class JournalService {
       journalFileRepository.deleteById(journalFile.getId());
     }
 
-    log.info("교육일지 논리적 삭제 및 파일 물리적 삭제 완료 - journalId: {}", journalId);
+    log.warn("교육일지 논리적 삭제 및 파일 물리적 삭제 완료 - journalId: {}", journalId);
   }
 
   // 기존 메서드 유지

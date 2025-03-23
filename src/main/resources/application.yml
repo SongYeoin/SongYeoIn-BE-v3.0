@@ -58,8 +58,7 @@ management:
 
 logging:
   level:
-    com.syi.project.journal.controller: INFO    # 컨트롤러는 INFO 레벨
-    com.syi.project.journal.service: DEBUG      # 서비스는 DEBUG 레벨
+    com.syi.project.journal: WARN    # journal 패키지 전체를 WARN 레벨로 설정
     com.syi.project.support: WARN    # support 패키지 전체를 WARN 레벨로 설정
     com.syi.project.discord: WARN    # discord 패키지 전체를 WARN 레벨로 설정
     org.springframework: INFO

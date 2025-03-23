@@ -56,7 +56,7 @@ public class AdminJournalController {
       @RequestParam(required = false)
       @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate
   ) {
-    log.info("[관리자] 교육일지 목록 조회 - courseId: {}", courseId);
+    log.warn("[관리자] 교육일지 목록 조회 - courseId: {}", courseId);
 
     Page<JournalResponseDTO> page = journalService.getAdminJournals(
         courseId,
@@ -91,7 +91,7 @@ public class AdminJournalController {
       @PathVariable Long journalId,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
-    log.info("[관리자] 교육일지 상세 조회 - journalId: {}", journalId);
+    log.warn("[관리자] 교육일지 상세 조회 - journalId: {}", journalId);
     return ResponseEntity.ok(journalService.getJournal(journalId, userDetails.getId()));
   }
 
@@ -131,7 +131,7 @@ public class AdminJournalController {
       @RequestBody List<Long> journalIds,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
-    log.info("[관리자] 교육일지 파일 존재 확인 - journalIds: {}", journalIds);
+    log.warn("[관리자] 교육일지 파일 존재 확인 - journalIds: {}", journalIds);
 
     boolean hasMissingFiles = journalService.checkHasMissingFiles(journalIds, userDetails.getId());
 
