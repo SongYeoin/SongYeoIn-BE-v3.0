@@ -196,6 +196,11 @@ public class SupportService {
       }
     });
 
+    // DeveloperResponse 삭제 로직 추가
+    developerResponseRepository.findBySupportId(id)
+        .ifPresent(developerResponseRepository::delete);
+    log.info("개발자 응답 삭제 완료 - supportId: {}", id);
+
     support.markAsDeleted(memberId);
     log.info("문의 삭제 완료 - id: {}", id);
   }
