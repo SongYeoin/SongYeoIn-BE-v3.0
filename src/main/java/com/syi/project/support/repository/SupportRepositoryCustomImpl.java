@@ -16,22 +16,27 @@ public class SupportRepositoryCustomImpl implements SupportRepositoryCustom {
 
   @Override
   public Page<Support> searchSupports(Long memberId, String keyword, Pageable pageable) {
-    // 기본 쿼리 구조 정의
-    BooleanExpression titleContains = keyword != null && !keyword.isEmpty()
-        ? QSupport.support.title.containsIgnoreCase(keyword)
-        : null;
-
+    // 검색 조건 구성
     BooleanExpression memberFilter = memberId != null
         ? QSupport.support.member.id.eq(memberId)
         : null;
 
     BooleanExpression notDeleted = QSupport.support.deletedBy.isNull();
 
+    // 제목 검색 조건 - 키워드가 있을 경우에만 적용
+    // final 키워드 추가
+    final BooleanExpression titleCondition;
+    if (keyword != null && !keyword.isEmpty()) {
+      titleCondition = QSupport.support.title.containsIgnoreCase(keyword);
+    } else {
+      titleCondition = null;
+    }
+
     // 쿼리 실행 (fetch join 사용)
     List<Support> supports = queryFactory
         .selectFrom(QSupport.support)
         .leftJoin(QSupport.support.member).fetchJoin()
-        .where(notDeleted, memberFilter, titleContains)
+        .where(notDeleted, memberFilter, titleCondition)
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .orderBy(QSupport.support.regDate.desc(), QSupport.support.id.desc())
@@ -42,7 +47,7 @@ public class SupportRepositoryCustomImpl implements SupportRepositoryCustom {
         queryFactory
             .select(QSupport.support.count())
             .from(QSupport.support)
-            .where(notDeleted, memberFilter, titleContains)
+            .where(notDeleted, memberFilter, titleCondition)
             .fetchOne()
     );
   }

@@ -12,13 +12,14 @@ import java.util.Optional;
 @Repository
 public interface JournalRepository extends JpaRepository<Journal, Long>, JournalRepositoryCustom {
 
-  List<Journal> findByCourseId(Long courseId);
-  List<Journal> findByCourseIdAndMemberId(Long courseId, Long memberId);
-  Optional<Journal> findByIdAndMemberId(Long id, Long memberId);
+  List<Journal> findByCourseIdAndIsDeletedFalse(Long courseId);
+  List<Journal> findByCourseIdAndMemberIdAndIsDeletedFalse(Long courseId, Long memberId);
+  Optional<Journal> findByIdAndMemberIdAndIsDeletedFalse(Long id, Long memberId);
   boolean existsByMemberIdAndCourseIdAndEducationDate(Long memberId, Long courseId, LocalDate educationDate);
 
-  @Query("SELECT j FROM Journal j LEFT JOIN FETCH j.journalFile jf LEFT JOIN FETCH jf.file f WHERE j.id = :journalId")
+  @Query("SELECT j FROM Journal j LEFT JOIN FETCH j.journalFile jf LEFT JOIN FETCH jf.file f WHERE j.id = :journalId AND j.isDeleted = false")
   Optional<Journal> findByIdWithFile(@Param("journalId") Long journalId);
-  @Query("SELECT j FROM Journal j LEFT JOIN FETCH j.journalFile jf LEFT JOIN FETCH jf.file f WHERE j.id IN :journalIds")
+
+  @Query("SELECT j FROM Journal j LEFT JOIN FETCH j.journalFile jf LEFT JOIN FETCH jf.file f WHERE j.id IN :journalIds AND j.isDeleted = false")
   List<Journal> findAllByIdsWithFiles(@Param("journalIds") List<Long> journalIds);
 }

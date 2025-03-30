@@ -64,6 +64,12 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
     implementation 'com.amazonaws:aws-java-sdk-s3:1.12.261'
 
+    // Discord API 의존성
+    implementation 'net.dv8tion:JDA:5.0.0-beta.19'
+
+    // health check 의존성 추가
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
 }
 
 tasks.named('test') {

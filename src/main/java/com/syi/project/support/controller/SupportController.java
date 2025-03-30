@@ -12,12 +12,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,12 +40,22 @@ public class SupportController {
       @ApiResponse(responseCode = "401", description = "인증 실패"),
       @ApiResponse(responseCode = "403", description = "권한 없음")
   })
-  @PostMapping
+  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<SupportResponseDTO> createSupport(
       @AuthenticationPrincipal CustomUserDetails userDetails,
-      @Parameter(description = "문의 요청 데이터", required = true) @Valid @RequestBody SupportRequestDTO requestDTO) {
+      @Parameter(description = "문의 제목", required = true) @RequestParam("title") String title,
+      @Parameter(description = "문의 내용", required = true) @RequestParam("content") String content,
+      @Parameter(description = "첨부 파일 (선택사항)") @RequestParam(value = "files", required = false) List<MultipartFile> files) {
+
     Long memberId = userDetails.getId();
     log.info("문의 등록 - memberId: {}", memberId);
+
+    SupportRequestDTO requestDTO = SupportRequestDTO.builder()
+        .title(title)
+        .content(content)
+        .files(files)
+        .build();
+
     SupportResponseDTO support = supportService.createSupport(memberId, requestDTO);
     return ResponseEntity.ok(support);
   }
@@ -94,5 +109,24 @@ public class SupportController {
     log.info("문의 삭제 - id: {}", id);
     supportService.deleteSupport(id, memberId);
     return ResponseEntity.noContent().build();
+  }
+
+  @Operation(summary = "문의 첨부파일 다운로드", description = "문의에 첨부된 파일을 다운로드합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "파일 다운로드 성공"),
+      @ApiResponse(responseCode = "404", description = "파일을 찾을 수 없음"),
+      @ApiResponse(responseCode = "401", description = "인증 실패"),
+      @ApiResponse(responseCode = "403", description = "권한 없음")
+  })
+  @GetMapping("/{supportId}/files/{fileId}/download")
+  public ResponseEntity<Resource> downloadSupportFile(
+      @Parameter(description = "문의 ID", required = true) @PathVariable Long supportId,
+      @Parameter(description = "파일 ID", required = true) @PathVariable Long fileId,
+      @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+    Long memberId = userDetails.getId();
+    log.info("문의 첨부파일 다운로드 - supportId: {}, fileId: {}, memberId: {}", supportId, fileId, memberId);
+
+    return supportService.downloadSupportFile(supportId, fileId, memberId);
   }
 }

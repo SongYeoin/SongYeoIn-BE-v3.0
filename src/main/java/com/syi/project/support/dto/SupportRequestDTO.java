@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Getter
 @ToString
@@ -21,10 +24,14 @@ public class SupportRequestDTO {
   @Schema(description = "문의 내용", example = "로그인 후 메인 페이지 접속 시 오류가 발생합니다.")
   private final String content;
 
+  @Schema(description = "첨부파일", type = "array", format = "binary")
+  private final List<MultipartFile> files;
+
   @Builder
-  public SupportRequestDTO(String title, String content) {
+  public SupportRequestDTO(String title, String content, List<MultipartFile> files) {
     this.title = title;
     this.content = content;
+    this.files = files;
   }
 
   public Support toEntity(Member member) {

@@ -47,14 +47,20 @@ spring:
 
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      base-path: /actuator
   endpoint:
     health:
-      show-details: ALWAYS
+      show-details: never
 
 logging:
   level:
-    com.syi.project.journal.controller: INFO    # 컨트롤러는 INFO 레벨
-    com.syi.project.journal.service: DEBUG      # 서비스는 DEBUG 레벨
+    com.syi.project.journal: WARN    # journal 패키지 전체를 WARN 레벨로 설정
+    com.syi.project.support: WARN    # support 패키지 전체를 WARN 레벨로 설정
+    com.syi.project.discord: WARN    # discord 패키지 전체를 WARN 레벨로 설정
     org.springframework: INFO
     com.ict: DEBUG
 
@@ -85,6 +91,15 @@ cloud:
 public:
   api:
     service-key: ${PUBLIC_API_SERVICE_KEY}  # 공휴일 api
+
+app:
+  developer-api:
+    key: ${DEVELOPER_API_KEY} # 고객센터 개발팀답변 api
+
+discord:
+  bot:
+    token: ${DISCORD_TOKEN}
+    dev-channel-id: ${DEV_CHANNEL_ID} # 디스코드봇 설정
 
 attendance:
   network:

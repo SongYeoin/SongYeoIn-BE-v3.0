@@ -40,7 +40,7 @@ public class JournalController {
       @AuthenticationPrincipal CustomUserDetails userDetails,
       @Valid @ModelAttribute JournalRequestDTO.Create requestDTO) {
     Long memberId = userDetails.getId();
-    log.info("교육일지 등록 - courseId: {}", requestDTO.getCourseId());
+    log.warn("교육일지 등록 - courseId: {}", requestDTO.getCourseId());
     return ResponseEntity.ok(journalService.createJournal(memberId, requestDTO));
   }
 
@@ -56,7 +56,6 @@ public class JournalController {
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
     Long memberId = userDetails.getId();
-    log.info("교육일지 목록 조회 - courseId: {}, memberId: {}", courseId, memberId);
 
     Page<JournalResponseDTO> page = journalService.getStudentJournals(
         memberId,
@@ -91,7 +90,6 @@ public class JournalController {
       @AuthenticationPrincipal CustomUserDetails userDetails // @AuthenticationPrincipal로 사용자 정보 주입
   ){
     Long memberId = userDetails.getId(); // userDetails에서 memberId 추출
-    log.info("교육일지 상세 조회 - journalId: {}, memberId: {}", journalId, memberId);
     return ResponseEntity.ok(journalService.getJournal(journalId, memberId));
   }
 
@@ -102,7 +100,7 @@ public class JournalController {
       @PathVariable Long journalId,
       @Valid @ModelAttribute JournalRequestDTO.Update requestDTO) {
     Long memberId = userDetails.getId();
-    log.info("교육일지 수정 - journalId: {}, memberId: {}", journalId, memberId);
+    log.warn("교육일지 수정 - journalId: {}, memberId: {}", journalId, memberId);
     return ResponseEntity.ok(journalService.updateJournal(memberId, journalId, requestDTO));
   }
 
@@ -112,7 +110,7 @@ public class JournalController {
       @AuthenticationPrincipal CustomUserDetails userDetails, // @AuthenticationPrincipal로 사용자 정보 주입
       @PathVariable Long journalId) {
     Long memberId = userDetails.getId(); // userDetails에서 memberId 추출
-    log.info("교육일지 삭제 - journalId: {}, memberId: {}", journalId, memberId);
+    log.warn("교육일지 삭제 - journalId: {}, memberId: {}", journalId, memberId);
     journalService.deleteJournal(memberId, journalId);
     return ResponseEntity.noContent().build();
   }
@@ -123,7 +121,6 @@ public class JournalController {
       @PathVariable Long journalId,
       @AuthenticationPrincipal CustomUserDetails userDetails
   ) {
-    log.info("교육일지 파일 다운로드 - journalId: {}", journalId);
     return journalService.downloadJournalFile(journalId, userDetails.getId());
   }
 }

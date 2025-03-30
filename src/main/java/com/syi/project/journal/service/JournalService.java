@@ -19,6 +19,7 @@ import com.syi.project.journal.dto.JournalRequestDTO;
 import com.syi.project.journal.dto.JournalResponseDTO;
 import com.syi.project.journal.entity.Journal;
 import com.syi.project.journal.entity.JournalFile;
+import com.syi.project.journal.repository.JournalFileRepository;
 import com.syi.project.journal.repository.JournalRepository;
 import com.syi.project.file.entity.File;
 import java.io.InputStream;
@@ -56,7 +57,8 @@ public class JournalService {
   private final CourseService courseService;
   private final S3Uploader s3Uploader;
   private final EnrollRepository enrollRepository;
-  private final JournalErrorHandler journalErrorHandler; // 생성자 주입 추가
+  private final JournalErrorHandler journalErrorHandler;
+  private final JournalFileRepository journalFileRepository;
 
   private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("hwp", "hwpx", "docx", "doc");
 
@@ -75,7 +77,7 @@ public class JournalService {
   }
 
   private Journal validateAndGetJournalWithMember(Long journalId, Long memberId) {
-    return journalRepository.findByIdAndMemberId(journalId, memberId)
+    return journalRepository.findByIdAndMemberIdAndIsDeletedFalse(journalId, memberId)
         .orElseThrow(() -> {
           log.error("교육일지를 찾을 수 없거나 접근 권한 없음 - journalId: {}, memberId: {}", journalId, memberId);
           return new IllegalArgumentException("존재하지 않거나 접근 권한이 없는 교육일지입니다.");
@@ -210,7 +212,7 @@ public class JournalService {
     // 이제 createdAt이 설정된 상태에서 파일 처리
     updateJournalFile(savedJournal, requestDTO.getFile(), member);
 
-    log.info("교육일지 등록 완료 - journalId: {}", savedJournal.getId());
+    log.warn("교육일지 등록 완료 - journalId: {}", savedJournal.getId());
 
     return JournalResponseDTO.from(savedJournal, s3Uploader);
   }
@@ -248,23 +250,37 @@ public class JournalService {
         requestDTO.getEducationDate()  // 교육일자 추가
     );
 
-    log.info("교육일지 수정 완료 - journalId: {}", journalId);
+    log.warn("교육일지 수정 완료 - journalId: {}", journalId);
     return JournalResponseDTO.from(journal, s3Uploader);
   }
 
   // 수정: 검증 로직 개선
   @Transactional
   public void deleteJournal(Long memberId, Long journalId) {
-
     Member member = validateAndGetMember(memberId);
     Journal journal = validateAndGetJournalWithMember(journalId, memberId);
 
-    if (journal.getJournalFile() != null) {
-      fileService.deleteFile(journal.getJournalFile().getFile().getId(), member);
+    // 파일 정보 미리 저장
+    JournalFile journalFile = journal.getJournalFile();
+    Long fileId = null;
+
+    if (journalFile != null) {
+      fileId = journalFile.getFile().getId();
+      // 교육일지와 파일 관계를 끊어줌
+      journal.setFile(null);
     }
 
-    journalRepository.delete(journal);
-    log.info("교육일지 삭제 완료 - journalId: {}", journalId);
+    // 교육일지는 논리적 삭제
+    journal.markAsDeleted();
+    journalRepository.save(journal);
+
+    // 파일은 물리적 삭제 (관계가 끊어진 후에 수행)
+    if (fileId != null) {
+      fileService.deleteFile(fileId, member);
+      journalFileRepository.deleteById(journalFile.getId());
+    }
+
+    log.warn("교육일지 논리적 삭제 및 파일 물리적 삭제 완료 - journalId: {}", journalId);
   }
 
   // 기존 메서드 유지
@@ -276,7 +292,6 @@ public class JournalService {
     }
 
     if (pageNum <= 0) {
-      log.warn("잘못된 페이지 번호 - pageNum: {}", pageNum);
       throw new IllegalArgumentException("페이지 번호는 1 이상이어야 합니다.");
     }
   }
@@ -355,8 +370,7 @@ public class JournalService {
         fileIdToDateMap.put(file.getId(), journal.getEducationDate());
       } catch (Exception e) {
         // S3에서 파일을 찾을 수 없거나 다른 문제가 있는 경우 로그만 남기고 건너뜀
-        log.warn("S3에서 파일을 찾을 수 없어 제외됨 - journalId: {}, fileId: {}, path: {}",
-            journal.getId(), file.getId(), file.getPath());
+        log.warn("S3 파일 누락 - 파일ID: {}", file.getId());
       }
     }
 
