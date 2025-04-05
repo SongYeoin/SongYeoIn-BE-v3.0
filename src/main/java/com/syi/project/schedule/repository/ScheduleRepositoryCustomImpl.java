@@ -1,24 +1,17 @@
 package com.syi.project.schedule.repository;
 
-import static com.syi.project.period.eneity.QPeriod.period;
+import static com.syi.project.period.entity.QPeriod.period;
 import static com.syi.project.schedule.entity.QSchedule.schedule;
 
 import com.querydsl.core.Tuple;
-import com.querydsl.core.types.ExpressionUtils;
-import com.querydsl.core.types.Order;
-import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.period.DayOrderUtil;
-import com.syi.project.period.eneity.Period;
-import com.syi.project.period.eneity.QPeriod;
+import com.syi.project.period.entity.Period;
 import com.syi.project.schedule.dto.ScheduleResponseDTO;
 import com.syi.project.schedule.entity.QSchedule;
 import com.syi.project.schedule.entity.Schedule;
 import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;

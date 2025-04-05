@@ -1,6 +1,6 @@
 package com.syi.project.period.dto;
 
-import com.syi.project.period.eneity.Period;
+import com.syi.project.period.entity.Period;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalTime;

@@ -1,14 +1,13 @@
 package com.syi.project.period.repository;
 
 import static com.syi.project.attendance.entity.QAttendance.attendance;
-import static com.syi.project.period.eneity.QPeriod.period;
-import static com.syi.project.schedule.entity.QSchedule.schedule;
+import static com.syi.project.period.entity.QPeriod.period;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.syi.project.period.DayOrderUtil;
-import com.syi.project.period.eneity.Period;
+import com.syi.project.period.entity.Period;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Repository;
