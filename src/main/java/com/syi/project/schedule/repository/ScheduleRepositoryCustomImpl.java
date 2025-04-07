@@ -56,7 +56,9 @@ public class ScheduleRepositoryCustomImpl implements ScheduleRepositoryCustom {
         .select(schedule, period)
         .from(schedule)
         .leftJoin(period).on(period.scheduleId.eq(schedule.id))
-        .where(schedule.courseId.eq(courseId))
+        .where(schedule.courseId.eq(courseId)
+            .and(period.deletedBy.isNull())
+            .and(schedule.deletedBy.isNull()))
         .orderBy(DayOrderUtil.getDayOrder(period.dayOfWeek),period.startTime.asc())
         .fetch();
 
