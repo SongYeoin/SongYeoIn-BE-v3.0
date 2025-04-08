@@ -101,7 +101,8 @@ public class PeriodRepositoryImpl implements PeriodRepositoryCustom {
         .distinct()
         .from(period)
         .where(period.dayOfWeek.eq(dayOfWeek)
-            .and(period.courseId.eq(courseId)))
+            .and(period.courseId.eq(courseId))
+            .and(period.deletedBy.isNull()))
         .orderBy(period.startTime.asc()) // 시간 순으로 정렬
         .fetch();
 
@@ -120,7 +121,8 @@ public class PeriodRepositoryImpl implements PeriodRepositoryCustom {
         .from(attendance)
         .join(period).on(attendance.periodId.eq(period.id))
         .where(attendance.date.between(startDate, endDate)
-            .and(period.courseId.eq(courseId)))
+            .and(period.courseId.eq(courseId))
+            .and(period.deletedBy.isNull()))
         .orderBy(period.startTime.asc())
         .fetch();
 
