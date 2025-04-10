@@ -48,7 +48,7 @@ public class CourseRepositoryCustomImpl implements
 
     // 현재 페이지 데이터
     List<Course> content = queryFactory.selectFrom(course)
-        .where(predicate)
+        .where(predicate.and(course.deletedBy.isNull()))
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .orderBy(course.enrollDate.desc(),course.name.asc())
@@ -63,7 +63,7 @@ public class CourseRepositoryCustomImpl implements
     // 전체 데이터 개수
     Long count = queryFactory.select(course.count())
         .from(course)
-        .where(predicate)
+        .where(predicate.and(course.deletedBy.isNull()))
         .fetchOne();
 
     return new PageImpl<>(content, pageable, count);
@@ -93,7 +93,9 @@ public class CourseRepositoryCustomImpl implements
         ))
         .from(course)
         .join(enroll).on(course.id.eq(enroll.courseId))
-        .where(enroll.memberId.eq(studentId))
+        .where(enroll.memberId.eq(studentId)
+            .and(enroll.deletedBy.isNull())
+            .and(course.deletedBy.isNull()))
         .fetch();
   }
 }
