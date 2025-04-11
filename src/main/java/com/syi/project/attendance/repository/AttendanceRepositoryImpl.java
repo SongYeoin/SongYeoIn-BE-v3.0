@@ -95,7 +95,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
             attendance.status)
         .from(attendance)
         .join(period).on(attendance.periodId.eq(period.id))
-        .where(predicate)
+        .where(predicate.and(period.deletedBy.isNull()))
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .fetch();
@@ -169,7 +169,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
     // 1: 모든 Period 정보 조회 (해당 Course의 Period 정보만 가져옴)
     List<Period> periods = queryFactory
         .selectFrom(period)
-        .where(period.courseId.eq(courseId))
+        .where(period.courseId.eq(courseId).and(period.deletedBy.isNull()))
         .orderBy(period.startTime.asc())
         .fetch();
 
@@ -506,7 +506,9 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
     // period 에서 id와 name 추출하기 위해 조회
     List<Period> periods = queryFactory
         .selectFrom(period)
-        .where(period.courseId.eq(courseId).and(period.dayOfWeek.eq(dayOfWeek)))
+        .where(period.courseId.eq(courseId)
+            .and(period.dayOfWeek.eq(dayOfWeek))
+            .and(period.deletedBy.isNull()))
         .orderBy(period.startTime.asc())
         .fetch();
 
@@ -627,7 +629,8 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .where(
             attendance.memberId.eq(studentId),
             attendance.courseId.eq(courseId),
-            attendance.date.eq(date)
+            attendance.date.eq(date),
+            period.deletedBy.isNull()
         )
         .orderBy(period.startTime.asc())
         .fetch();
