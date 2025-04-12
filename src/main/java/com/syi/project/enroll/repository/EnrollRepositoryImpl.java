@@ -77,7 +77,7 @@ public class EnrollRepositoryImpl implements EnrollRepositoryCustom {
     return queryFactory.select(member)
         .from(enroll)
         .join(member).on(enroll.memberId.eq(member.id))
-        .where(enroll.courseId.eq(courseId))
+        .where(enroll.courseId.eq(courseId).and(enroll.deletedBy.isNull()))
         .fetch();
   }
 
