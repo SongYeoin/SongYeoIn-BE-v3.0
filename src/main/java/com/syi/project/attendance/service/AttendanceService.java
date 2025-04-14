@@ -546,7 +546,8 @@ public class AttendanceService {
 
     // 퇴실 인정 시간 체크
     LocalTime lastPeriodEndTime = lastPeriod.getEndTime();
-    LocalTime allowedExitStart = lastPeriodEndTime.minusMinutes(20);  // 퇴실 가능 시작 시간 = 마지막 교시 종료 시간 - 20분
+    LocalTime allowedExitStart = lastPeriod.getStartTime(); // 퇴실 가능 시작 시간 = 마지막 교시 시작 시간
+    //LocalTime allowedExitStart = lastPeriodEndTime.minusMinutes(20);  // 퇴실 가능 시작 시간 = 마지막 교시 종료 시간 - 20분
     LocalTime allowedExitEnd = lastPeriodEndTime.plusMinutes(70);  // 퇴실 가능 종료 시간 = 마지막 교시 종료 + 1시간 10분
 
     if (exitDateTime.toLocalTime().isBefore(allowedExitStart) || exitDateTime.toLocalTime().isAfter(allowedExitEnd)) {
@@ -603,7 +604,7 @@ public class AttendanceService {
     Period firstPeriod = periods.get(0);
     Period lastPeriod = periods.get(periods.size() - 1);
 
-    // 1교시 시작 40분 전
+    // 1교시 시작 40분 전 ~ 마지막 교시 시작 20분 후 까지 입실 허용
     LocalDateTime firstAllowedEntryTime = LocalDateTime.of(enterDateTime.toLocalDate(),
         firstPeriod.getStartTime()).minusMinutes(40);
     LocalDateTime lastAllowedEntryTime = LocalDateTime.of(enterDateTime.toLocalDate(),
@@ -671,10 +672,14 @@ public class AttendanceService {
           period.getStartTime());
       LocalDateTime periodEnd = LocalDateTime.of(enterDateTime.toLocalDate(),
           period.getEndTime());
-      LocalDateTime periodStartLate = periodStart.plusMinutes(20); // 교시 시작 후 20분까지 (1교시만)
+      LocalDateTime periodStartLate = periodStart.plusMinutes(20); // 교시 시작 후 20분까지 (1교시 제외)
 
       if (period.equals(firstPeriod)) { // 1교시 입실 규칙 적용
-        if (enterDateTime.isBefore(periodStartLate)) {
+
+        // 1교시에 한해 10:00까지 출석으로 인정
+        LocalDateTime extendedCutoff = LocalDateTime.of(enterDateTime.toLocalDate(), LocalTime.of(10, 0));
+
+        if (enterDateTime.isBefore(extendedCutoff)) {
           attendance.updateStatus(AttendanceStatus.PRESENT);
         } else if (enterDateTime.isBefore(periodEnd)) {
           attendance.updateStatus(AttendanceStatus.LATE);
@@ -771,13 +776,15 @@ public class AttendanceService {
     String[] allowedNetworks = {
         "127.0.0.1/32", // 로컬, 추가 네트워크 범위가 있을 경우 추가 가능
         "192.168.0.0/24", // 학원 네트워크(로컬네트워크)
-        "115.93.9.236/30",  // 학원 와이파이 공인 ip
+        "115.93.9.232/29",  // 학원 와이파이 공인 ip 115.93.9.232~239 범위 (115.93.9.234 포함)
+        "118.235.12.0/24",  // 118.235.12.x 범위 (118.235.12.207 포함)
+        "118.235.15.0/24",  // 118.235.15.x 범위 (118.235.15.114 포함)
         myIp1,
         myIp2,
         myIp3,
         myIp4,
     };
-    log.info("myIp1: {}, myIp2: {}, myIp3: {}, myIp4: {}",myIp1,myIp2,myIp3,myIp4);
+    log.debug("myIp1: {}, myIp2: {}, myIp3: {}, myIp4: {}",myIp1,myIp2,myIp3,myIp4);
 
     try {
       InetAddress targetAddress = InetAddress.getByName(targetIp);
