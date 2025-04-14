@@ -771,13 +771,15 @@ public class AttendanceService {
     String[] allowedNetworks = {
         "127.0.0.1/32", // 로컬, 추가 네트워크 범위가 있을 경우 추가 가능
         "192.168.0.0/24", // 학원 네트워크(로컬네트워크)
-        "115.93.9.236/30",  // 학원 와이파이 공인 ip
+        "115.93.9.232/29",  // 학원 와이파이 공인 ip 115.93.9.232~239 범위 (115.93.9.234 포함)
+        "118.235.12.0/24",  // 118.235.12.x 범위 (118.235.12.207 포함)
+        "118.235.15.0/24",  // 118.235.15.x 범위 (118.235.15.114 포함)
         myIp1,
         myIp2,
         myIp3,
         myIp4,
     };
-    log.info("myIp1: {}, myIp2: {}, myIp3: {}, myIp4: {}",myIp1,myIp2,myIp3,myIp4);
+    log.debug("myIp1: {}, myIp2: {}, myIp3: {}, myIp4: {}",myIp1,myIp2,myIp3,myIp4);
 
     try {
       InetAddress targetAddress = InetAddress.getByName(targetIp);
