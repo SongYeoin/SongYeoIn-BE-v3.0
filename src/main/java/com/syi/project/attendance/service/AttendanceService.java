@@ -546,7 +546,8 @@ public class AttendanceService {
 
     // 퇴실 인정 시간 체크
     LocalTime lastPeriodEndTime = lastPeriod.getEndTime();
-    LocalTime allowedExitStart = lastPeriodEndTime.minusMinutes(20);  // 퇴실 가능 시작 시간 = 마지막 교시 종료 시간 - 20분
+    LocalTime allowedExitStart = lastPeriod.getStartTime(); // 퇴실 가능 시작 시간 = 마지막 교시 시작 시간
+    //LocalTime allowedExitStart = lastPeriodEndTime.minusMinutes(20);  // 퇴실 가능 시작 시간 = 마지막 교시 종료 시간 - 20분
     LocalTime allowedExitEnd = lastPeriodEndTime.plusMinutes(70);  // 퇴실 가능 종료 시간 = 마지막 교시 종료 + 1시간 10분
 
     if (exitDateTime.toLocalTime().isBefore(allowedExitStart) || exitDateTime.toLocalTime().isAfter(allowedExitEnd)) {
