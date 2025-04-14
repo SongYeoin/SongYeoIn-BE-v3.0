@@ -604,7 +604,7 @@ public class AttendanceService {
     Period firstPeriod = periods.get(0);
     Period lastPeriod = periods.get(periods.size() - 1);
 
-    // 1교시 시작 40분 전
+    // 1교시 시작 40분 전 ~ 마지막 교시 시작 20분 후 까지 입실 허용
     LocalDateTime firstAllowedEntryTime = LocalDateTime.of(enterDateTime.toLocalDate(),
         firstPeriod.getStartTime()).minusMinutes(40);
     LocalDateTime lastAllowedEntryTime = LocalDateTime.of(enterDateTime.toLocalDate(),
@@ -672,10 +672,14 @@ public class AttendanceService {
           period.getStartTime());
       LocalDateTime periodEnd = LocalDateTime.of(enterDateTime.toLocalDate(),
           period.getEndTime());
-      LocalDateTime periodStartLate = periodStart.plusMinutes(20); // 교시 시작 후 20분까지 (1교시만)
+      LocalDateTime periodStartLate = periodStart.plusMinutes(20); // 교시 시작 후 20분까지 (1교시 제외)
 
       if (period.equals(firstPeriod)) { // 1교시 입실 규칙 적용
-        if (enterDateTime.isBefore(periodStartLate)) {
+
+        // 1교시에 한해 10:00까지 출석으로 인정
+        LocalDateTime extendedCutoff = LocalDateTime.of(enterDateTime.toLocalDate(), LocalTime.of(10, 0));
+
+        if (enterDateTime.isBefore(extendedCutoff)) {
           attendance.updateStatus(AttendanceStatus.PRESENT);
         } else if (enterDateTime.isBefore(periodEnd)) {
           attendance.updateStatus(AttendanceStatus.LATE);
