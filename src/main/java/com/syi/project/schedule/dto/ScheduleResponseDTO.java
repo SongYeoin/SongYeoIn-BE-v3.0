@@ -1,12 +1,10 @@
 package com.syi.project.schedule.dto;
 
-import com.syi.project.period.dto.PeriodRequestDTO;
 import com.syi.project.period.dto.PeriodResponseDTO;
-import com.syi.project.period.eneity.Period;
+import com.syi.project.period.entity.Period;
 import com.syi.project.schedule.entity.Schedule;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PastOrPresent;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.Builder;

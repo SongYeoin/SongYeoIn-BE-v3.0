@@ -5,7 +5,7 @@ import static com.syi.project.schedule.dto.ScheduleResponseDTO.fromEntity;
 import com.syi.project.course.entity.Course;
 import com.syi.project.period.DayOfWeekMapper;
 import com.syi.project.period.dto.PeriodRequestDTO;
-import com.syi.project.period.eneity.Period;
+import com.syi.project.period.entity.Period;
 import com.syi.project.period.repository.PeriodRepository;
 import com.syi.project.schedule.dto.ScheduleRequestDTO;
 import com.syi.project.schedule.dto.ScheduleRequestDTO.ScheduleUpdateRequestDTO;

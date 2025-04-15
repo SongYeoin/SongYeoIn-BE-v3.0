@@ -18,7 +18,7 @@ import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_FAILED;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_NOT_IN_RANGE;
 import static com.syi.project.common.exception.ErrorCode.ATTENDANCE_SEGMENT_NOT_FOUND;
 import static com.syi.project.common.exception.ErrorCode.COURSE_NOT_FOUND;
-import static com.syi.project.period.eneity.QPeriod.period;
+import static com.syi.project.period.entity.QPeriod.period;
 
 import com.querydsl.core.Tuple;
 import com.syi.project.attendance.AttendanceCalculator;
@@ -46,7 +46,7 @@ import com.syi.project.course.entity.Course;
 import com.syi.project.course.repository.CourseRepository;
 import com.syi.project.enroll.repository.EnrollRepository;
 import com.syi.project.period.dto.PeriodResponseDTO;
-import com.syi.project.period.eneity.Period;
+import com.syi.project.period.entity.Period;
 import com.syi.project.period.repository.PeriodRepository;
 import com.syi.project.schedule.dto.ScheduleResponseDTO;
 import com.syi.project.schedule.repository.ScheduleRepository;

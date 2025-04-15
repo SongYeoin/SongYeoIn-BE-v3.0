@@ -1,6 +1,6 @@
 package com.syi.project.period.repository;
 
-import com.syi.project.period.eneity.Period;
+import com.syi.project.period.entity.Period;
 import java.time.LocalDate;
 import java.util.List;
 

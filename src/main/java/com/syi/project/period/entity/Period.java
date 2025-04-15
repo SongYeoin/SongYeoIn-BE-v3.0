@@ -1,4 +1,4 @@
-package com.syi.project.period.eneity;
+package com.syi.project.period.entity;
 
 
 import com.syi.project.common.annotation.StartBeforeEnd;
