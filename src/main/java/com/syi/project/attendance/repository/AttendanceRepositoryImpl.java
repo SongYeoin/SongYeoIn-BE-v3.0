@@ -92,7 +92,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
             attendance.status)
         .from(attendance)
         .join(period).on(attendance.periodId.eq(period.id))
-        .where(predicate.and(period.deletedBy.isNull()))
+        .where(predicate)
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .fetch();
