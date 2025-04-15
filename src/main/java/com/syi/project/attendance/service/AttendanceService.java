@@ -1443,7 +1443,9 @@ public class AttendanceService {
       for (Course course : todayCourses) {
         // 해당 수업의 모든 학생 ID와 교시 조회
         List<Long> studentIds = enrollRepository.findStudentIdByCourseId(course.getId());
-        List<Period> periods = periodRepository.findByCourseId(course.getId());
+
+        String todayDayOfWeek = today.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN); // 예: "월요일"
+        List<Period> periods = periodRepository.getScheduleByCourseId(todayDayOfWeek, course.getId());
 
         log.info("수업 ID: {}, 학생 수: {}, 교시 수: {}",
             course.getId(), studentIds.size(), periods.size());
