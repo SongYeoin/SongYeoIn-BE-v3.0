@@ -26,6 +26,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -486,7 +488,9 @@ public class ClubService {
 
         // 다운로드할 파일 목록 생성
         List<File> files = new ArrayList<>();
-        List<String> names = new ArrayList<>();
+        // 파일 ID와 Club 객체를 매핑하는 Map 생성
+        Map<Long, Club> fileIdToClubMap = new HashMap<>();
+
         for (Club club : clubs) {
             // 클럽 파일 존재 여부 확인
             if (club.getClubFile() == null || club.getClubFile().getFile() == null || club.getClubFile().getFile().getId() == null) {
@@ -497,8 +501,9 @@ public class ClubService {
             // 회원의 클럽 접근 권한 확인
             try {
                 validateMemberClubAccess(member, club);
-                files.add(club.getClubFile().getFile());
-                names.add(club.getClubName());
+                File file = club.getClubFile().getFile();
+                files.add(file);
+                fileIdToClubMap.put(file.getId(), club);
             } catch (AccessDeniedException e) {
                 log.warn("일부 클럽 파일 접근 권한 없음 - memberId: {}, clubId: {}", member.getId(), club.getId());
                 // 권한이 없는 클럽은 건너뜀
@@ -515,12 +520,13 @@ public class ClubService {
         String zipFileName = "동아리일지_일괄다운로드.zip";
 
         // 파일 서비스를 통해 zip 파일 생성
-        Resource zipResource = fileService.downloadFilesAsZip(files, zipFileName,
-          file -> {
-              int index = files.indexOf(file);
-              return file.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "_" +
-                names.get(index) + "_" + file.getOriginalName();
-          });
+        Resource zipResource = fileService.downloadFilesAsZip(files, zipFileName, file -> {
+            Club club = fileIdToClubMap.get(file.getId());
+            String dateFormat = club.getStudyDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String extension = file.getOriginalName().substring(file.getOriginalName().lastIndexOf("."));
+            // 동아리일지_동아리명_날짜.확장자 형식
+            return "동아리일지_" + club.getClubName() + "_" + dateFormat + extension;
+        });
 
         // 응답 생성
         return ResponseEntity.ok()
