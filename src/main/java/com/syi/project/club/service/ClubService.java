@@ -457,11 +457,26 @@ public class ClubService {
         // 클럽 관리자인지 확인
         boolean isAdmin = club.getCheckerId().equals(member.getId());
 
-        // 클럽 회원인지 확인
-        boolean isMember = club.getWriterId().equals(member.getId());
+        // 클럽 작성자인지 확인
+        boolean isWriter = club.getWriterId().equals(member.getId());
 
-        if (!isAdmin && !isMember) {
-            log.warn("클럽 파일 접근 권한 없음 - memberId: {}, clubId: {}", member.getId(), club.getId());
+        // 참여자인지 확인
+        boolean isParticipant = false;
+        if (club.getParticipants() != null && !club.getParticipants().isEmpty()) {
+            // 참여자 목록을 쉼표로 분리
+            String[] participantNames = club.getParticipants().split(",");
+
+            // 참여자 이름 앞뒤 공백 제거 후 현재 회원의 이름과 비교
+            for (String participantName : participantNames) {
+                if (participantName.trim().equals(member.getName())) {
+                    isParticipant = true;
+                    break;
+                }
+            }
+        }
+
+        if (!isAdmin && !isWriter && !isParticipant) {
+            log.warn("클럽 파일 접근 권한 없음 - memberId: {}, memberName: {}, clubId: {}", member.getId(), member.getName(), club.getId());
             throw new AccessDeniedException("클럽 파일에 접근할 권한이 없습니다.");
         }
     }
