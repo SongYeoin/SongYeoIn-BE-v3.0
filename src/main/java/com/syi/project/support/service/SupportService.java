@@ -13,6 +13,7 @@ import com.syi.project.support.dto.SupportResponseDTO;
 import com.syi.project.support.entity.DeveloperResponse;
 import com.syi.project.support.entity.Support;
 import com.syi.project.support.entity.SupportFile;
+import com.syi.project.support.enums.SupportStatus;
 import com.syi.project.support.repository.DeveloperResponseRepository;
 import com.syi.project.support.repository.SupportRepository;
 import lombok.RequiredArgsConstructor;
@@ -286,6 +287,15 @@ public class SupportService {
       support.confirm();
       log.debug("문의 확인 처리 완료 - id: {}", id);
     }
+  }
+
+  // 개발팀의 해결 상태 전송
+  @Transactional
+  public void updateStatus(Long supportId, SupportStatus status) {
+    Support support = supportRepository.findByIdAndDeletedByIsNull(supportId)
+        .orElseThrow(() -> new InvalidRequestException(ErrorCode.SUPPORT_NOT_FOUND));
+    support.updateStatus(status);
+    log.info("문의 상태 변경 - id: {}, status: {}", supportId, status);
   }
 
   /**
