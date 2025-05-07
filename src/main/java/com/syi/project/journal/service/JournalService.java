@@ -26,10 +26,12 @@ import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -353,43 +355,49 @@ public class JournalService {
 
     // S3에 실제로 존재하는 파일만 포함할 리스트
     List<File> availableFiles = new ArrayList<>();
+    Map<Long, LocalDate> fileIdToDateMap = new HashMap<>();
+    Map<Long, String> fileIdToUserName = new HashMap<>();
 
-    // 교육일자와 파일 정보를 매핑한 Map 생성
-    java.util.Map<Long, LocalDate> fileIdToDateMap = new HashMap<>();
-
-    // 각 파일이 S3에 존재하는지 확인
     for (Journal journal : validJournals) {
       File file = journal.getJournalFile().getFile();
-      try {
-        // 파일 다운로드를 시도하지만 실제로 스트림은 닫기만 함
-        InputStream is = s3Uploader.downloadFile(file.getPath());
-        is.close();
-
-        // 예외가 발생하지 않으면 파일이 존재하는 것이므로 리스트와 맵에 추가
+      try (InputStream is = s3Uploader.downloadFile(file.getPath())) {
         availableFiles.add(file);
         fileIdToDateMap.put(file.getId(), journal.getEducationDate());
+        fileIdToUserName.put(file.getId(), journal.getMember().getName());
       } catch (Exception e) {
-        // S3에서 파일을 찾을 수 없거나 다른 문제가 있는 경우 로그만 남기고 건너뜀
         log.warn("S3 파일 누락 - 파일ID: {}", file.getId());
       }
     }
 
-    // 유효한 파일이 하나도 없는 경우
     if (availableFiles.isEmpty()) {
       throw new InvalidRequestException(ErrorCode.JOURNAL_NO_FILES_TO_DOWNLOAD,
           "선택한 모든 파일이 저장소에서 찾을 수 없습니다.");
     }
 
+    // 중복 처리용 맵
+    Map<String, Integer> nameDateCountMap = new HashMap<>();
+    Map<Long, String> fileIdToRenamed = new HashMap<>();
+
+    for (File file : availableFiles) {
+      String name = fileIdToUserName.get(file.getId());
+      String date = fileIdToDateMap.get(file.getId()).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+      String ext = file.getOriginalName().substring(file.getOriginalName().lastIndexOf('.') + 1);
+      String key = name + "_" + date;
+
+      int count = nameDateCountMap.getOrDefault(key, 0);
+      nameDateCountMap.put(key, count + 1);
+
+      String suffix = (count == 0) ? "" : String.valueOf((char) ('A' + count - 1));
+      String renamed = "교육일지_" + name + suffix + "_" + date + "." + ext;
+
+      fileIdToRenamed.put(file.getId(), renamed);
+    }
+
     try {
-      // 교육일자를 활용한 파일명 생성 로직 전달
       Resource zipResource = fileService.downloadFilesAsZip(
           availableFiles,
           "교육일지_일괄다운로드.zip",
-          file -> {
-            LocalDate date = fileIdToDateMap.get(file.getId());
-            String datePrefix = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-            return datePrefix + "_" + file.getOriginalName();
-          }
+          file -> fileIdToRenamed.getOrDefault(file.getId(), file.getOriginalName())
       );
 
       return ResponseEntity.ok()
@@ -403,6 +411,7 @@ public class JournalService {
           "일괄 다운로드 처리 중 오류가 발생했습니다.");
     }
   }
+
 
   // 파일이 S3에 존재하지 않는 것이 있는지 확인하는 메소드
   public boolean checkHasMissingFiles(List<Long> journalIds, Long memberId) {
