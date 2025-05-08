@@ -397,11 +397,17 @@ public class ClubService {
 
         // 멤버 정보 조회
         Member member = memberRepository.findById(memberId)
-            .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
+            .orElseThrow(() -> {
+                log.warn("회원을 찾을 수 없습니다. memberId: {}", memberId);
+                return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+            });
 
         // 클럽 정보 조회
         Club club = clubRepository.findById(clubId)
-            .orElseThrow(() -> new EntityNotFoundException("클럽을 찾을 수 없습니다. clubId: " + clubId));
+            .orElseThrow(() -> {
+                log.warn("클럽을 찾을 수 없습니다. clubId: {}", clubId);
+                return new InvalidRequestException(ErrorCode.CLUB_NOT_FOUND);
+            });
 
         // 클럽 파일 존재 여부 확인
         if (club.getClubFile().getId() == null || club.getClubFile().getFile().getId() == null) {
@@ -477,7 +483,7 @@ public class ClubService {
 
         if (!isAdmin && !isWriter && !isParticipant) {
             log.warn("클럽 파일 접근 권한 없음 - memberId: {}, memberName: {}, clubId: {}", member.getId(), member.getName(), club.getId());
-            throw new AccessDeniedException("클럽 파일에 접근할 권한이 없습니다.");
+            throw new InvalidRequestException(ErrorCode.FILE_ACCESS_DENIED);
         }
     }
 
@@ -493,7 +499,10 @@ public class ClubService {
 
         // 멤버 정보 조회
         Member member = memberRepository.findById(memberId)
-            .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다. memberId: " + memberId));
+          .orElseThrow(() -> {
+              log.warn("회원을 찾을 수 없습니다. memberId: {}", memberId);
+              return new InvalidRequestException(ErrorCode.USER_NOT_FOUND);
+          });
 
         // 클럽 정보 일괄 조회
         List<Club> clubs = clubRepository.findAllById(clubIds);
