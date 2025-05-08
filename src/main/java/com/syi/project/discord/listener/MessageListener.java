@@ -2,7 +2,9 @@ package com.syi.project.discord.listener;
 
 import com.syi.project.discord.config.DiscordBotConfig;
 import com.syi.project.support.dto.DeveloperResponseDTO;
+import com.syi.project.support.enums.SupportStatus;
 import com.syi.project.support.service.DeveloperResponseService;
+import com.syi.project.support.service.SupportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
@@ -30,7 +32,8 @@ public class MessageListener extends ListenerAdapter {
     if (event.getAuthor().isBot()) return;
 
     // 설정된 채널 ID가 있다면 해당 채널에서만 동작
-    if (config.getDevChannelId() != null && !config.getDevChannelId().isEmpty() &&
+    if (config.getDevChannelId() != null &&
+        !config.getDevChannelId().isEmpty() &&
         !event.getChannel().getId().equals(config.getDevChannelId())) {
       return;
     }
@@ -54,19 +57,15 @@ public class MessageListener extends ListenerAdapter {
 
         log.info("개발팀 응답 등록 요청 - 문의ID: {}, 개발자: {}", supportId, developerName);
 
-        try {
-          DeveloperResponseDTO response = developerResponseService.createDeveloperResponse(
-              supportId, responseContent, developerId, developerName);
+        // 👉 모든 처리 위임
+        developerResponseService.handleDiscordResponse(supportId, responseContent, developerId, developerName);
 
-          event.getChannel().sendMessage("✅ 문의 #" + supportId + "에 대한 답변이 성공적으로 등록되었습니다.").queue();
-          log.info("개발팀 응답 등록 성공 - 문의ID: {}, 응답ID: {}", supportId, response.getId());
-        } catch (Exception e) {
-          String errorMessage = "❌ 답변 등록에 실패했습니다: " + e.getMessage();
-          event.getChannel().sendMessage(errorMessage).queue();
-          log.error("개발팀 응답 등록 실패 - 문의ID: {}, 오류: {}", supportId, e.getMessage());
-        }
+        event.getChannel().sendMessage("✅ 문의 #" + supportId + "에 대한 답변이 등록되었습니다.").queue();
+
       } catch (NumberFormatException e) {
         event.getChannel().sendMessage("❌ 문의ID는 숫자여야 합니다.").queue();
+      } catch (Exception e) {
+        event.getChannel().sendMessage("❌ 오류 발생: " + e.getMessage()).queue();
       }
     }
   }

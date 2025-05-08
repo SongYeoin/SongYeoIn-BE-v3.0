@@ -236,7 +236,6 @@ public class AttendanceCalculator {
 
     for (Map<String, Object> segment : segments) {
 
-      // 1차는 21일, 나머지는 20일씩
       List<LocalDate> periodDays = new ArrayList<>();
       Object rawObject = segment.get("날짜들");
 
@@ -257,16 +256,8 @@ public class AttendanceCalculator {
       boolean containsLastDate = periodDays.stream()
           .anyMatch(date -> date.isEqual(lastRecordedDate) || date.isAfter(lastRecordedDate));
 
-      // 첫 번째 차수(1차)면서 21일인 경우, 계산할 때는 첫째 날을 제외
-      boolean isFirstPeriod = segment.containsKey("첫차여부") && (boolean) segment.get("첫차여부");
       List<LocalDate> calculationDays = periodDays;
-
       log.info("calculationDays 의 크기: {}", calculationDays.size());
-      if (isFirstPeriod && periodDays.size() > 1) {
-        log.info("1차이므로 첫재날을 제외합니다.");
-        calculationDays = periodDays.subList(1, periodDays.size()); // 첫째 날 제외한 리스트
-        log.info("(변화) calculationDays 의 크기: {}", calculationDays.size());
-      }
 
 
       currentSegmentDays = 0;
@@ -489,7 +480,7 @@ public class AttendanceCalculator {
     }
 
     while (!workingDays.isEmpty()) {
-      int daysInSegment = (periodIndex == 1) ? 21 : SEGMENT_DAYS;   // 1차는 21일 이후는 20일
+      int daysInSegment = SEGMENT_DAYS;
       log.info("이번 차수의 크기: {}",daysInSegment);
       int segmentSize = Math.min(daysInSegment, workingDays.size());
 
