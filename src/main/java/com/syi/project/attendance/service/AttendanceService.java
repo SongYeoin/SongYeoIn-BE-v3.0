@@ -1154,17 +1154,6 @@ public class AttendanceService {
     log.info("해당 기간에 속하는 날짜들 사이즈: {}", courseDates.size());
 
     LocalDate startDate;
-    // 해당 차수의 시작일과 종료일
-    /*if (termLabel.equals("1차")) {
-      startDate = ((LocalDate) result.get("시작일")).minusDays(1);
-      List<LocalDate> newCourseDates = new ArrayList<>(courseDates);
-      newCourseDates.add(0, startDate);
-      courseDates = newCourseDates;
-      log.info("1차라서 교육과정 시작일 {} 을 courseDates에 포함시켰음 : {}", startDate, courseDates.size());
-      //courseDates = courseDates.subList(1, courseDates.size()); // 시작날짜 포함
-    } else {
-      startDate = (LocalDate) result.get("시작일");
-    }*/
     startDate = (LocalDate) result.get("시작일");
     LocalDate endDate = (LocalDate) result.get("종료일");
 
@@ -1332,13 +1321,6 @@ public class AttendanceService {
 
     AttendancePrintResponseDto.SummaryPageDto summaryPage = new AttendancePrintResponseDto.SummaryPageDto();
     List<AttendancePrintResponseDto.StudentSummaryDto> summaries = new ArrayList<>();
-
-/*    if (termLabel.equals("1차")) {
-      courseDates.subList(1, courseDates.size());
-      startDate = startDate.plusDays(1);
-      log.info("출석률 계산을 위해 1차라서 포함시켰던 교육과정 시작일 {} 을 배제시킴 : {}", startDate, courseDates.size());
-      //courseDates = courseDates.subList(1, courseDates.size());
-    }*/
 
     int totalWorkingDays = courseDates.size();
     log.debug("소정 출석일: {}", totalWorkingDays);
