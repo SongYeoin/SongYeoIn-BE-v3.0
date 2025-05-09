@@ -38,7 +38,7 @@ public class AttendanceCalculator {
     log.info("dailyStats size: {}, startDate: {}, endDate: {}, holidays: {}", dailyStats.size(),
         startDate, endDate, holidays);
 
-    // 첫 날 제외하고 유효한 전체 출석일 (115일)
+    // 유효한 전체 출석일 (115일 - 주말, 공휴일 제외)
     List<LocalDate> validDays = getValidDays(startDate, endDate, holidays);
 
     // validDays가 비어있는 경우 처리
@@ -137,7 +137,7 @@ public class AttendanceCalculator {
       LocalDate date = stats.getDate();
 
       // 유효한 출석일만 고려
-      if (!validDays.contains(date) || date.isEqual(startDate)) {
+      if (!validDays.contains(date)) {
         continue;
       }
 
@@ -184,14 +184,14 @@ public class AttendanceCalculator {
     }
 
     log.debug("최종 전체 실제 출석일 수: {}", totalAttendanceDays);
-    double realValidDaysSize = (double) validDays.size() - 1;
+    double realValidDaysSize = (double) validDays.size();
     if (realValidDaysSize <= 0) {
-      log.warn("유효 출석일 수가 1 이하입니다. 출석률을 0.0으로 반환합니다.");
+      log.warn("유효 출석일 수가 0 입니다. 출석률을 0.0으로 반환합니다.");
       return 0.0;
     }
     log.debug("(double) validDays.size()) - 1: {}",realValidDaysSize);
 
-    log.info("(최종) 전체 실제 출석일 수: {}, 1일 감소된 유효일 수: {}", totalAttendanceDays, realValidDaysSize);
+    log.info("(최종) 전체 실제 출석일 수: {}, 유효일 수: {}", totalAttendanceDays, realValidDaysSize);
     return roundToTwoDecimalPlaces((totalAttendanceDays / realValidDaysSize) * 100);
   }
 
@@ -247,10 +247,6 @@ public class AttendanceCalculator {
       }
 
 
-/*      // 첫 번째 차수(1차)만 첫째 날을 제외
-      if (periodIndex == 0 && periodDays.size() > 1) {
-        periodDays = periodDays.subList(1, periodDays.size()); // 첫째 날 제외
-      }*/
 
       // 이 세그먼트가 마지막 기록된 날짜를 포함하는지 확인
       boolean containsLastDate = periodDays.stream()
@@ -491,8 +487,7 @@ public class AttendanceCalculator {
           "시작일", periodDays.get(0),
           "종료일", periodDays.get(periodDays.size()-1),
           "일수", periodDays.size(),
-          "날짜들", periodDays,
-          "첫차여부", periodIndex == 1
+          "날짜들", periodDays
       ));
 //      workingDays = workingDays.subList(Math.min(SEGMENT_DAYS, workingDays.size()), workingDays.size());
       workingDays = workingDays.subList(segmentSize, workingDays.size());
