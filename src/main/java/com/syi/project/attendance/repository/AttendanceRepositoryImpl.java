@@ -15,6 +15,7 @@ import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendance
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.DeleteResultDto;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
 import com.syi.project.common.enums.AttendanceStatus;
@@ -668,6 +669,39 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
             .select(attendance)
             .fetchOne()
     );
+  }
+
+  @Override
+  public DeleteResultDto deleteAllAttendancesByDateAndStudentAndCourse(LocalDate date,
+      Long studentId, Long courseId) {
+
+    // 삭제할 데이터 수 조회
+    Long count = countByDateAndStudentAndCourse(date, studentId, courseId);
+
+    // null 체크 추가
+    if (count == null || count == 0) {
+      return new DeleteResultDto(0L, "삭제할 출석 데이터가 없습니다.");
+    }
+
+    Long deletedCount = queryFactory.delete(attendance)
+        .where(attendance.date.eq(date)
+            .and(attendance.memberId.eq(studentId))
+            .and(attendance.courseId.eq(courseId)))
+        .execute();
+
+    return new DeleteResultDto(deletedCount, deletedCount + "개의 출석 정보가 삭제되었습니다.");
+  }
+
+  private Long countByDateAndStudentAndCourse(LocalDate date, Long studentId, Long courseId) {
+
+    // 카운트 결과를 Long으로 반환
+    return queryFactory.select(attendance.count())
+        .from(attendance)
+        .where(attendance.date.eq(date)
+            .and(attendance.memberId.eq(studentId))
+            .and(attendance.courseId.eq(courseId)))
+        .fetchOne();
+
   }
 
 
