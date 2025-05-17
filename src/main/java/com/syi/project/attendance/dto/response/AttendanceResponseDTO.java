@@ -296,6 +296,19 @@ public class AttendanceResponseDTO {
     }
   }
 
+  @Getter
+  @ToString
+  public static class DeleteResultDto{
+    private Long deletedCount;
+    private String message;
+
+    @Builder
+    public DeleteResultDto(Long deletedCount, String message ) {
+      this.deletedCount = deletedCount;
+      this.message = message;
+    }
+  }
+
 
   private Long attendanceId;
 

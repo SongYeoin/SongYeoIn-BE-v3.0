@@ -34,6 +34,7 @@ import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceP
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendancePrintResponseDto.SummaryPageDto;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.DeleteResultDto;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
 import com.syi.project.attendance.repository.AttendanceRepository;
@@ -57,6 +58,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -1528,6 +1531,32 @@ public class AttendanceService {
     } catch (Exception e) {
       log.error("{}일 미기록 출석 수동 처리 중 오류 발생", date, e);
     }
+  }
+
+  /**
+   * 특정 날짜의 특정 학생의 모든 출석 데이터 일괄 삭제 (모든 페이지 포함)
+   *
+   * @return 삭제된 데이터 수를 포함한 결과 정보
+   */
+  @Transactional
+  public DeleteResultDto bulkDeleteAllAttendances(String dateStr, Long studentId, Long courseId) {
+
+    LocalDate date;
+
+    try {
+      // 문자열 날짜를 LocalDate로 변환
+      date = LocalDate.parse(dateStr, DateTimeFormatter.ISO_DATE);
+    } catch (DateTimeParseException e) {
+      throw new IllegalArgumentException("잘못된 날짜 형식입니다. YYYY-MM-DD 형식으로 입력해주세요.");
+    }
+
+    // null 체크
+    if (studentId == null || courseId == null) {
+      throw new IllegalArgumentException("학생 ID와 강의 ID는 필수 입력 값입니다.");
+    }
+
+    // 리포지토리에서 삭제 실행 및 결과 반환
+    return attendanceRepository.deleteAllAttendancesByDateAndStudentAndCourse(date, studentId, courseId);
   }
 }
 
