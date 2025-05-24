@@ -7,6 +7,7 @@ import com.syi.project.attendance.dto.response.AttendanceResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendDetailDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendancePrintResponseDto;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.DeleteResultDto;
 import com.syi.project.attendance.service.AttendanceService;
 import com.syi.project.auth.service.CustomUserDetails;
 import com.syi.project.auth.service.MemberService;
@@ -28,6 +29,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -189,5 +191,18 @@ public class AdminAttendanceController {
     return ResponseEntity.ok(attendancePrintDataByCourseId);
   }
 
+  /**
+   * 특정 날짜의 특정 학생의 모든 출석 데이터 일괄 삭제
+   * @return 삭제된 데이터 수를 포함한 결과 정보
+   */
+  @DeleteMapping("/bulk-all")
+  public ResponseEntity<DeleteResultDto> bulkDeleteAllAttendances(
+      @RequestParam String date,
+      @RequestParam Long studentId,
+      @RequestParam Long courseId) {
+
+    DeleteResultDto result = attendanceService.bulkDeleteAllAttendances(date, studentId, courseId);
+    return ResponseEntity.ok(result);
+  }
 
 }

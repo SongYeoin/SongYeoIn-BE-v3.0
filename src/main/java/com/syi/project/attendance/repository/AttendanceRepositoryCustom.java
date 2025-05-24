@@ -6,6 +6,7 @@ import com.syi.project.attendance.dto.request.AttendanceRequestDTO.AllAttendance
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendListResponseDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceStatusListDTO;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.AttendanceTableDTO;
+import com.syi.project.attendance.dto.response.AttendanceResponseDTO.DeleteResultDto;
 import com.syi.project.attendance.dto.response.AttendanceResponseDTO.MemberInfoInDetail;
 import com.syi.project.attendance.entity.Attendance;
 import java.time.LocalDate;
@@ -43,4 +44,6 @@ public interface AttendanceRepositoryCustom {
   List<AttendanceDailyStats> findAttendanceStatsByStudentIdAndCourseIdAndDates(Long id, Long courseId, LocalDate startDate, LocalDate endDate);
 
   Optional<Attendance> findByMemberIdAndDateAndPeriodId(Long studentId, LocalDate today, Long id);
+
+  DeleteResultDto deleteAllAttendancesByDateAndStudentAndCourse(LocalDate date, Long studentId, Long courseId);
 }
