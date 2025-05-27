@@ -17,6 +17,7 @@ import com.syi.project.common.utils.S3Uploader;
 import com.syi.project.file.dto.FileDownloadDTO;
 import com.syi.project.file.dto.FileResponseDTO;
 import com.syi.project.file.entity.File;
+import com.syi.project.file.enums.FileStatus;
 import com.syi.project.file.repository.FileRepository;
 import com.syi.project.file.service.FileService;
 import jakarta.persistence.EntityNotFoundException;
@@ -275,11 +276,13 @@ public class ClubService {
             // 기존 파일이 있는 경우 삭제하고 새 파일로 교체
             File existingFile = clubFile.getFile();
             if (existingFile != null) {
-                fileService.deleteFile(existingFile.getId(), member);
+                existingFile.delete(member); // 논리적 삭제
+                fileRepository.save(existingFile); // 상태 변경 저장
             }
 
             // 새 파일 업로드
             File uploadedFile = fileService.uploadFile(file, dirName, member);
+            //기존 ClubFile의 파일만 교체 (레코드는 유지)
             clubFile.updateFile(uploadedFile);
             clubFileRepository.save(clubFile);
 
@@ -295,6 +298,7 @@ public class ClubService {
 
             return FileResponseDTO.from(uploadedFile, s3Uploader);
         }
+
     }
 
     // 클럽 파일 정보 조회 메서드
