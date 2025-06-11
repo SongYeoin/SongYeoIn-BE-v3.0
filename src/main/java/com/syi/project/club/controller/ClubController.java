@@ -246,7 +246,7 @@ public class ClubController {
 
     @GetMapping("/classmates/{courseId}")
     public ResponseEntity<Page<MemberDTO>> getCourseMembers(@PathVariable Long courseId,
-      @PageableDefault(size = 5) Pageable pageable) {
+      @PageableDefault(size = 30) Pageable pageable) {
         log.info("Request to get course members with ID: {}", courseId);
         Page<MemberDTO> members = courseService.getMembersByCourse(courseId, pageable);
         return ResponseEntity.ok(members);
