@@ -94,6 +94,7 @@ public class AttendanceRepositoryImpl implements AttendanceRepositoryCustom{
         .from(attendance)
         .join(period).on(attendance.periodId.eq(period.id))
         .where(predicate)
+        .orderBy(period.startTime.asc())
         .offset(pageable.getOffset())
         .limit(pageable.getPageSize())
         .fetch();
