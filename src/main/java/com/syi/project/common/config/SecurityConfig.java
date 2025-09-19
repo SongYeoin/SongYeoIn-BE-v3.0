@@ -107,7 +107,8 @@ public class SecurityConfig {
     configuration.setAllowedOrigins(List.of(
         "http://localhost:3000",
         "https://songyeoin.site",
-        "https://www.songyeoin.site"
+        "https://www.songyeoin.site",
+        "https://d3b6eelio5tp5k.cloudfront.net"
     )); // 프론트엔드 주소
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(Arrays.asList(
